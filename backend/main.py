@@ -3835,15 +3835,19 @@ def generate_detailed_calculation(start_date, lecture_hours, project_hours, work
         # 첫날 오후부터 시작하는 경우
         first_day = True
         
+        # 오전/오후 둘 다 0이면 빈 결과 즉시 반환
+        if morning_h <= 0 and afternoon_h <= 0:
+            return start, start, {}, []
+
         while remaining > 0:
             if not is_workday(current):
                 current += timedelta(days=1)
                 continue
-            
+
             month_key = f"{current.year}년 {current.month}월"
             day_hours = 0
             time_str = ""
-            
+
             # 첫날이고 오후부터 시작하는 경우
             if first_day and start_at_afternoon:
                 # 오후만
@@ -3907,9 +3911,11 @@ def generate_detailed_calculation(start_date, lecture_hours, project_hours, work
             # 첫날 오후(4시간) + N일 + 마지막날
             # 예: 220 = 4(첫날) + 208(26일) + 8(마지막날)
             remaining_after_first = hours - afternoon_h
-            last_day_hours = remaining_after_first % (morning_h + afternoon_h)
+            total_h = morning_h + afternoon_h
+            last_day_hours = (remaining_after_first % total_h) if total_h > 0 else 0
         else:
-            last_day_hours = hours % (morning_h + afternoon_h)
+            total_h = morning_h + afternoon_h
+            last_day_hours = (hours % total_h) if total_h > 0 else 0
         
         if last_day_hours == 0:
             end_time = "18:00"
@@ -4052,9 +4058,12 @@ async def calculate_course_dates(data: dict):
         
         if not start_date_str:
             raise HTTPException(status_code=400, detail="시작일은 필수입니다.")
-        
+
+        if daily_hours <= 0:
+            raise HTTPException(status_code=400, detail="일일 수업시간(오전+오후)은 0보다 커야 합니다.")
+
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        
+
         # 시간을 일수로 변환 (입력된 일일 시간 기준)
         lecture_days = (lecture_hours + daily_hours - 1) // daily_hours  # 올림 처리
         project_days = (project_hours + daily_hours - 1) // daily_hours
@@ -7129,7 +7138,10 @@ async def auto_generate_timetables(data: dict):
         workship_hours = data['workship_hours']
         morning_hours = data.get('morning_hours', 4)
         afternoon_hours = data.get('afternoon_hours', 4)
-        
+
+        if morning_hours + afternoon_hours <= 0:
+            return JSONResponse(status_code=400, content={"detail": "오전/오후 수업시간 합계가 0보다 커야 합니다."})
+
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         
         # 기존 시간표 삭제
@@ -7250,46 +7262,27 @@ async def auto_generate_timetables(data: dict):
                 if subject_remaining.get(subj['subject_code'], 0) > 0:
                     available_subjects.append(subj)
             
-            # ★★★ 핵심: 해당 요일 배정 과목이 모두 소진되면 다른 과목으로 채우기 ★★★
+            # 해당 요일 배정 과목이 모두 소진되면 빈 요일로 건너뛰기
             if not available_subjects:
                 # 모든 교과목이 소진되었는지 확인
                 all_subjects_exhausted = all(hours <= 0 for hours in subject_remaining.values())
-                if all_subjects_exhausted and total_remaining <= 0:
+                if all_subjects_exhausted or total_remaining <= 0:
                     # 이론 완전 종료
                     break
-                
-                # 해당 요일 과목은 소진되었지만, 다른 과목이 남아있으면 채우기
-                if total_remaining > 0:
-                    # 전체 교과목 중 남은 시수가 있는 과목 찾기
-                    for assignment in course_subject_assignments:
-                        if subject_remaining.get(assignment['subject_code'], 0) > 0:
-                            available_subjects.append({
-                                'subject_code': assignment['subject_code'],
-                                'is_biweekly': 0,  # 요일 배정 무시
-                                'week_offset': 0,
-                                'name': assignment['name'],
-                                'hours': assignment['hours'],
-                                'instructor': assignment['main_instructor']
-                            })
-                    
-                    # 여전히 과목이 없으면 다음날로
-                    if not available_subjects:
-                        current_date += timedelta(days=1)
-                        afternoon_slot_available = False
-                        continue
-                else:
-                    current_date += timedelta(days=1)
-                    afternoon_slot_available = False
-                    continue
+
+                # 해당 요일 과목은 소진 → 빈 요일로 넘김
+                current_date += timedelta(days=1)
+                afternoon_slot_available = False
+                continue
             
             # 남은 시수가 많은 순으로 정렬
             available_subjects.sort(key=lambda s: subject_remaining.get(s['subject_code'], 0), reverse=True)
             
             # 오전 슬롯
-            if total_remaining > 0 and available_subjects:
+            if total_remaining > 0 and available_subjects and morning_hours > 0:
                 subj = available_subjects[0]  # 남은 시수가 가장 많은 교과목
                 hours_to_use = min(morning_hours, subject_remaining[subj['subject_code']], total_remaining)
-                
+
                 timetables.append({
                     'course_code': course_code,
                     'subject_code': subj['subject_code'],
@@ -7299,10 +7292,10 @@ async def auto_generate_timetables(data: dict):
                     'instructor_code': subj['instructor'],
                     'type': 'lecture'
                 })
-                
+
                 subject_remaining[subj['subject_code']] -= hours_to_use
                 total_remaining -= hours_to_use
-                
+
                 # ★★★ 핵심: 이론이 오전에 완전히 끝났는지 체크 ★★★
                 if total_remaining <= 0:
                     # 이론이 오전에 끝남 → 오후부터 프로젝트 시작
@@ -7320,26 +7313,14 @@ async def auto_generate_timetables(data: dict):
                     # 오전 과목이 남아있으면 계속 사용
                     afternoon_subject = subj
                 else:
-                    # 2. 오전 과목이 소진되었으면 다른 과목 선택 (요일 배정 무시)
-                    afternoon_available = []
-                    for assignment in course_subject_assignments:
-                        if subject_remaining.get(assignment['subject_code'], 0) > 0:
-                            afternoon_available.append({
-                                'subject_code': assignment['subject_code'],
-                                'is_biweekly': 0,
-                                'week_offset': 0,
-                                'name': assignment['name'],
-                                'hours': assignment['hours'],
-                                'instructor': assignment['main_instructor']
-                            })
-                    
-                    if afternoon_available:
-                        # 남은 시수가 가장 많은 과목 선택
-                        afternoon_available.sort(key=lambda s: subject_remaining.get(s['subject_code'], 0), reverse=True)
-                        afternoon_subject = afternoon_available[0]
+                    # 2. 오전 과목이 소진되었으면 같은 요일 배정 과목 중에서만 선택
+                    for s in available_subjects:
+                        if subject_remaining.get(s['subject_code'], 0) > 0:
+                            afternoon_subject = s
+                            break
                 
                 # 오후 슬롯 생성
-                if afternoon_subject:
+                if afternoon_subject and afternoon_hours > 0:
                     hours_to_use = min(afternoon_hours, subject_remaining[afternoon_subject['subject_code']], total_remaining)
                     
                     timetables.append({
@@ -7367,7 +7348,7 @@ async def auto_generate_timetables(data: dict):
             remaining_hours = project_hours
             
             # 이론이 오전에 끝나고 오후가 비어있으면 같은 날 오후부터 시작
-            if afternoon_slot_available and remaining_hours > 0:
+            if afternoon_slot_available and remaining_hours > 0 and afternoon_hours > 0:
                 daily_instructor = course_instructors[instructor_idx % len(course_instructors)]
                 hours_to_use = min(afternoon_hours, remaining_hours)
                 timetables.append({
@@ -7383,16 +7364,16 @@ async def auto_generate_timetables(data: dict):
                 instructor_idx += 1
                 current_date += timedelta(days=1)
                 afternoon_slot_available = False
-            
+
             while remaining_hours > 0:
                 if is_weekend(current_date) or is_holiday(current_date):
                     current_date += timedelta(days=1)
                     continue
-                
+
                 daily_instructor = course_instructors[instructor_idx % len(course_instructors)]
-                
+
                 # 오전
-                if remaining_hours > 0:
+                if remaining_hours > 0 and morning_hours > 0:
                     hours_to_use = min(morning_hours, remaining_hours)
                     timetables.append({
                         'course_code': course_code,
@@ -7404,15 +7385,15 @@ async def auto_generate_timetables(data: dict):
                         'type': 'project'
                     })
                     remaining_hours -= hours_to_use
-                    
+
                     # ★★★ 핵심: 프로젝트가 오전에 완전히 끝났는지 체크 ★★★
                     if remaining_hours <= 0:
                         # 프로젝트가 오전에 끝남 → 오후부터 현장실습 시작
                         afternoon_slot_available = True
                         break
-                
+
                 # 오후 - 프로젝트가 아직 남아있는 경우에만
-                if remaining_hours > 0:
+                if remaining_hours > 0 and afternoon_hours > 0:
                     hours_to_use = min(afternoon_hours, remaining_hours)
                     timetables.append({
                         'course_code': course_code,
@@ -7424,7 +7405,7 @@ async def auto_generate_timetables(data: dict):
                         'type': 'project'
                     })
                     remaining_hours -= hours_to_use
-                
+
                 instructor_idx += 1
                 current_date += timedelta(days=1)
                 afternoon_slot_available = False
@@ -7434,7 +7415,7 @@ async def auto_generate_timetables(data: dict):
             remaining_hours = workship_hours
             
             # 프로젝트가 오전에 끝나고 오후가 비어있으면 같은 날 오후부터 시작
-            if afternoon_slot_available and remaining_hours > 0:
+            if afternoon_slot_available and remaining_hours > 0 and afternoon_hours > 0:
                 daily_instructor = course_instructors[instructor_idx % len(course_instructors)]
                 hours_to_use = min(afternoon_hours, remaining_hours)
                 timetables.append({
@@ -7449,16 +7430,16 @@ async def auto_generate_timetables(data: dict):
                 remaining_hours -= hours_to_use
                 instructor_idx += 1
                 current_date += timedelta(days=1)
-            
+
             while remaining_hours > 0:
                 if is_weekend(current_date) or is_holiday(current_date):
                     current_date += timedelta(days=1)
                     continue
-                
+
                 daily_instructor = course_instructors[instructor_idx % len(course_instructors)]
-                
+
                 # 오전
-                if remaining_hours > 0:
+                if remaining_hours > 0 and morning_hours > 0:
                     hours_to_use = min(morning_hours, remaining_hours)
                     timetables.append({
                         'course_code': course_code,
@@ -7470,9 +7451,9 @@ async def auto_generate_timetables(data: dict):
                         'type': 'workship'
                     })
                     remaining_hours -= hours_to_use
-                
+
                 # 오후
-                if remaining_hours > 0:
+                if remaining_hours > 0 and afternoon_hours > 0:
                     hours_to_use = min(afternoon_hours, remaining_hours)
                     timetables.append({
                         'course_code': course_code,

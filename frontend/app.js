@@ -8250,14 +8250,14 @@ function renderCourseDetail(course) {
     const lectureHours = course.lecture_hours || 0;
     const projectHours = course.project_hours || 0;
     const internHours = course.workship_hours || 0;
-    const morningHours = course.morning_hours || 4;
-    const afternoonHours = course.afternoon_hours || 4;
+    const morningHours = course.morning_hours != null ? Number(course.morning_hours) : 4;
+    const afternoonHours = course.afternoon_hours != null ? Number(course.afternoon_hours) : 4;
     const dailyHours = morningHours + afternoonHours;
     
     // 일수 계산 (실제 일일 수업시간 기준)
-    const lectureDays = lectureHours > 0 ? Math.ceil(lectureHours / dailyHours) : 0;
-    const projectDays = projectHours > 0 ? Math.ceil(projectHours / dailyHours) : 0;
-    const internDays = internHours > 0 ? Math.ceil(internHours / dailyHours) : 0;
+    const lectureDays = (lectureHours > 0 && dailyHours > 0) ? Math.ceil(lectureHours / dailyHours) : 0;
+    const projectDays = (projectHours > 0 && dailyHours > 0) ? Math.ceil(projectHours / dailyHours) : 0;
+    const internDays = (internHours > 0 && dailyHours > 0) ? Math.ceil(internHours / dailyHours) : 0;
     
     // 퍼센트 계산
     const lecturePercent = totalDays > 0 ? Math.floor((lectureDays / totalDays) * 100) : 0;
@@ -9012,8 +9012,8 @@ window.autoCalculateDates = async function() {
     const lectureHours = parseInt(document.getElementById('form-course-lecture-hours').value) || 0;
     const projectHours = parseInt(document.getElementById('form-course-project-hours').value) || 0;
     const workshipHours = parseInt(document.getElementById('form-course-workship-hours').value) || 0;
-    const morningHours = parseInt(document.getElementById('form-course-morning-hours').value) || 4;
-    const afternoonHours = parseInt(document.getElementById('form-course-afternoon-hours').value) || 4;
+    const morningHours = (() => { const v = parseInt(document.getElementById('form-course-morning-hours').value); return isNaN(v) ? 4 : v; })();
+    const afternoonHours = (() => { const v = parseInt(document.getElementById('form-course-afternoon-hours').value); return isNaN(v) ? 4 : v; })();
     const dailyHours = morningHours + afternoonHours;
     
     if (!startDate) {
@@ -9596,8 +9596,8 @@ window.saveCourse = async function(existingCode) {
         lecture_hours: parseInt(document.getElementById('form-course-lecture-hours').value) || 0,
         project_hours: parseInt(document.getElementById('form-course-project-hours').value) || 0,
         workship_hours: parseInt(document.getElementById('form-course-workship-hours').value) || 0,
-        morning_hours: parseInt(document.getElementById('form-course-morning-hours').value) || 4,
-        afternoon_hours: parseInt(document.getElementById('form-course-afternoon-hours').value) || 4,
+        morning_hours: (() => { const v = parseInt(document.getElementById('form-course-morning-hours').value); return isNaN(v) ? 4 : v; })(),
+        afternoon_hours: (() => { const v = parseInt(document.getElementById('form-course-afternoon-hours').value); return isNaN(v) ? 4 : v; })(),
         start_date: document.getElementById('form-course-start-date').value,
         lecture_end_date: document.getElementById('form-course-lecture-end').value,
         project_end_date: document.getElementById('form-course-project-end').value,
