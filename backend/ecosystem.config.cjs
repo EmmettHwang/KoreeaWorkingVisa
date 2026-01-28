@@ -4,7 +4,7 @@ module.exports = {
       name: 'bhhs-backend',
       script: 'python3',
       args: '-m uvicorn main:app --host 0.0.0.0 --port 8000',
-      cwd: '/usr/miniLMS/backend',
+      cwd: '/usr/minilms/backend',
       env: {
         PYTHONUNBUFFERED: '1'
       },

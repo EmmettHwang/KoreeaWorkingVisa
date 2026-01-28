@@ -5898,6 +5898,30 @@ async def create_student_registration(data: dict):
         if not name:
             raise HTTPException(status_code=400, detail="이름은 필수입니다")
 
+        # profile_photo가 Base64 데이터이면 FTP에 업로드하고 URL만 저장
+        profile_photo = data.get('profile_photo', '')
+        if profile_photo and profile_photo.startswith('data:image'):
+            try:
+                if ',' in profile_photo:
+                    header, base64_data = profile_photo.split(',', 1)
+                    if 'image/' in header:
+                        image_type = header.split('image/')[1].split(';')[0]
+                        file_ext = f'.{image_type}'
+                    else:
+                        file_ext = '.jpg'
+                else:
+                    base64_data = profile_photo
+                    file_ext = '.jpg'
+
+                file_data = base64.b64decode(base64_data)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                unique_id = str(uuid.uuid4())[:8]
+                new_filename = f"{timestamp}_{unique_id}{file_ext}"
+                profile_photo = upload_to_ftp(file_data, new_filename, "student")
+            except Exception as e:
+                print(f"[WARN] 신규가입 프로필 사진 FTP 업로드 실패: {e}")
+                profile_photo = ''
+
         cursor.execute("""
             INSERT INTO student_registrations
             (name, birth_date, gender, phone, email, address, interests, education, introduction, course_code, profile_photo)
@@ -5913,7 +5937,7 @@ async def create_student_registration(data: dict):
             data.get('education', ''),
             data.get('introduction', ''),
             data.get('course_code', ''),
-            data.get('profile_photo', '')
+            profile_photo
         ))
 
         conn.commit()
