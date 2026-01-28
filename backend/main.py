@@ -3809,7 +3809,8 @@ def generate_detailed_calculation(start_date, lecture_hours, project_hours, work
                                   morning_hours, afternoon_hours, holidays_detail,
                                   lecture_end_date, project_end_date, workship_end_date,
                                   lecture_days, project_days, intern_days,
-                                  weekend_days, holiday_count):
+                                  weekend_days, holiday_count,
+                                  lecture_weekdays=None):
     """상세 계산 과정 생성 - 오전/오후 분할 고려"""
     from datetime import timedelta
     from collections import defaultdict
@@ -3826,15 +3827,16 @@ def generate_detailed_calculation(start_date, lecture_hours, project_hours, work
         return date.weekday() < 5 and date not in holidays_set
     
     # 상세 계산 로직 (오전/오후 분할 정확 처리, 날짜별 상세 표시)
-    def calculate_stage_detail(stage_name, start, hours, morning_h, afternoon_h, start_at_afternoon=False):
+    # allowed_weekdays: 수업 가능한 요일 목록 (1=월~5=금), None이면 모든 평일
+    def calculate_stage_detail(stage_name, start, hours, morning_h, afternoon_h, start_at_afternoon=False, allowed_weekdays=None):
         current = start
         remaining = hours
         monthly_hours = defaultdict(lambda: {'days': 0, 'hours': 0, 'detail': []})
         all_dates = []  # 모든 날짜 기록
-        
+
         # 첫날 오후부터 시작하는 경우
         first_day = True
-        
+
         # 오전/오후 둘 다 0이면 빈 결과 즉시 반환
         if morning_h <= 0 and afternoon_h <= 0:
             return start, start, {}, []
@@ -3843,6 +3845,13 @@ def generate_detailed_calculation(start_date, lecture_hours, project_hours, work
             if not is_workday(current):
                 current += timedelta(days=1)
                 continue
+
+            # 요일 제한이 있으면 해당 요일만 수업 배치
+            if allowed_weekdays is not None:
+                today_weekday = current.weekday() + 1  # 0(월)~4(금) → 1(월)~5(금)
+                if today_weekday not in allowed_weekdays:
+                    current += timedelta(days=1)
+                    continue
 
             month_key = f"{current.year}년 {current.month}월"
             day_hours = 0
@@ -3955,9 +3964,9 @@ def generate_detailed_calculation(start_date, lecture_hours, project_hours, work
     else:
         holidays_str += "\n  없음"
     
-    # 각 단계별 상세 계산
+    # 각 단계별 상세 계산 (이론은 교과목 요일 배정 적용)
     lecture_detail, lecture_actual_end, lecture_ends_afternoon = calculate_stage_detail(
-        "1단계: 이론", start_date, lecture_hours, morning_hours, afternoon_hours, False
+        "1단계: 이론", start_date, lecture_hours, morning_hours, afternoon_hours, False, allowed_weekdays=lecture_weekdays
     )
     
     # 프로젝트 시작일 결정
@@ -4055,7 +4064,8 @@ async def calculate_course_dates(data: dict):
         daily_hours = int(data.get('daily_hours', 8))  # 일일 수업시간 (기본값 8시간)
         morning_hours = int(data.get('morning_hours', 4))
         afternoon_hours = int(data.get('afternoon_hours', 4))
-        
+        course_code = data.get('course_code')
+
         if not start_date_str:
             raise HTTPException(status_code=400, detail="시작일은 필수입니다.")
 
@@ -4064,11 +4074,28 @@ async def calculate_course_dates(data: dict):
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
 
+        # 교과목 요일 배정 조회 (이론 단계에서 사용)
+        lecture_weekdays = None  # None이면 모든 평일
+        if course_code:
+            conn_subj = get_db_connection()
+            cursor_subj = conn_subj.cursor(pymysql.cursors.DictCursor)
+            cursor_subj.execute("""
+                SELECT DISTINCT s.day_of_week
+                FROM course_subjects cs
+                JOIN subjects s ON cs.subject_code = s.code
+                WHERE cs.course_code = %s AND s.day_of_week IS NOT NULL AND s.day_of_week BETWEEN 1 AND 5
+            """, (course_code,))
+            weekday_rows = cursor_subj.fetchall()
+            cursor_subj.close()
+            conn_subj.close()
+            if weekday_rows:
+                lecture_weekdays = set(row['day_of_week'] for row in weekday_rows)
+
         # 시간을 일수로 변환 (입력된 일일 시간 기준)
         lecture_days = (lecture_hours + daily_hours - 1) // daily_hours  # 올림 처리
         project_days = (project_hours + daily_hours - 1) // daily_hours
         intern_days = (workship_hours + daily_hours - 1) // daily_hours
-        
+
         # 공휴일 가져오기
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -4089,20 +4116,21 @@ async def calculate_course_dates(data: dict):
         conn.close()
         
         # 근무일 계산 함수 (주말 및 공휴일 제외)
-        def add_business_days(start, days_to_add):
+        # allowed_weekdays: 수업 가능한 요일 (1=월~5=금), None이면 모든 평일
+        def add_business_days(start, days_to_add, allowed_weekdays=None):
             current = start
             added_days = 0
-            
+
             while added_days < days_to_add:
                 current += timedelta(days=1)
-                # 주말(토요일=5, 일요일=6)과 공휴일 제외
                 if current.weekday() < 5 and current not in holidays:
-                    added_days += 1
-            
+                    if allowed_weekdays is None or (current.weekday() + 1) in allowed_weekdays:
+                        added_days += 1
+
             return current
-        
-        # 각 단계별 종료일 계산
-        lecture_end_date = add_business_days(start_date, lecture_days)
+
+        # 각 단계별 종료일 계산 (이론은 요일 제한 적용)
+        lecture_end_date = add_business_days(start_date, lecture_days, allowed_weekdays=lecture_weekdays)
         project_end_date = add_business_days(lecture_end_date, project_days)
         workship_end_date = add_business_days(project_end_date, intern_days)
         
@@ -4179,7 +4207,8 @@ async def calculate_course_dates(data: dict):
             morning_hours, afternoon_hours, holidays_detail,
             lecture_end_date, project_end_date, workship_end_date,
             lecture_days, project_days, intern_days,
-            weekend_days, len(holidays_in_period)
+            weekend_days, len(holidays_in_period),
+            lecture_weekdays=lecture_weekdays
         )
         
         # 정확한 종료일 사용
