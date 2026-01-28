@@ -258,7 +258,10 @@ function isMainInstructor() {
         const instructor = sessionStorage.getItem('instructor');
         if (!instructor) return false;
         const instructorData = JSON.parse(instructor);
-        return instructorData.instructor_type_type === '1. 주강사';
+        // 관리자(ROOT, 코드 '0') 또는 주강사 모두 허용
+        return instructorData.instructor_type_type === '1. 주강사'
+            || instructorData.instructor_type_type === '관리자'
+            || instructorData.code === 'ROOT';
     } catch (e) {
         return false;
     }
