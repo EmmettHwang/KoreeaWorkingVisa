@@ -8901,12 +8901,12 @@ window.generateTimetableFromButton = async function(courseCode) {
             lecture_hours: course.lecture_hours,
             project_hours: course.project_hours,
             workship_hours: course.workship_hours,
-            morning_hours: course.morning_hours || 4,
-            afternoon_hours: course.afternoon_hours || 4
+            morning_hours: course.morning_hours != null ? Number(course.morning_hours) : 4,
+            afternoon_hours: course.afternoon_hours != null ? Number(course.afternoon_hours) : 4
         });
-        
+
         window.hideLoading();
-        
+
         if (response.data.success) {
             await window.showAlert(
                 `✅ 시간표 자동 생성 완료!\\n\\n` +
@@ -8971,8 +8971,8 @@ window.generateTimetable = async function(courseCode, calculationResult) {
             lecture_hours: course.lecture_hours || 0,
             project_hours: course.project_hours || 0,
             workship_hours: course.workship_hours || 0,
-            morning_hours: course.morning_hours || 4,
-            afternoon_hours: course.afternoon_hours || 4,
+            morning_hours: course.morning_hours != null ? Number(course.morning_hours) : 4,
+            afternoon_hours: course.afternoon_hours != null ? Number(course.afternoon_hours) : 4,
             subject_codes: subjectCodes
         });
         
@@ -9506,7 +9506,7 @@ window.showCourseForm = function(code = null) {
                 <label class="block text-sm font-semibold text-gray-700 mb-1">
                     <i class="fas fa-sun text-yellow-500 mr-1"></i>오전 수업시간(h)
                 </label>
-                <input type="number" id="form-course-morning-hours" placeholder="4" value="${existing ? (existing.morning_hours || 4) : 4}" 
+                <input type="number" id="form-course-morning-hours" placeholder="4" value="${existing ? (existing.morning_hours != null ? existing.morning_hours : 4) : 4}"
                        class="w-full border rounded px-3 py-2" min="0" max="8"
                        onchange="window.updateDailyHours()">
             </div>
@@ -9514,7 +9514,7 @@ window.showCourseForm = function(code = null) {
                 <label class="block text-sm font-semibold text-gray-700 mb-1">
                     <i class="fas fa-moon text-blue-500 mr-1"></i>오후 수업시간(h)
                 </label>
-                <input type="number" id="form-course-afternoon-hours" placeholder="4" value="${existing ? (existing.afternoon_hours || 4) : 4}" 
+                <input type="number" id="form-course-afternoon-hours" placeholder="4" value="${existing ? (existing.afternoon_hours != null ? existing.afternoon_hours : 4) : 4}"
                        class="w-full border rounded px-3 py-2" min="0" max="8"
                        onchange="window.updateDailyHours()">
             </div>
@@ -9522,7 +9522,7 @@ window.showCourseForm = function(code = null) {
                 <label class="block text-sm font-semibold text-gray-700 mb-1">
                     <i class="fas fa-clock text-purple-500 mr-1"></i>일일 총 수업시간
                 </label>
-                <input type="number" id="form-course-daily-hours" value="${existing ? ((existing.morning_hours || 4) + (existing.afternoon_hours || 4)) : 8}" 
+                <input type="number" id="form-course-daily-hours" value="${existing ? ((existing.morning_hours != null ? existing.morning_hours : 4) + (existing.afternoon_hours != null ? existing.afternoon_hours : 4)) : 8}" 
                        class="w-full border rounded px-3 py-2 bg-purple-50 font-semibold text-purple-600" readonly>
             </div>
             <div class="col-span-3">
