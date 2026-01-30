@@ -8,6 +8,8 @@ import pymysql
 import pandas as pd
 import io
 import os
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime, timedelta, date
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -36,6 +38,44 @@ app = FastAPI(
     # 요청 크기 제한 설정 (기본 10MB)
     # Cafe24 배포 시 nginx client_max_body_size도 조정 필요
 )
+
+# ========== 로깅 설정 (7일 로테이션) ==========
+LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# 로그 포맷 설정
+log_formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# 파일 핸들러: 매일 자정에 로테이션, 7일치 보관
+file_handler = TimedRotatingFileHandler(
+    filename=os.path.join(LOG_DIR, "app.log"),
+    when="midnight",
+    interval=1,
+    backupCount=7,
+    encoding="utf-8"
+)
+file_handler.setFormatter(log_formatter)
+file_handler.suffix = "%Y-%m-%d"
+
+# 콘솔 핸들러
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+
+# 루트 로거 설정
+logger = logging.getLogger("riselms")
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# uvicorn 로거도 파일에 기록
+uvicorn_logger = logging.getLogger("uvicorn.access")
+uvicorn_logger.addHandler(file_handler)
+
+logger.info("RISELMS 서버 시작 - 로그 로테이션 활성화 (7일 보관)")
+# ================================================
 
 # 정적 파일 서빙 (프론트엔드)
 import os

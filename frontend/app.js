@@ -22472,11 +22472,16 @@ function showRAGProcessingModal() {
     const modalHtml = `
         <div id="rag-processing-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" style="backdrop-filter: blur(8px);">
             <div class="bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 rounded-3xl shadow-2xl p-8 max-w-4xl w-full mx-4 relative overflow-hidden">
+                <!-- 닫기 버튼 (우측 상단) -->
+                <button onclick="closeRAGProcessingModal()" class="absolute top-4 right-4 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all" title="백그라운드에서 계속 처리됩니다">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+
                 <!-- 배경 그리드 효과 -->
                 <div class="absolute inset-0 opacity-10">
                     <div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 50px 50px;"></div>
                 </div>
-                
+
                 <!-- 상단 타이틀 (맥동 애니메이션) -->
                 <div id="rag-modal-title" class="text-center mb-8 relative z-10">
                     <h2 class="text-3xl font-bold text-white mb-2" style="animation: pulse 2s ease-in-out infinite;">
@@ -22724,6 +22729,19 @@ function hideRAGProcessingModal() {
         modal.style.opacity = '0';
         modal.style.transition = 'opacity 0.5s ease';
         setTimeout(() => modal.remove(), 500);
+    }
+}
+
+// 사용자가 직접 닫기 버튼을 누른 경우 - 백그라운드 계속 처리
+function closeRAGProcessingModal() {
+    const modal = document.getElementById('rag-processing-modal');
+    if (modal) {
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+            modal.remove();
+            window.showCustomAlert('문서 처리가 백그라운드에서 계속됩니다. 완료되면 목록에 표시됩니다.', 'info');
+        }, 300);
     }
 }
 

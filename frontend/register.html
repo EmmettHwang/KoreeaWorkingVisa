@@ -339,6 +339,10 @@
         // 페이지 로드 시 모집중인 과정 불러오기
         async function loadOpenCourses() {
             try {
+                // URL 파라미터에서 과정 코드 확인
+                const urlParams = new URLSearchParams(window.location.search);
+                const preselectedCourse = urlParams.get('course');
+
                 // 시스템 설정에서 모집중인 과정 코드 목록 가져오기
                 const settingsResponse = await axios.get(`${API_BASE_URL}/api/system-settings`);
                 const openCourseCodes = settingsResponse.data.open_courses || '';
@@ -369,8 +373,16 @@
                     courseSelect.appendChild(option);
                 });
 
+                // URL 파라미터로 전달된 과정이 있으면 자동 선택
+                if (preselectedCourse) {
+                    const exists = filteredCourses.some(c => c.code === preselectedCourse);
+                    if (exists) {
+                        courseSelect.value = preselectedCourse;
+                        console.log('URL 파라미터로 과정 자동 선택:', preselectedCourse);
+                    }
+                }
                 // 모집중인 과정이 1개일 때 자동 선택
-                if (filteredCourses.length === 1) {
+                else if (filteredCourses.length === 1) {
                     courseSelect.value = filteredCourses[0].code;
                 }
 
