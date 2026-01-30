@@ -14722,36 +14722,44 @@ function renderSystemSettings(settings) {
         // YouTube API 키 로드 (서버 우선, 없으면 localStorage)
         const youtubeApiKeyInput = document.getElementById('youtube-api-key');
         const youtubeKey = settings.youtube_api_key || localStorage.getItem('youtube_api_key') || '';
+
+        // 서버에서 불러온 키를 localStorage에도 저장 (BGM 재생에 사용) - UI 요소 유무와 상관없이
+        if (settings.youtube_api_key) {
+            localStorage.setItem('youtube_api_key', settings.youtube_api_key);
+        }
+        console.log('✅ YouTube API 키 로드 (서버):', youtubeKey ? '설정됨' : '미설정');
+
         if (youtubeApiKeyInput) {
             youtubeApiKeyInput.value = youtubeKey;
-            // 서버에서 불러온 키를 localStorage에도 저장 (BGM 재생에 사용)
-            if (youtubeKey) {
-                localStorage.setItem('youtube_api_key', youtubeKey);
-            }
-            console.log('✅ YouTube API 키 로드 (서버):', youtubeKey ? '설정됨' : '미설정');
         }
         
         // BGM 장르 로드 (서버 우선, 없으면 localStorage)
         const bgmGenreSelect = document.getElementById('bgm-genre');
         const bgmGenre = settings.bgm_genre || localStorage.getItem('bgm_genre') || '';
+
+        // 서버에서 불러온 값을 localStorage에도 저장 - UI 요소 유무와 상관없이
+        if (settings.bgm_genre) {
+            localStorage.setItem('bgm_genre', settings.bgm_genre);
+        }
+        console.log('✅ BGM 장르 로드 (서버):', bgmGenre || '끄기');
+
         if (bgmGenreSelect) {
             bgmGenreSelect.value = bgmGenre;
-            if (bgmGenre) {
-                localStorage.setItem('bgm_genre', bgmGenre);
-            }
-            console.log('✅ BGM 장르 로드 (서버):', bgmGenre || '끄기');
         }
-        
+
         // BGM 볼륨 로드 (서버 우선, 없으면 localStorage)
         const bgmVolumeInput = document.getElementById('bgm-volume');
         const bgmVolume = settings.bgm_volume || localStorage.getItem('bgm_volume') || '30';
+
+        // 서버에서 불러온 값을 localStorage에도 저장 - UI 요소 유무와 상관없이
+        if (settings.bgm_volume) {
+            localStorage.setItem('bgm_volume', settings.bgm_volume);
+        }
+        console.log('✅ BGM 볼륨 로드 (서버):', bgmVolume + '%');
+
         if (bgmVolumeInput) {
             bgmVolumeInput.value = bgmVolume;
             document.getElementById('volume-value').textContent = bgmVolume + '%';
-            if (bgmVolume) {
-                localStorage.setItem('bgm_volume', bgmVolume);
-            }
-            console.log('✅ BGM 볼륨 로드 (서버):', bgmVolume + '%');
         }
         
         // AI 모델 설정 로드
@@ -15780,23 +15788,73 @@ async function uploadRAGFile(file) {
             body: formData
         });
 
-        if (response.ok) {
+        if (!response.ok) {
+            const error = await response.json();
+            showNotification(`${file.name} 업로드 실패: ${error.detail}`, 'error');
+            progressDiv.classList.add('hidden');
+            return;
+        }
+
+        const data = await response.json();
+        const taskId = data.task_id;
+
+        if (!taskId) {
+            // task_id가 없으면 기존 동기 방식 응답으로 처리
             progressBar.style.width = '100%';
             progressPercent.textContent = '100%';
-            
-            const data = await response.json();
-            showNotification(`${file.name} 업로드 완료 (${data.chunks_count}개 청크)`, 'success');
-            
+            showNotification(`${file.name} 업로드 완료 (${data.chunks_count || 0}개 청크)`, 'success');
             setTimeout(() => {
                 progressDiv.classList.add('hidden');
                 progressBar.style.width = '0%';
                 progressPercent.textContent = '0%';
             }, 1000);
-        } else {
-            const error = await response.json();
-            showNotification(`${file.name} 업로드 실패: ${error.detail}`, 'error');
-            progressDiv.classList.add('hidden');
+            return;
         }
+
+        // 백그라운드 태스크 상태 폴링
+        progressBar.style.width = '30%';
+        progressPercent.textContent = '30%';
+
+        const pollInterval = setInterval(async () => {
+            try {
+                const statusRes = await fetch(`${API_BASE_URL}/api/rag/task-status/${taskId}`);
+                if (!statusRes.ok) {
+                    clearInterval(pollInterval);
+                    showNotification(`${file.name} 상태 확인 실패`, 'error');
+                    progressDiv.classList.add('hidden');
+                    return;
+                }
+                const status = await statusRes.json();
+
+                if (status.status === 'parsing') {
+                    progressBar.style.width = '50%';
+                    progressPercent.textContent = '50%';
+                } else if (status.status === 'embedding') {
+                    progressBar.style.width = '75%';
+                    progressPercent.textContent = '75%';
+                } else if (status.status === 'completed') {
+                    clearInterval(pollInterval);
+                    progressBar.style.width = '100%';
+                    progressPercent.textContent = '100%';
+                    showNotification(`${file.name} 업로드 완료 (${status.chunks || 0}개 청크)`, 'success');
+                    setTimeout(() => {
+                        progressDiv.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                        progressPercent.textContent = '0%';
+                    }, 1000);
+                } else if (status.status === 'failed') {
+                    clearInterval(pollInterval);
+                    showNotification(`${file.name} 업로드 실패: ${status.error || '알 수 없는 오류'}`, 'error');
+                    progressDiv.classList.add('hidden');
+                }
+            } catch (pollErr) {
+                clearInterval(pollInterval);
+                console.error('Polling error:', pollErr);
+                showNotification(`${file.name} 상태 확인 실패`, 'error');
+                progressDiv.classList.add('hidden');
+            }
+        }, 2000);
+
     } catch (error) {
         console.error('Upload error:', error);
         showNotification(`${file.name} 업로드 실패: ${error.message}`, 'error');
@@ -18612,7 +18670,7 @@ function renderAesong3DChat() {
                             👨‍💼
                         </div>
                         <div style="flex: 1;">
-                            <div class="text-sm font-semibold" style="white-space: nowrap;">PM 정운표 <span class="text-xs text-gray-500 font-normal">(1.5MB)</span></div>
+                            <div class="text-sm font-semibold" style="white-space: nowrap;">PM <span class="text-xs text-gray-500 font-normal">(1.5MB)</span></div>
                         </div>
                     </div>
                     
@@ -19331,7 +19389,7 @@ async function playTTS(text, characterName) {
         const utterance = new SpeechSynthesisUtterance(text);
         
         // 캐릭터별 음성 설정
-        if (characterName === '데이빗' || characterName === 'PM 정운표') {
+        if (characterName === '데이빗' || characterName === 'PM') {
             // 남성 목소리
             utterance.pitch = 0.8;  // 낮은 톤
             utterance.rate = 0.9;   // 조금 느린 속도
@@ -22735,75 +22793,134 @@ async function processRAGDocument(file) {
         currentStage++;
     };
     
+    // 스테이지 이름을 백엔드 상태에 매핑
+    const backendStageMap = {
+        'pending': 0,
+        'parsing': 1,    // parsing + chunking
+        'embedding': 2,  // embedding + indexing
+        'completed': 4,
+        'failed': -1
+    };
+
     // 첫 번째 스테이지를 즉시 표시
-    setTimeout(() => {
-        updateStage();
-        // 3초마다 스테이지 변경 (백엔드 처리가 끝날 때까지 반복)
-        stageInterval = setInterval(() => {
-            if (isProcessing) {
-                updateStage();
-            }
-        }, 3000);
-    }, 100);
-    
+    updateStage();
+
     try {
-        // 실제 RAG 업로드
+        // 1단계: 파일 업로드 (문서 저장소)
         const formData = new FormData();
         formData.append('file', file);
         formData.append('category', 'rag-indexed');
-        
+
         const response = await axios.post(`${API_BASE_URL}/api/documents/upload`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
-        
-        // RAG 인덱싱 트리거 (백엔드에 별도 엔드포인트 필요)
-        if (response.data.success) {
-            const filename = response.data.filename;
-            
-            // RAG 인덱싱 요청 (타임아웃 5분)
-            await axios.post(`${API_BASE_URL}/api/rag/index-document`, {
-                filename: filename,
-                original_filename: response.data.original_filename
-            }, {
-                timeout: 300000 // 5분 (300초)
-            });
+
+        if (!response.data.success) {
+            throw new Error('파일 업로드 실패');
         }
-        
-        // 백엔드 처리 완료 - 애니메이션 중지
-        isProcessing = false;
-        if (stageInterval) {
-            clearInterval(stageInterval);
+
+        const filename = response.data.filename;
+
+        // 2단계: RAG 인덱싱 요청 (즉시 반환)
+        const indexRes = await axios.post(`${API_BASE_URL}/api/rag/index-document`, {
+            filename: filename,
+            original_filename: response.data.original_filename
+        });
+
+        const taskId = indexRes.data.task_id;
+
+        if (!taskId) {
+            // task_id가 없으면 이미 동기적으로 완료된 것으로 처리
+            isProcessing = false;
+            if (stageInterval) clearInterval(stageInterval);
+
+            const statusText = document.getElementById('rag-status-text');
+            if (statusText) {
+                statusText.innerHTML = '<i class="fas fa-check-circle mr-2 text-green-400"></i>✨ 문서 처리 완료! 이제 이 문서로 질문할 수 있습니다.';
+            }
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressPercent) progressPercent.textContent = '100%';
+
+            setTimeout(async () => {
+                hideRAGProcessingModal();
+                await window.showCustomAlert('✨ 문서가 성공적으로 업로드되고 RAG 시스템에 인덱싱되었습니다!', 'success');
+                loadDocuments();
+            }, 2000);
+            return;
         }
-        
-        // 완료 상태로 업데이트
-        const statusText = document.getElementById('rag-status-text');
-        if (statusText) {
-            statusText.innerHTML = '<i class="fas fa-check-circle mr-2 text-green-400"></i>✨ 문서 처리 완료! 이제 이 문서로 질문할 수 있습니다.';
-        }
-        const progressBar = document.getElementById('rag-progress-bar');
-        const progressPercent = document.getElementById('rag-progress-percentage');
-        if (progressBar) progressBar.style.width = '100%';
-        if (progressPercent) progressPercent.textContent = '100%';
-        
-        // 2초 후 모달 닫기
-        setTimeout(async () => {
-            hideRAGProcessingModal();
-            await window.showCustomAlert('✨ 문서가 성공적으로 업로드되고 RAG 시스템에 인덱싱되었습니다!', 'success');
-            loadDocuments();
+
+        // 3단계: 백그라운드 태스크 상태 폴링
+        stageInterval = setInterval(async () => {
+            try {
+                const statusRes = await fetch(`${API_BASE_URL}/api/rag/task-status/${taskId}`);
+                if (!statusRes.ok) return;
+                const taskStatus = await statusRes.json();
+
+                const targetStage = backendStageMap[taskStatus.status];
+
+                if (taskStatus.status === 'parsing') {
+                    // parsing 단계: stage 0(parsing) → stage 1(chunking) 순차 표시
+                    if (currentStage < 2) {
+                        updateStage();
+                    }
+                } else if (taskStatus.status === 'embedding') {
+                    // embedding 단계: stage 2(embedding) → stage 3(indexing) 순차 표시
+                    while (currentStage < 4) {
+                        updateStage();
+                    }
+                } else if (taskStatus.status === 'completed') {
+                    clearInterval(stageInterval);
+                    isProcessing = false;
+
+                    // 모든 스테이지 완료 표시
+                    while (currentStage < stages.length) {
+                        updateStage();
+                    }
+
+                    const statusText = document.getElementById('rag-status-text');
+                    if (statusText) {
+                        statusText.innerHTML = '<i class="fas fa-check-circle mr-2 text-green-400"></i>✨ 문서 처리 완료! 이제 이 문서로 질문할 수 있습니다.';
+                    }
+                    if (progressBar) progressBar.style.width = '100%';
+                    if (progressPercent) progressPercent.textContent = '100%';
+
+                    setTimeout(async () => {
+                        hideRAGProcessingModal();
+                        await window.showCustomAlert('✨ 문서가 성공적으로 업로드되고 RAG 시스템에 인덱싱되었습니다!', 'success');
+                        loadDocuments();
+                    }, 2000);
+
+                } else if (taskStatus.status === 'failed') {
+                    clearInterval(stageInterval);
+                    isProcessing = false;
+
+                    const statusText = document.getElementById('rag-status-text');
+                    if (statusText) {
+                        statusText.innerHTML = `<i class="fas fa-times-circle mr-2 text-red-400"></i>처리 실패: ${taskStatus.error || '알 수 없는 오류'}`;
+                    }
+
+                    setTimeout(async () => {
+                        hideRAGProcessingModal();
+                        await window.showCustomAlert('문서 처리 실패: ' + (taskStatus.error || '알 수 없는 오류'), 'error');
+                    }, 2000);
+                }
+            } catch (pollErr) {
+                console.error('RAG 태스크 폴링 오류:', pollErr);
+            }
         }, 2000);
-        
+
     } catch (error) {
         isProcessing = false;
         if (stageInterval) {
             clearInterval(stageInterval);
         }
         console.error('RAG 문서 처리 실패:', error);
-        
+
         const statusText = document.getElementById('rag-status-text');
         if (statusText) {
             statusText.innerHTML = `<i class="fas fa-times-circle mr-2 text-red-400"></i>처리 실패: ${error.response?.data?.detail || error.message}`;
         }
-        
+
         setTimeout(async () => {
             hideRAGProcessingModal();
             await window.showCustomAlert('문서 처리 실패: ' + (error.response?.data?.detail || error.message), 'error');

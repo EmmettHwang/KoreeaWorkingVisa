@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 import requests
 from ftplib import FTP
 import uuid
+import threading
 import base64
 from PIL import Image
 from pathlib import Path
@@ -6894,8 +6895,8 @@ async def aesong_chat(data: dict, request: Request):
 - 헬스케어 데이터 분석, AI 모델 구축, 디지털 헬스 앱 개발 등 실습 중심 교육
 - 학생들에게 실무에서 바로 활용 가능한 AI 헬스케어 기술 전수
 - 매우 친절하고 열정적인 강사"""
-        elif character == 'PM 정운표' or character == '아솔님':
-            system_prompt = """당신은 'PM 정운표'입니다. 우송대학교 바이오헬스 교육과정의 프로젝트 매니저입니다.
+        elif character == 'PM' or character == '아솔님':
+            system_prompt = """당신은 'PM'입니다. 우송대학교 바이오헬스 교육과정의 프로젝트 매니저입니다.
 
 특징:
 - 프로젝트 관리 전문가로서 실무적이고 체계적인 조언을 제공합니다
@@ -6905,7 +6906,7 @@ async def aesong_chat(data: dict, request: Request):
 - 프로젝트 진행, 팀워크, 일정 관리 등 실무적인 조언을 제공합니다
 - 짧고 명확하면서도 실용적으로 답변합니다 (2-3문장)
 
-중요: 당신의 이름은 'PM 정운표'입니다. 절대 다른 이름을 사용하지 마세요.
+중요: 당신의 이름은 'PM'입니다. 절대 다른 이름을 사용하지 마세요.
 
 역할:
 - 우송대학교 바이오헬스 교육 관리 시스템의 프로젝트 매니저
@@ -7091,7 +7092,7 @@ async def text_to_speech(data: dict, request: Request):
             voice_name = "ko-KR-Neural2-C"  # Neural2 남성 음성 (더 자연스러움)
             pitch = -3.0  # 적당히 낮은 톤
             speaking_rate = 0.95  # 조금 느린 속도
-        elif character == 'PM 정운표' or character == '아솔님':
+        elif character == 'PM' or character == '아솔님':
             voice_name = "ko-KR-Neural2-C"  # Neural2 남성 음성 (PM 중후한 목소리)
             pitch = -5.0  # 매우 낮은 톤 (중후함)
             speaking_rate = 0.85  # 느린 속도 (안정감)
@@ -8278,6 +8279,74 @@ from typing import Optional
 vector_store_manager = None
 document_loader = None
 
+# RAG 백그라운드 태스크 상태 관리
+rag_task_status = {}  # {task_id: {status, filename, progress, chunks, error, ...}}
+
+def _process_rag_upload(task_id, file_path, metadata, original_filename):
+    """백그라운드 스레드에서 RAG 문서 업로드 처리 (파싱→임베딩→저장)"""
+    global vector_store_manager, document_loader
+    try:
+        rag_task_status[task_id]['status'] = 'parsing'
+        print(f"[RAG Task {task_id}] 문서 파싱 중: {original_filename}")
+        documents = document_loader.load_document(str(file_path), metadata)
+
+        if not documents:
+            rag_task_status[task_id]['status'] = 'failed'
+            rag_task_status[task_id]['error'] = '문서에서 텍스트를 추출할 수 없습니다'
+            return
+
+        rag_task_status[task_id]['chunks'] = len(documents)
+        rag_task_status[task_id]['status'] = 'embedding'
+        print(f"[RAG Task {task_id}] 임베딩 중: {len(documents)}개 청크")
+
+        texts = [doc.page_content for doc in documents]
+        metadatas = [doc.metadata for doc in documents]
+        doc_ids = vector_store_manager.add_documents(texts, metadatas)
+
+        rag_task_status[task_id]['status'] = 'completed'
+        rag_task_status[task_id]['document_ids'] = doc_ids
+        rag_task_status[task_id]['vector_count'] = len(doc_ids)
+        print(f"[RAG Task {task_id}] 완료: {len(doc_ids)}개 벡터 저장")
+
+    except Exception as e:
+        print(f"[RAG Task {task_id}] 실패: {e}")
+        rag_task_status[task_id]['status'] = 'failed'
+        rag_task_status[task_id]['error'] = str(e)
+
+
+def _process_rag_index(task_id, file_path, metadata, filename):
+    """백그라운드 스레드에서 RAG 문서 인덱싱 처리"""
+    global vector_store_manager, document_loader
+    try:
+        rag_task_status[task_id]['status'] = 'parsing'
+        print(f"[RAG Task {task_id}] 문서 파싱 중: {filename}")
+        documents = document_loader.load_document(str(file_path), metadata)
+
+        if not documents:
+            rag_task_status[task_id]['status'] = 'failed'
+            rag_task_status[task_id]['error'] = '문서에서 텍스트를 추출할 수 없습니다'
+            return
+
+        rag_task_status[task_id]['chunks'] = len(documents)
+        rag_task_status[task_id]['status'] = 'embedding'
+        print(f"[RAG Task {task_id}] 임베딩 중: {len(documents)}개 청크")
+
+        texts = [doc.page_content for doc in documents]
+        metadatas = [doc.metadata for doc in documents]
+        doc_ids = vector_store_manager.add_documents(texts, metadatas)
+
+        rag_task_status[task_id]['status'] = 'completed'
+        rag_task_status[task_id]['chunks'] = len(documents)
+        rag_task_status[task_id]['vector_count'] = len(doc_ids)
+        print(f"[RAG Task {task_id}] 인덱싱 완료: {len(doc_ids)}개 벡터 저장")
+
+    except Exception as e:
+        print(f"[RAG Task {task_id}] 인덱싱 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        rag_task_status[task_id]['status'] = 'failed'
+        rag_task_status[task_id]['error'] = str(e)
+
 def init_rag():
     """RAG 시스템 초기화"""
     global vector_store_manager, document_loader
@@ -8572,33 +8641,35 @@ async def upload_rag_document(
             "date": date or datetime.now().strftime("%Y-%m-%d"),
             "description": description or ""
         }
-        
-        # 문서 로드 및 청킹
-        print(f"📝 문서 처리 중: {file.filename}")
-        documents = document_loader.load_document(str(file_path), metadata)
-        
-        if not documents:
-            raise HTTPException(status_code=400, detail="문서에서 텍스트를 추출할 수 없습니다")
-        
-        # 벡터 DB에 저장
-        print(f"💾 벡터 DB에 저장 중...")
-        
-        # Document 객체를 텍스트와 메타데이터로 분리
-        texts = [doc.page_content for doc in documents]
-        metadatas = [doc.metadata for doc in documents]
-        
-        doc_ids = vector_store_manager.add_documents(texts, metadatas)
-        
-        return {
-            "success": True,
-            "message": "문서가 성공적으로 업로드되었습니다",
+
+        # 백그라운드 태스크로 파싱/임베딩 처리
+        task_id = str(uuid.uuid4())
+        rag_task_status[task_id] = {
+            "status": "pending",
             "filename": file.filename,
             "file_path": str(file_path),
-            "chunks_count": len(documents),
-            "document_ids": doc_ids,
+            "progress": 0,
+            "chunks": 0,
+            "error": None,
             "metadata": metadata
         }
-        
+
+        thread = threading.Thread(
+            target=_process_rag_upload,
+            args=(task_id, file_path, metadata, file.filename),
+            daemon=True
+        )
+        thread.start()
+
+        return {
+            "success": True,
+            "task_id": task_id,
+            "status": "processing",
+            "message": "문서 업로드 완료. 백그라운드에서 인덱싱 처리 중입니다.",
+            "filename": file.filename,
+            "file_path": str(file_path)
+        }
+
     except Exception as e:
         print(f"[ERROR] 문서 업로드 실패: {e}")
         raise HTTPException(status_code=500, detail=f"문서 업로드 실패: {str(e)}")
@@ -9182,9 +9253,9 @@ async def get_exam_list():
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         
         cursor.execute("""
-            SELECT exam_id, exam_name, subject, exam_date, total_questions, 
+            SELECT exam_id, exam_name, subject, exam_date, total_questions,
                    question_type, difficulty, instructor_code, description,
-                   created_at, updated_at
+                   created_at
             FROM exam_bank
             ORDER BY exam_date DESC, created_at DESC
         """)
@@ -9211,9 +9282,9 @@ async def get_exam_detail(exam_id: int):
         
         # 시험 정보 조회
         cursor.execute("""
-            SELECT exam_id, exam_name, subject, exam_date, total_questions, 
+            SELECT exam_id, exam_name, subject, exam_date, total_questions,
                    question_type, difficulty, instructor_code, description,
-                   created_at, updated_at
+                   created_at
             FROM exam_bank
             WHERE exam_id = %s
         """, (exam_id,))
@@ -10829,7 +10900,7 @@ async def index_document_to_rag(request: Request):
             )
         
         print(f"📚 RAG 인덱싱 시작: {filename}")
-        
+
         # 메타데이터 구성
         metadata = {
             "filename": filename,
@@ -10838,34 +10909,34 @@ async def index_document_to_rag(request: Request):
             "file_size": file_path.stat().st_size,
             "source": "documents_folder"
         }
-        
-        # 문서 로드 및 청킹
-        print(f"📝 문서 파싱 중...")
-        documents = document_loader.load_document(str(file_path), metadata)
-        
-        if not documents:
-            raise HTTPException(status_code=400, detail="문서에서 텍스트를 추출할 수 없습니다")
-        
-        print(f"🧩 청킹 완료: {len(documents)}개 조각")
-        
-        # 벡터 DB에 저장
-        print(f"🔢 임베딩 및 인덱싱 중...")
-        texts = [doc.page_content for doc in documents]
-        metadatas = [doc.metadata for doc in documents]
-        
-        doc_ids = vector_store_manager.add_documents(texts, metadatas)
-        
-        print(f"[OK] RAG indexing complete: {len(doc_ids)} vectors saved")
-        
-        return {
-            "success": True,
-            "message": "문서가 RAG 시스템에 성공적으로 인덱싱되었습니다",
+
+        # 백그라운드 태스크로 파싱/임베딩 처리
+        task_id = str(uuid.uuid4())
+        rag_task_status[task_id] = {
+            "status": "pending",
             "filename": filename,
-            "chunks_count": len(documents),
-            "vector_count": len(doc_ids),
+            "original_filename": original_filename,
+            "progress": 0,
+            "chunks": 0,
+            "error": None,
             "metadata": metadata
         }
-        
+
+        thread = threading.Thread(
+            target=_process_rag_index,
+            args=(task_id, file_path, metadata, filename),
+            daemon=True
+        )
+        thread.start()
+
+        return {
+            "success": True,
+            "task_id": task_id,
+            "status": "processing",
+            "message": "인덱싱 요청 완료. 백그라운드에서 처리 중입니다.",
+            "filename": filename
+        }
+
     except HTTPException:
         raise
     except Exception as e:
@@ -10873,6 +10944,15 @@ async def index_document_to_rag(request: Request):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"RAG 인덱싱 실패: {str(e)}")
+
+
+@app.get("/api/rag/task-status/{task_id}")
+async def get_rag_task_status(task_id: str):
+    """RAG 백그라운드 태스크 상태 조회"""
+    task = rag_task_status.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="태스크를 찾을 수 없습니다")
+    return task
 
 
 @app.get("/api/rag/document-status/{filename}")

@@ -587,7 +587,7 @@ function loadCharacter(characterType) {
         positionY = -0.8; // 키가 크니까 아래로 (얼굴이 보이도록)
     } else if (characterType === 'asol') {
         modelPath = '/api/models/pmjung.glb';
-        modelName = 'PM 정운표';
+        modelName = 'PM';
         scale = 1.5; // 적당한 크기
         positionY = -0.8; // 성인 남성 키
     } else {
@@ -723,7 +723,7 @@ function updateInitialGreeting(characterType) {
     } else if (characterType === 'david') {
         greeting = '안녕하세요! 저는 데이빗입니다. AI 헬스케어 프로그램 개발에 대해 궁금하신 게 있으신가요?';
     } else if (characterType === 'asol') {
-        greeting = '안녕하십니까, PM 정운표입니다. 프로젝트 관리나 팀 협업에 대해 도움이 필요하신가요?';
+        greeting = '안녕하십니까, PM입니다. 프로젝트 관리나 팀 협업에 대해 도움이 필요하신가요?';
     }
     
     // 챗봇 위젯의 초기 메시지 업데이트
