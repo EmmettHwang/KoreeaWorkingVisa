@@ -282,9 +282,10 @@
                 <div id="alertMessage" class="hidden mt-4 p-4 rounded-lg"></div>
 
                 <!-- 과정 소개 / 교육지원제도 버튼 -->
-                <div class="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                <div id="login-extra-buttons" class="mt-6 pt-6 border-t border-gray-200 space-y-3">
                     <button
                         type="button"
+                        id="btn-course-intro"
                         onclick="window.location.href='/course-intro.html'"
                         class="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-bold py-3 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                     >
@@ -292,6 +293,7 @@
                     </button>
                     <button
                         type="button"
+                        id="btn-education-support"
                         onclick="window.location.href='/education-support.html'"
                         class="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-bold py-3 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                     >
@@ -300,14 +302,14 @@
                 </div>
 
                 <!-- 소셜 미디어 링크 -->
-                <div class="mt-4 pt-4 border-t border-gray-200 text-center">
+                <div id="login-social-container" class="mt-4 pt-4 border-t border-gray-200 text-center">
                     <p class="text-sm text-gray-600 mb-3">소셜 미디어로 소통하세요</p>
                     <div class="flex justify-center gap-4">
-                        <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer"
+                        <a id="btn-facebook" href="https://www.facebook.com" target="_blank" rel="noopener noreferrer"
                            class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-all transform hover:scale-110 shadow-lg">
                             <i class="fab fa-facebook-f text-xl"></i>
                         </a>
-                        <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer"
+                        <a id="btn-instagram" href="https://www.instagram.com" target="_blank" rel="noopener noreferrer"
                            class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 text-white transition-all transform hover:scale-110 shadow-lg">
                             <i class="fab fa-instagram text-xl"></i>
                         </a>
@@ -364,6 +366,45 @@
                             }
                         }
                     } catch(e) {}
+                }
+
+                // 로그인 페이지 버튼 표시/숨김 (기본값: 모두 표시)
+                const showRegister = settings.login_show_register !== 'false';
+                const showCourseIntro = settings.login_show_course_intro !== 'false';
+                const showEducationSupport = settings.login_show_education_support !== 'false';
+                const showFacebook = settings.login_show_facebook !== 'false';
+                const showInstagram = settings.login_show_instagram !== 'false';
+
+                // 신규가입 버튼
+                const registerBtn = document.getElementById('registerButton');
+                if (registerBtn) registerBtn.style.display = showRegister ? '' : 'none';
+
+                // 과정소개 버튼
+                const courseIntroBtn = document.getElementById('btn-course-intro');
+                if (courseIntroBtn) courseIntroBtn.style.display = showCourseIntro ? '' : 'none';
+
+                // 교육지원제도 버튼
+                const eduSupportBtn = document.getElementById('btn-education-support');
+                if (eduSupportBtn) eduSupportBtn.style.display = showEducationSupport ? '' : 'none';
+
+                // 페이스북 버튼
+                const facebookBtn = document.getElementById('btn-facebook');
+                if (facebookBtn) facebookBtn.style.display = showFacebook ? '' : 'none';
+
+                // 인스타그램 버튼
+                const instagramBtn = document.getElementById('btn-instagram');
+                if (instagramBtn) instagramBtn.style.display = showInstagram ? '' : 'none';
+
+                // 과정소개/교육지원제도 둘 다 숨기면 컨테이너도 숨김
+                const extraBtnsContainer = document.getElementById('login-extra-buttons');
+                if (extraBtnsContainer && !showCourseIntro && !showEducationSupport) {
+                    extraBtnsContainer.style.display = 'none';
+                }
+
+                // 소셜 미디어 둘 다 숨기면 컨테이너도 숨김
+                const socialContainer = document.getElementById('login-social-container');
+                if (socialContainer && !showFacebook && !showInstagram) {
+                    socialContainer.style.display = 'none';
                 }
 
                 console.log('✅ 로그인 페이지 시스템 설정 로드 완료');

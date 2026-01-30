@@ -5821,7 +5821,12 @@ async def update_system_settings(
     bgm_volume: Optional[str] = Form(None),
     dashboard_refresh_interval: Optional[str] = Form(None),
     open_courses: Optional[str] = Form(None),
-    interest_keywords: Optional[str] = Form(None)
+    interest_keywords: Optional[str] = Form(None),
+    login_show_register: Optional[str] = Form(None),
+    login_show_course_intro: Optional[str] = Form(None),
+    login_show_education_support: Optional[str] = Form(None),
+    login_show_facebook: Optional[str] = Form(None),
+    login_show_instagram: Optional[str] = Form(None)
 ):
     """시스템 설정 업데이트"""
     conn = get_db_connection()
@@ -5844,7 +5849,12 @@ async def update_system_settings(
             'bgm_volume': bgm_volume,
             'dashboard_refresh_interval': dashboard_refresh_interval,
             'open_courses': open_courses,
-            'interest_keywords': interest_keywords
+            'interest_keywords': interest_keywords,
+            'login_show_register': login_show_register,
+            'login_show_course_intro': login_show_course_intro,
+            'login_show_education_support': login_show_education_support,
+            'login_show_facebook': login_show_facebook,
+            'login_show_instagram': login_show_instagram
         }
         
         update_count = 0

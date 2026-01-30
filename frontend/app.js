@@ -14388,6 +14388,44 @@ function renderSystemSettings(settings) {
                             쉼표(,)로 구분하여 입력하세요. 신규가입 페이지에서 체크박스로 표시됩니다.
                         </p>
                     </div>
+
+                    <!-- 로그인 페이지 버튼 설정 -->
+                    <div class="mt-6">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-sign-in-alt mr-2 text-blue-500"></i>로그인 페이지 버튼 표시
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-white rounded-lg border border-gray-200">
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                                <input type="checkbox" id="login-show-register" class="w-5 h-5 text-blue-600 rounded"
+                                       ${settings.login_show_register !== 'false' ? 'checked' : ''}>
+                                <span class="text-sm"><i class="fas fa-user-plus mr-1 text-blue-500"></i>신규가입</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                                <input type="checkbox" id="login-show-course-intro" class="w-5 h-5 text-green-600 rounded"
+                                       ${settings.login_show_course_intro !== 'false' ? 'checked' : ''}>
+                                <span class="text-sm"><i class="fas fa-info-circle mr-1 text-green-500"></i>과정소개</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                                <input type="checkbox" id="login-show-education-support" class="w-5 h-5 text-purple-600 rounded"
+                                       ${settings.login_show_education_support !== 'false' ? 'checked' : ''}>
+                                <span class="text-sm"><i class="fas fa-hand-holding-usd mr-1 text-purple-500"></i>교육지원제도</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                                <input type="checkbox" id="login-show-facebook" class="w-5 h-5 text-blue-600 rounded"
+                                       ${settings.login_show_facebook !== 'false' ? 'checked' : ''}>
+                                <span class="text-sm"><i class="fab fa-facebook mr-1 text-blue-600"></i>페이스북</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                                <input type="checkbox" id="login-show-instagram" class="w-5 h-5 text-pink-600 rounded"
+                                       ${settings.login_show_instagram !== 'false' ? 'checked' : ''}>
+                                <span class="text-sm"><i class="fab fa-instagram mr-1 text-pink-500"></i>인스타그램</span>
+                            </label>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            체크하지 않은 버튼은 로그인 페이지에 표시되지 않습니다.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- 테마 설정 섹션 -->
@@ -15184,7 +15222,20 @@ window.saveSystemSettings = async function() {
     const interestKeywords = document.getElementById('interest-keywords')?.value || '';
     formData.append('interest_keywords', interestKeywords);
     console.log('💾 관심분야 키워드 저장:', interestKeywords || '미설정');
-    
+
+    // 로그인 페이지 버튼 설정 저장
+    const loginShowRegister = document.getElementById('login-show-register')?.checked ? 'true' : 'false';
+    const loginShowCourseIntro = document.getElementById('login-show-course-intro')?.checked ? 'true' : 'false';
+    const loginShowEducationSupport = document.getElementById('login-show-education-support')?.checked ? 'true' : 'false';
+    const loginShowFacebook = document.getElementById('login-show-facebook')?.checked ? 'true' : 'false';
+    const loginShowInstagram = document.getElementById('login-show-instagram')?.checked ? 'true' : 'false';
+    formData.append('login_show_register', loginShowRegister);
+    formData.append('login_show_course_intro', loginShowCourseIntro);
+    formData.append('login_show_education_support', loginShowEducationSupport);
+    formData.append('login_show_facebook', loginShowFacebook);
+    formData.append('login_show_instagram', loginShowInstagram);
+    console.log('💾 로그인 페이지 버튼 설정 저장:', { loginShowRegister, loginShowCourseIntro, loginShowEducationSupport, loginShowFacebook, loginShowInstagram });
+
     try {
         // 프로그레스바 표시
         window.showLoading('시스템 설정을 저장하는 중...');
