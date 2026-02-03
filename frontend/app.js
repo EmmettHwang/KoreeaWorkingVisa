@@ -3356,86 +3356,69 @@ function renderStudents() {
             <div id="student-form" class="hidden mb-6 p-4 bg-gray-50 rounded-lg"></div>
             <div id="excel-upload" class="hidden mb-6 p-4 bg-purple-50 rounded-lg"></div>
             
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-white">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-2 py-2 text-center w-12">사진</th>
-                            <th class="px-4 py-2 text-left">학생코드</th>
-                            <th class="px-4 py-2 text-left">이름</th>
-                            <th class="px-4 py-2 text-left">생년월일</th>
-                            <th class="px-4 py-2 text-left">성별</th>
-                            <th class="px-4 py-2 text-left">연락처</th>
-                            <th class="px-4 py-2 text-left">학력사항</th>
-                            <th class="px-4 py-2 text-left">관심분야</th>
-                            <th class="px-4 py-2 text-left">작업</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${(() => {
-                            // 필터와 정렬 적용
-                            let filteredStudents = [...students];
-                            
-                            // 과정 필터
-                            const courseFilter = document.getElementById('student-course-filter')?.value;
-                            if (courseFilter) {
-                                filteredStudents = filteredStudents.filter(s => s.course_code === courseFilter);
+            <div id="student-list-container" class="overflow-x-auto">
+                ${(() => {
+                    // 필터와 정렬 적용
+                    let filteredStudents = [...students];
+
+                    // 과정 필터
+                    const courseFilter = document.getElementById('student-course-filter')?.value;
+                    if (courseFilter) {
+                        filteredStudents = filteredStudents.filter(s => s.course_code === courseFilter);
+                    }
+
+                    // 검색 필터
+                    const searchText = document.getElementById('student-search')?.value.toLowerCase();
+                    if (searchText) {
+                        filteredStudents = filteredStudents.filter(s =>
+                            (s.name && s.name.toLowerCase().includes(searchText)) ||
+                            (s.code && s.code.toLowerCase().includes(searchText))
+                        );
+                    }
+
+                    // 정렬
+                    const sortBy = document.getElementById('student-sort')?.value || 'name';
+                    if (sortBy === 'name') {
+                        filteredStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+                    } else if (sortBy === 'course') {
+                        filteredStudents.sort((a, b) => (a.course_code || '').localeCompare(b.course_code || ''));
+                    } else if (sortBy === 'campus') {
+                        filteredStudents.sort((a, b) => (a.campus || '').localeCompare(b.campus || '', 'ko'));
+                    } else if (sortBy === 'final_school') {
+                        filteredStudents.sort((a, b) => (a.final_school || '').localeCompare(b.final_school || '', 'ko'));
+                    } else if (sortBy === 'birth_date') {
+                        filteredStudents.sort((a, b) => (a.birth_date || '').localeCompare(b.birth_date || ''));
+                    }
+
+                    // 학생 행 렌더링 함수
+                    const renderStudentRow = (student, rowNum) => {
+                        const shortInterest = student.interest_area || student.interests
+                            ? ((student.interest_area || student.interests).length > 30
+                                ? (student.interest_area || student.interests).substring(0, 30) + '...'
+                                : (student.interest_area || student.interests))
+                            : '-';
+
+                        const educationText = student.education || student.final_school || '-';
+                        const shortEducation = educationText.length > 15
+                            ? educationText.substring(0, 15) + '...'
+                            : educationText;
+
+                        let shortGender = '-';
+                        if (student.gender) {
+                            if (student.gender.includes('남') || student.gender === 'M' || student.gender === 'male') {
+                                shortGender = '남';
+                            } else if (student.gender.includes('여') || student.gender === 'F' || student.gender === 'female') {
+                                shortGender = '여';
+                            } else {
+                                shortGender = student.gender;
                             }
-                            
-                            // 검색 필터
-                            const searchText = document.getElementById('student-search')?.value.toLowerCase();
-                            if (searchText) {
-                                filteredStudents = filteredStudents.filter(s => 
-                                    (s.name && s.name.toLowerCase().includes(searchText)) ||
-                                    (s.code && s.code.toLowerCase().includes(searchText))
-                                );
-                            }
-                            
-                            // 정렬
-                            const sortBy = document.getElementById('student-sort')?.value || 'name';
-                            if (sortBy === 'name') {
-                                filteredStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
-                            } else if (sortBy === 'course') {
-                                filteredStudents.sort((a, b) => (a.course_code || '').localeCompare(b.course_code || ''));
-                            } else if (sortBy === 'campus') {
-                                filteredStudents.sort((a, b) => (a.campus || '').localeCompare(b.campus || '', 'ko'));
-                            } else if (sortBy === 'final_school') {
-                                filteredStudents.sort((a, b) => (a.final_school || '').localeCompare(b.final_school || '', 'ko'));
-                            } else if (sortBy === 'birth_date') {
-                                filteredStudents.sort((a, b) => (a.birth_date || '').localeCompare(b.birth_date || ''));
-                            }
-                            
-                            return filteredStudents.map(student => {
-                                // 관심분야 짧게 (30자까지만)
-                                const shortInterest = student.interest_area || student.interests
-                                    ? ((student.interest_area || student.interests).length > 30 
-                                        ? (student.interest_area || student.interests).substring(0, 30) + '...' 
-                                        : (student.interest_area || student.interests))
-                                    : '-';
-                                
-                                // 학력사항 요약 (15자까지만)
-                                const educationText = student.education || student.final_school || '-';
-                                const shortEducation = educationText.length > 15 
-                                    ? educationText.substring(0, 15) + '...' 
-                                    : educationText;
-                                
-                                // 성별 짧게 (남/여)
-                                let shortGender = '-';
-                                if (student.gender) {
-                                    if (student.gender.includes('남') || student.gender === 'M' || student.gender === 'male') {
-                                        shortGender = '남';
-                                    } else if (student.gender.includes('여') || student.gender === 'F' || student.gender === 'female') {
-                                        shortGender = '여';
-                                    } else {
-                                        shortGender = student.gender;
-                                    }
-                                }
-                                
-                                // 전화번호 포맷팅 (010-0000-0000)
-                                const formattedPhone = normalizePhone(student.phone) || '-';
-                                
-                                return `
+                        }
+
+                        const formattedPhone = normalizePhone(student.phone) || '-';
+
+                        return `
                             <tr class="border-b hover:bg-gray-50">
+                                <td class="px-2 py-2 text-center text-gray-500 text-sm font-medium">${rowNum}</td>
                                 <td class="px-2 py-2 text-center">
                                     ${student.profile_photo ? `
                                         <img src="${API_BASE_URL}/api/thumbnail?url=${encodeURIComponent(student.profile_photo)}"
@@ -3468,10 +3451,76 @@ function renderStudents() {
                                 </td>
                             </tr>
                         `;
-                            }).join('');
-                        })()}
-                    </tbody>
-                </table>
+                    };
+
+                    // 테이블 헤더
+                    const tableHeader = `
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-2 py-2 text-center w-10">No</th>
+                                <th class="px-2 py-2 text-center w-12">사진</th>
+                                <th class="px-4 py-2 text-left">학생코드</th>
+                                <th class="px-4 py-2 text-left">이름</th>
+                                <th class="px-4 py-2 text-left">생년월일</th>
+                                <th class="px-4 py-2 text-left">성별</th>
+                                <th class="px-4 py-2 text-left">연락처</th>
+                                <th class="px-4 py-2 text-left">학력사항</th>
+                                <th class="px-4 py-2 text-left">관심분야</th>
+                                <th class="px-4 py-2 text-left">작업</th>
+                            </tr>
+                        </thead>
+                    `;
+
+                    // 전체 과정일 때 과정별로 그룹화
+                    if (!courseFilter) {
+                        // 과정별로 그룹화
+                        const groupedByCourse = {};
+                        filteredStudents.forEach(s => {
+                            const courseCode = s.course_code || '미지정';
+                            if (!groupedByCourse[courseCode]) {
+                                groupedByCourse[courseCode] = [];
+                            }
+                            groupedByCourse[courseCode].push(s);
+                        });
+
+                        // 과정 코드 정렬
+                        const sortedCourses = Object.keys(groupedByCourse).sort();
+
+                        let html = '';
+                        sortedCourses.forEach(courseCode => {
+                            const courseStudents = groupedByCourse[courseCode];
+                            const courseName = courses.find(c => c.code === courseCode)?.name || courseCode;
+
+                            html += `
+                                <div class="mb-6">
+                                    <h3 class="text-lg font-bold text-gray-700 mb-2 bg-blue-50 p-3 rounded-lg">
+                                        <i class="fas fa-folder-open mr-2 text-blue-600"></i>
+                                        ${courseName}
+                                        <span class="text-sm font-normal text-gray-500 ml-2">(${courseStudents.length}명)</span>
+                                    </h3>
+                                    <table class="min-w-full bg-white border">
+                                        ${tableHeader}
+                                        <tbody>
+                                            ${courseStudents.map((s, idx) => renderStudentRow(s, idx + 1)).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `;
+                        });
+
+                        return html || '<p class="text-gray-500 text-center py-8">등록된 학생이 없습니다.</p>';
+                    } else {
+                        // 단일 과정 선택 시 기존 방식 (넘버링 포함)
+                        return `
+                            <table class="min-w-full bg-white">
+                                ${tableHeader}
+                                <tbody>
+                                    ${filteredStudents.map((s, idx) => renderStudentRow(s, idx + 1)).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    }
+                })()}
             </div>
         </div>
     `;
