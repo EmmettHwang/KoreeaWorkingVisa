@@ -204,3 +204,5 @@ journalctl -u minilms -f   # 로그 실시간 확인
 - **변경 사유**: 개별 작업 브랜치에서 개발 진행
 - **브랜치 상태**: `sung` 브랜치는 `main`의 모든 기능을 포함하고 있음
 - **신규 기능**: 로그인 페이지에 Facebook/Instagram 소셜 미디어 링크 추가
+#   K o r e e a W o r k i n g V i s a  
+ 
