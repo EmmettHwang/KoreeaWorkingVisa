@@ -637,7 +637,7 @@
     </div>
 
     <!-- ===== 모바일 전용 레이아웃 ===== -->
-    <div id="mobileLayout" class="mobile-only" style="display:none;">
+    <div id="mobileLayout" class="mobile-only">
         <div id="mobileSwipeContainer" style="overflow:hidden;">
             <!-- 페이지 1: 대시보드 -->
             <div class="mobile-page" id="mobilePage1" style="padding:0 0 80px 0;">
@@ -2797,8 +2797,6 @@
         }
 
         function initMobileLayout() {
-            const layout = document.getElementById('mobileLayout');
-            if (layout) layout.style.display = 'block';
             renderMobileDashboard();
             renderMobileMenuGrid();
             initMobileSwipe();
@@ -2812,31 +2810,28 @@
 
         // 초기 로드
         document.addEventListener('DOMContentLoaded', () => {
-            loadUserInfo();
-            loadStats();
-            loadVisaTypes();
-            loadJobs();
-            loadRegions();
-            loadNotices();
-            renderApplicants();
-            loadRecentApplicants();
-            loadSavedSettings();
-
-            // 모바일 초기화 (initCharts보다 먼저)
+            // 모바일 초기화를 최우선 실행
             if (isMobileView()) {
-                initMobileLayout();
+                try { initMobileLayout(); } catch(e) { console.warn('initMobileLayout error:', e); }
             }
 
-            // 데스크톱 차트 (에러 방지)
+            try { loadUserInfo(); } catch(e) { console.warn(e); }
+            try { loadStats(); } catch(e) { console.warn(e); }
+            try { loadVisaTypes(); } catch(e) { console.warn(e); }
+            try { loadJobs(); } catch(e) { console.warn(e); }
+            try { loadRegions(); } catch(e) { console.warn(e); }
+            try { loadNotices(); } catch(e) { console.warn(e); }
+            try { renderApplicants(); } catch(e) { console.warn(e); }
+            try { loadRecentApplicants(); } catch(e) { console.warn(e); }
+            try { loadSavedSettings(); } catch(e) { console.warn(e); }
             try { initCharts(); } catch(e) { console.warn('initCharts error:', e); }
 
             // 리사이즈 핸들러
+            let mobileInitDone = isMobileView();
             window.addEventListener('resize', () => {
-                if (isMobileView()) {
-                    const layout = document.getElementById('mobileLayout');
-                    if (layout && layout.style.display === 'none') {
-                        initMobileLayout();
-                    }
+                if (isMobileView() && !mobileInitDone) {
+                    mobileInitDone = true;
+                    try { initMobileLayout(); } catch(e) { console.warn(e); }
                 }
             });
         });
