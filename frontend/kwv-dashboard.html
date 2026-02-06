@@ -2556,6 +2556,10 @@
             document.querySelectorAll('.mobile-page-dot').forEach((dot, i) => {
                 dot.classList.toggle('active', i === page);
             });
+            // 페이지 전환 시 상단으로 스크롤
+            const targetPage = document.getElementById(page === 0 ? 'mobilePage1' : 'mobilePage2');
+            if (targetPage) targetPage.scrollTop = 0;
+            window.scrollTo(0, 0);
             // 스와이프 힌트 숨기기
             const hint = document.getElementById('mobileSwipeHint');
             if (hint && page === 1) hint.style.display = 'none';
