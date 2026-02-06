@@ -2,6 +2,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Form, Request
 # KWV Auth Module
 from auth import router as auth_router
+from kwv_api import router as kwv_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -92,6 +93,7 @@ if os.path.exists(frontend_dir):
 
 # KWV 인증 라우터 등록
 app.include_router(auth_router)
+app.include_router(kwv_router)
 
 # CORS 설정
 app.add_middleware(

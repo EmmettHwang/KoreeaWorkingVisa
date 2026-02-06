@@ -29,6 +29,44 @@
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #a1a1a6; }
+
+        /* ===== 모바일 전용 스타일 ===== */
+        @media (max-width: 768px) {
+            .desktop-only { display: none !important; }
+            .mobile-only { display: block !important; }
+        }
+        @media (min-width: 769px) {
+            .mobile-only { display: none !important; }
+        }
+        #mobileSwipeContainer {
+            display: flex; width: 200%; transition: transform 0.35s cubic-bezier(0.25,0.1,0.25,1);
+        }
+        .mobile-page { width: 50%; min-height: calc(100vh - 60px); overflow-y: auto; }
+        @keyframes mobileFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .mobile-fade-in { animation: mobileFadeIn 0.5s ease-out forwards; opacity: 0; }
+        .mobile-menu-card { transition: transform 0.15s ease; }
+        .mobile-menu-card:active { transform: scale(0.95); }
+        .mobile-page-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; transition: all 0.3s; }
+        .mobile-page-dot.active { width: 24px; border-radius: 4px; background: #007AFF; }
+        .mobile-stat-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .mobile-stat-green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .mobile-stat-orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+        .mobile-stat-indigo { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+        .mobile-stat-pink { background: linear-gradient(135deg, #ec4899, #db2777); }
+        .mobile-menu-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .mobile-menu-green { background: linear-gradient(135deg, #22c55e, #15803d); }
+        .mobile-menu-purple { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+        .mobile-menu-orange { background: linear-gradient(135deg, #f97316, #c2410c); }
+        .mobile-menu-indigo { background: linear-gradient(135deg, #6366f1, #4338ca); }
+        .mobile-menu-pink { background: linear-gradient(135deg, #ec4899, #be185d); }
+        @keyframes swipeHint {
+            0%,100% { transform: translateX(0); opacity: 0.7; }
+            50% { transform: translateX(-10px); opacity: 1; }
+        }
+        .swipe-hint { animation: swipeHint 2s ease-in-out 3; }
     </style>
 </head>
 <body class="min-h-screen"><script>if(localStorage.getItem("kwv_logged_in")!=="true"&&sessionStorage.getItem("kwv_logged_in")!=="true"){window.location.href="/login.html";}</script>
@@ -44,7 +82,7 @@
     </script>
 
     <!-- 헤더 -->
-    <nav class="glass sticky top-0 z-50 border-b border-gray-200/50">
+    <nav class="glass sticky top-0 z-50 border-b border-gray-200/50 desktop-only">
         <div class="max-w-7xl mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-3">
@@ -84,7 +122,7 @@
     </nav>
 
     <!-- 메뉴 탭 -->
-    <div class="glass border-b border-gray-200/50">
+    <div class="glass border-b border-gray-200/50 desktop-only">
         <div class="max-w-7xl mx-auto px-6">
             <div class="flex space-x-1">
                 <button onclick="showTab('dashboard')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-blue-600 bg-white/50" data-tab="dashboard">
@@ -110,7 +148,7 @@
     </div>
 
     <!-- 메인 컨텐츠 -->
-    <main class="max-w-7xl mx-auto px-6 py-8">
+    <main class="max-w-7xl mx-auto px-6 py-8 desktop-only">
         
         <!-- ==================== 대시보드 탭 ==================== -->
         <div id="tab-dashboard" class="tab-content active">
@@ -598,6 +636,54 @@
         </div>
     </div>
 
+    <!-- ===== 모바일 전용 레이아웃 ===== -->
+    <div id="mobileLayout" class="mobile-only" style="display:none;">
+        <div id="mobileSwipeContainer" style="overflow:hidden;">
+            <!-- 페이지 1: 대시보드 -->
+            <div class="mobile-page" id="mobilePage1" style="padding:0 0 80px 0;">
+                <!-- 모바일 헤더 -->
+                <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-[#007AFF] to-[#5856D6] rounded-lg flex items-center justify-center">
+                            <i class="fas fa-globe-asia text-white text-sm"></i>
+                        </div>
+                        <span class="font-bold text-gray-900 text-sm" data-i18n="siteName">KoreaWorkingVisa</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="relative p-2 text-gray-500">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">3</span>
+                        </button>
+                        <div class="w-8 h-8 bg-gradient-to-br from-[#007AFF] to-[#5856D6] rounded-full flex items-center justify-center" onclick="toggleUserMenu()">
+                            <i class="fas fa-user text-white text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- 대시보드 콘텐츠 -->
+                <div id="mobileDashboardContent" class="px-4 pt-4"></div>
+                <!-- 스와이프 힌트 -->
+                <div id="mobileSwipeHint" class="swipe-hint fixed bottom-20 right-4 bg-black/60 text-white text-xs px-3 py-2 rounded-full">
+                    <i class="fas fa-chevron-left mr-1"></i> <span data-i18n="mobileMenu">메뉴</span>
+                </div>
+            </div>
+            <!-- 페이지 2: 메뉴 -->
+            <div class="mobile-page" id="mobilePage2" style="padding:0 0 80px 0;background:#f5f5f7;">
+                <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center">
+                    <button onclick="switchMobilePage(0)" class="mr-3 p-2 text-gray-500"><i class="fas fa-chevron-left"></i></button>
+                    <span class="font-bold text-gray-900" data-i18n="mobileMenu">메뉴</span>
+                </div>
+                <div id="mobileMenuGrid" class="grid grid-cols-2 gap-3 p-4"></div>
+                <!-- 모바일 탭 콘텐츠 영역 -->
+                <div id="mobileTabContent" class="px-4 pb-4" style="display:none;"></div>
+            </div>
+        </div>
+        <!-- 페이지 인디케이터 -->
+        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 z-50">
+            <div class="mobile-page-dot active" data-page="0"></div>
+            <div class="mobile-page-dot" data-page="1"></div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api/kwv';
         let allJobs = [];
@@ -619,6 +705,7 @@
                 tabJobs: '구인/구직',
                 tabApplicants: '지원자',
                 tabSettings: '설정',
+                mobileMenu: '메뉴',
 
                 // 대시보드
                 hello: '안녕하세요',
@@ -802,6 +889,7 @@
                 tabJobs: 'Jobs',
                 tabApplicants: 'Applicants',
                 tabSettings: 'Settings',
+                mobileMenu: 'Menu',
 
                 hello: 'Hello',
                 welcomeSuffix: ' 👋',
@@ -973,6 +1061,7 @@
                 tabJobs: 'Việc làm',
                 tabApplicants: 'Ứng viên',
                 tabSettings: 'Cài đặt',
+                mobileMenu: 'Menu',
 
                 hello: 'Xin chào',
                 welcomeSuffix: ' 👋',
@@ -1144,6 +1233,7 @@
                 tabJobs: 'งาน',
                 tabApplicants: 'ผู้สมัคร',
                 tabSettings: 'ตั้งค่า',
+                mobileMenu: 'เมนู',
 
                 hello: 'สวัสดี',
                 welcomeSuffix: ' 👋',
@@ -1315,6 +1405,7 @@
                 tabJobs: 'Mga Trabaho',
                 tabApplicants: 'Mga Aplikante',
                 tabSettings: 'Mga Setting',
+                mobileMenu: 'Menu',
 
                 hello: 'Kumusta',
                 welcomeSuffix: ' 👋',
@@ -1724,6 +1815,8 @@
                     document.getElementById('krRegions').textContent = data.data.kr_regions;
                     document.getElementById('foreignRegions').textContent = data.data.foreign_regions;
                     document.getElementById('visaTypes').textContent = data.data.visa_types;
+                    // 모바일 통계 동기화
+                    if (isMobileView()) syncMobileStats();
                 }
             } catch(e) { console.error(e); }
         }
@@ -2200,6 +2293,12 @@
             loadVisaTypes();
             loadJobs();
             loadRegions();
+
+            // 모바일 뷰 갱신
+            if (isMobileView()) {
+                renderMobileDashboard();
+                renderMobileMenuGrid();
+            }
         }
 
         // 언어 적용 함수
@@ -2423,6 +2522,294 @@
             initNotificationSettings();
         }
 
+        // ==================== 모바일 전용 함수 ====================
+        let mobileCurrentPage = 0;
+        let mobileTouchStartX = 0;
+        let mobileTouchStartY = 0;
+        let mobileChartInstances = {};
+
+        function isMobileView() { return window.innerWidth <= 768; }
+
+        function initMobileSwipe() {
+            const container = document.getElementById('mobileSwipeContainer');
+            if (!container) return;
+            container.addEventListener('touchstart', (e) => {
+                mobileTouchStartX = e.touches[0].clientX;
+                mobileTouchStartY = e.touches[0].clientY;
+            }, { passive: true });
+            container.addEventListener('touchend', (e) => {
+                const dx = e.changedTouches[0].clientX - mobileTouchStartX;
+                const dy = e.changedTouches[0].clientY - mobileTouchStartY;
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                    if (dx < 0 && mobileCurrentPage === 0) switchMobilePage(1);
+                    else if (dx > 0 && mobileCurrentPage === 1) switchMobilePage(0);
+                }
+            }, { passive: true });
+        }
+
+        function switchMobilePage(page) {
+            mobileCurrentPage = page;
+            const container = document.getElementById('mobileSwipeContainer');
+            if (container) container.style.transform = `translateX(-${page * 50}%)`;
+            document.querySelectorAll('.mobile-page-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === page);
+            });
+            // 스와이프 힌트 숨기기
+            const hint = document.getElementById('mobileSwipeHint');
+            if (hint && page === 1) hint.style.display = 'none';
+            // 메뉴 페이지로 갈 때 탭 콘텐츠 숨기기
+            if (page === 1) {
+                const tc = document.getElementById('mobileTabContent');
+                if (tc) tc.style.display = 'none';
+                const mg = document.getElementById('mobileMenuGrid');
+                if (mg) mg.style.display = 'grid';
+            }
+        }
+
+        function renderMobileDashboard() {
+            const content = document.getElementById('mobileDashboardContent');
+            if (!content) return;
+
+            const userStr = sessionStorage.getItem('kwv_user');
+            let userName = t('hello') || '안녕하세요';
+            if (userStr) {
+                try {
+                    const u = JSON.parse(userStr);
+                    userName = (t('hello') || '안녕하세요') + ', ' + (u.name || u.email || '') + (t('welcomeSuffix') || '님 👋');
+                } catch(e) {}
+            }
+
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+
+            let delay = 0;
+            const fd = () => { delay += 0.05; return `animation-delay:${delay}s`; };
+
+            content.innerHTML = `
+                <!-- 환영 카드 -->
+                <div class="mobile-fade-in rounded-2xl p-5 bg-gradient-to-r from-[#007AFF] via-[#5856D6] to-[#AF52DE] text-white mb-4" style="${fd()}">
+                    <p class="text-white/70 text-xs">${dateStr}</p>
+                    <h2 class="text-lg font-bold mt-1">${userName}</h2>
+                    <p class="text-white/80 text-xs mt-1">${t('newApplicants') || '새로운 지원자'} <span class="font-bold text-yellow-300">3${t('waitingApproval') || '명이 승인을 기다리고 있습니다'}</span></p>
+                </div>
+                <!-- 통계 카드 -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="mobile-fade-in mobile-stat-blue rounded-2xl p-4 text-white" style="${fd()}">
+                        <div class="flex items-center justify-between">
+                            <i class="fas fa-briefcase text-white/70 text-xl"></i>
+                            <span class="text-2xl font-bold" id="mTotalJobs">-</span>
+                        </div>
+                        <p class="text-white/70 text-xs mt-2">${t('totalJobs') || '총 구인'}</p>
+                    </div>
+                    <div class="mobile-fade-in mobile-stat-green rounded-2xl p-4 text-white" style="${fd()}">
+                        <div class="flex items-center justify-between">
+                            <i class="fas fa-users text-white/70 text-xl"></i>
+                            <span class="text-2xl font-bold" id="mTotalPositions">-</span>
+                        </div>
+                        <p class="text-white/70 text-xs mt-2">${t('totalPositions') || '모집 인원'}</p>
+                    </div>
+                    <div class="mobile-fade-in mobile-stat-orange rounded-2xl p-4 text-white" style="${fd()}">
+                        <div class="flex items-center justify-between">
+                            <i class="fas fa-flag text-white/70 text-xl"></i>
+                            <span class="text-2xl font-bold" id="mKrRegions">-</span>
+                        </div>
+                        <p class="text-white/70 text-xs mt-2">${t('krRegions') || '한국 지자체'}</p>
+                    </div>
+                    <div class="mobile-fade-in mobile-stat-indigo rounded-2xl p-4 text-white" style="${fd()}">
+                        <div class="flex items-center justify-between">
+                            <i class="fas fa-globe text-white/70 text-xl"></i>
+                            <span class="text-2xl font-bold" id="mForeignRegions">-</span>
+                        </div>
+                        <p class="text-white/70 text-xs mt-2">${t('foreignRegions') || '해외 지자체'}</p>
+                    </div>
+                    <div class="mobile-fade-in mobile-stat-pink rounded-2xl p-4 text-white col-span-2" style="${fd()}">
+                        <div class="flex items-center justify-between">
+                            <i class="fas fa-passport text-white/70 text-xl"></i>
+                            <span class="text-2xl font-bold" id="mVisaTypes">-</span>
+                        </div>
+                        <p class="text-white/70 text-xs mt-2">${t('visaTypes') || '비자 종류'}</p>
+                    </div>
+                </div>
+                <!-- 차트 -->
+                <div class="mobile-fade-in bg-white rounded-2xl p-4 mb-4 shadow-sm" style="${fd()}">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">${t('monthlyTrend') || '월별 지원자 추이'}</h3>
+                    <canvas id="mobileMonthlyChart" height="180"></canvas>
+                </div>
+                <div class="mobile-fade-in bg-white rounded-2xl p-4 mb-4 shadow-sm" style="${fd()}">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">${t('visaApplicationStatus') || '비자별 지원 현황'}</h3>
+                    <canvas id="mobileVisaChart" height="180"></canvas>
+                </div>
+                <!-- 최근 지원자 -->
+                <div class="mobile-fade-in bg-white rounded-2xl p-4 mb-4 shadow-sm" style="${fd()}">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-semibold text-gray-800">${t('recentApplicants') || '👥 최근 지원자'}</h3>
+                    </div>
+                    <div id="mobileRecentApplicants" class="space-y-2"></div>
+                </div>
+                <!-- 공지사항 -->
+                <div class="mobile-fade-in bg-white rounded-2xl p-4 mb-4 shadow-sm" style="${fd()}">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-semibold text-gray-800">${t('notices') || '📢 공지사항'}</h3>
+                    </div>
+                    <div id="mobileNoticeList" class="space-y-2"></div>
+                </div>
+            `;
+
+            // 통계 동기화
+            syncMobileStats();
+            // 차트
+            setTimeout(() => initMobileCharts(), 100);
+            // 지원자, 공지
+            renderMobileRecentApplicants();
+            renderMobileNotices();
+        }
+
+        function syncMobileStats() {
+            const ids = [['totalJobs','mTotalJobs'],['totalPositions','mTotalPositions'],['krRegions','mKrRegions'],['foreignRegions','mForeignRegions'],['visaTypes','mVisaTypes']];
+            ids.forEach(([desk, mob]) => {
+                const dEl = document.getElementById(desk);
+                const mEl = document.getElementById(mob);
+                if (dEl && mEl) mEl.textContent = dEl.textContent;
+            });
+        }
+
+        function initMobileCharts() {
+            // 월별 차트
+            const mMonthly = document.getElementById('mobileMonthlyChart');
+            if (mMonthly) {
+                if (mobileChartInstances.monthly) mobileChartInstances.monthly.destroy();
+                mobileChartInstances.monthly = new Chart(mMonthly, {
+                    type: 'line',
+                    data: {
+                        labels: ['9월','10월','11월','12월','1월','2월'],
+                        datasets: [{
+                            label: '지원자', data: [30,45,60,80,95,120],
+                            borderColor: '#007aff', backgroundColor: 'rgba(0,122,255,0.1)',
+                            fill: true, tension: 0.4, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#007aff'
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } } }
+                });
+            }
+            // 비자별 차트
+            const mVisa = document.getElementById('mobileVisaChart');
+            if (mVisa) {
+                if (mobileChartInstances.visa) mobileChartInstances.visa.destroy();
+                mobileChartInstances.visa = new Chart(mVisa, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['E8 계절근로','D2 유학','D4 어학연수','D10 구직','F4 재외동포'],
+                        datasets: [{ data: [110,25,17,10,8], backgroundColor: ['#007aff','#34c759','#af52de','#ff9500','#ff2d55'], borderWidth: 0 }]
+                    },
+                    options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } } } }
+                });
+            }
+        }
+
+        function renderMobileRecentApplicants() {
+            const container = document.getElementById('mobileRecentApplicants');
+            if (!container) return;
+            const flags = {VN:'🇻🇳', TH:'🇹🇭', PH:'🇵🇭'};
+            const statusColors = {pending:'bg-yellow-100 text-yellow-700', approved:'bg-green-100 text-green-700', rejected:'bg-red-100 text-red-700'};
+            const statusText = {pending: t('pending') || '대기중', approved: t('approved') || '승인', rejected: t('rejected') || '거절'};
+            if (typeof applicants !== 'undefined') {
+                container.innerHTML = applicants.slice(0,3).map(a => `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-xl">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg">${flags[a.country] || '🌐'}</span>
+                            <div>
+                                <p class="font-medium text-gray-800 text-xs">${a.name}</p>
+                                <p class="text-[10px] text-gray-400">${a.job}</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-medium ${statusColors[a.status]}">${statusText[a.status]}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderMobileNotices() {
+            const container = document.getElementById('mobileNoticeList');
+            if (!container) return;
+            const desktopNotices = document.getElementById('noticeList');
+            if (desktopNotices && desktopNotices.innerHTML) {
+                container.innerHTML = desktopNotices.innerHTML;
+                // 폰트 사이즈 축소
+                container.querySelectorAll('p, span').forEach(el => {
+                    el.style.fontSize = el.style.fontSize || '';
+                    el.classList.add('text-xs');
+                });
+            } else {
+                container.innerHTML = '<p class="text-xs text-gray-400">공지사항이 없습니다.</p>';
+            }
+        }
+
+        function renderMobileMenuGrid() {
+            const grid = document.getElementById('mobileMenuGrid');
+            if (!grid) return;
+            const menus = [
+                { id: 'dashboard', icon: 'fa-chart-pie', label: t('tabDashboard') || '대시보드', desc: t('siteDesc') || '통계 및 현황', color: 'mobile-menu-blue' },
+                { id: 'visa', icon: 'fa-passport', label: t('tabVisa') || '비자 관리', desc: '비자 종류 안내', color: 'mobile-menu-green' },
+                { id: 'regions', icon: 'fa-map-marker-alt', label: t('tabRegions') || '지자체', desc: '지역 정보', color: 'mobile-menu-purple' },
+                { id: 'jobs', icon: 'fa-briefcase', label: t('tabJobs') || '구인/구직', desc: '구인 목록', color: 'mobile-menu-orange' },
+                { id: 'applicants', icon: 'fa-users', label: t('tabApplicants') || '지원자', desc: '지원자 관리', color: 'mobile-menu-indigo' },
+                { id: 'settings', icon: 'fa-cog', label: t('tabSettings') || '설정', desc: '앱 설정', color: 'mobile-menu-pink' }
+            ];
+            grid.innerHTML = menus.map(m => `
+                <div class="mobile-menu-card mobile-fade-in bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer" onclick="handleMobileMenuClick('${m.id}')">
+                    <div class="${m.color} p-4 flex flex-col items-center justify-center" style="min-height:100px;">
+                        <i class="fas ${m.icon} text-white text-3xl mb-2"></i>
+                        <span class="text-white font-bold text-sm">${m.label}</span>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-gray-500 text-xs text-center">${m.desc}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function handleMobileMenuClick(tabId) {
+            if (tabId === 'dashboard') {
+                switchMobilePage(0);
+                return;
+            }
+            // 해당 탭 콘텐츠를 모바일 영역에 표시
+            const tabContent = document.getElementById('tab-' + tabId);
+            const mobileTabContent = document.getElementById('mobileTabContent');
+            const menuGrid = document.getElementById('mobileMenuGrid');
+            if (tabContent && mobileTabContent) {
+                menuGrid.style.display = 'none';
+                mobileTabContent.style.display = 'block';
+                mobileTabContent.innerHTML = `
+                    <button onclick="closeMobileTab()" class="mb-3 text-sm text-blue-600 font-medium"><i class="fas fa-arrow-left mr-1"></i> ${t('mobileMenu') || '메뉴'}</button>
+                    <div>${tabContent.innerHTML}</div>
+                `;
+                // 데스크톱 탭도 동기화
+                showTab(tabId);
+            }
+        }
+
+        function closeMobileTab() {
+            const mobileTabContent = document.getElementById('mobileTabContent');
+            const menuGrid = document.getElementById('mobileMenuGrid');
+            if (mobileTabContent) mobileTabContent.style.display = 'none';
+            if (menuGrid) menuGrid.style.display = 'grid';
+        }
+
+        function initMobileLayout() {
+            const layout = document.getElementById('mobileLayout');
+            if (layout) layout.style.display = 'block';
+            renderMobileDashboard();
+            renderMobileMenuGrid();
+            initMobileSwipe();
+            // 3초 후 스와이프 힌트 숨기기
+            setTimeout(() => {
+                const hint = document.getElementById('mobileSwipeHint');
+                if (hint) hint.style.opacity = '0';
+                setTimeout(() => { if (hint) hint.style.display = 'none'; }, 500);
+            }, 7000);
+        }
+
         // 초기 로드
         document.addEventListener('DOMContentLoaded', () => {
             loadUserInfo();
@@ -2433,8 +2820,25 @@
             loadNotices();
             renderApplicants();
             loadRecentApplicants();
-            initCharts();
             loadSavedSettings();
+
+            // 모바일 초기화 (initCharts보다 먼저)
+            if (isMobileView()) {
+                initMobileLayout();
+            }
+
+            // 데스크톱 차트 (에러 방지)
+            try { initCharts(); } catch(e) { console.warn('initCharts error:', e); }
+
+            // 리사이즈 핸들러
+            window.addEventListener('resize', () => {
+                if (isMobileView()) {
+                    const layout = document.getElementById('mobileLayout');
+                    if (layout && layout.style.display === 'none') {
+                        initMobileLayout();
+                    }
+                }
+            });
         });
     </script>
 </body>
