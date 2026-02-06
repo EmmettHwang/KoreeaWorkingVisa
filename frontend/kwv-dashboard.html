@@ -5052,10 +5052,20 @@
             document.querySelectorAll('.mobile-page-dot').forEach((dot, i) => {
                 dot.classList.toggle('active', i === page);
             });
+            // 비활성 페이지 pointer-events 끄기
+            const page1 = document.getElementById('mobilePage1');
+            const page2 = document.getElementById('mobilePage2');
+            if (page1) page1.style.pointerEvents = page === 0 ? 'auto' : 'none';
+            if (page2) page2.style.pointerEvents = page === 1 ? 'auto' : 'none';
             // 페이지 전환 시 상단으로 스크롤
-            const targetPage = document.getElementById(page === 0 ? 'mobilePage1' : 'mobilePage2');
+            const targetPage = page === 0 ? page1 : page2;
             if (targetPage) targetPage.scrollTop = 0;
             window.scrollTo(0, 0);
+            // 메뉴 닫기
+            const lm = document.getElementById('mobileLayoutUserMenu');
+            if (lm) lm.classList.add('hidden');
+            const mp = document.getElementById('mobileNotifPanel');
+            if (mp) mp.classList.add('hidden');
             // 스와이프 힌트 숨기기
             const hint = document.getElementById('mobileSwipeHint');
             if (hint && page === 1) hint.style.display = 'none';
@@ -5302,6 +5312,9 @@
             renderMobileDashboard();
             renderMobileMenuGrid();
             initMobileSwipe();
+            // 초기 상태: page2 비활성
+            const page2 = document.getElementById('mobilePage2');
+            if (page2) page2.style.pointerEvents = 'none';
             // 3초 후 스와이프 힌트 숨기기
             setTimeout(() => {
                 const hint = document.getElementById('mobileSwipeHint');
