@@ -38,6 +38,7 @@
         @media (min-width: 769px) {
             .mobile-only { display: none !important; }
         }
+        #mobileLayout { overflow: hidden; }
         #mobileSwipeContainer {
             display: flex; width: 200%; transition: transform 0.35s cubic-bezier(0.25,0.1,0.25,1);
         }
@@ -46,7 +47,8 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .mobile-fade-in { animation: mobileFadeIn 0.5s ease-out forwards; opacity: 0; }
+        .mobile-fade-in { animation: mobileFadeIn 0.5s ease-out both; }
+        @media (prefers-reduced-motion: reduce) { .mobile-fade-in { animation: none; } }
         .mobile-menu-card { transition: transform 0.15s ease; }
         .mobile-menu-card:active { transform: scale(0.95); }
         .mobile-page-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; transition: all 0.3s; }
