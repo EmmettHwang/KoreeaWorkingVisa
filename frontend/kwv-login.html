@@ -208,8 +208,7 @@
 
                 if (!res.ok) throw new Error(data.detail || 'Login failed');
 
-                localStorage.setItem('kwv_token', data.access_token);
-                localStorage.setItem('kwv_user', JSON.stringify(data.user));
+                sessionStorage.setItem('kwv_token', data.access_token);
                 redirectUser(data.user);
             } catch (error) {
                 showError(error.message);
@@ -221,9 +220,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             applyTranslations();
 
-            const token = localStorage.getItem('kwv_token');
-            const user = localStorage.getItem('kwv_user');
-            if (token && user) {
+            // sessionStorage 기반 - 브라우저 닫으면 로그아웃
+            const loggedIn = sessionStorage.getItem('kwv_logged_in');
+            const user = sessionStorage.getItem('kwv_user');
+            if (loggedIn === 'true' && user) {
                 redirectUser(JSON.parse(user));
             }
         });

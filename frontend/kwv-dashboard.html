@@ -69,8 +69,8 @@
         .swipe-hint { animation: swipeHint 2s ease-in-out 3; }
     </style>
 </head>
-<body class="min-h-screen"><script>if(localStorage.getItem("kwv_logged_in")!=="true"&&sessionStorage.getItem("kwv_logged_in")!=="true"){window.location.href="/login.html";}</script>
-    <!-- 로그인 체크 -->
+<body class="min-h-screen">
+    <!-- 로그인 체크 (sessionStorage만 사용 - 브라우저 닫으면 로그아웃) -->
     <script>
         (function() {
             const loggedIn = sessionStorage.getItem('kwv_logged_in');
