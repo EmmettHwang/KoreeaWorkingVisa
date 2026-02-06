@@ -856,17 +856,25 @@
                         <span id="adminBadgeMobile" class="admin-badge" style="display:none;"></span>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button class="relative p-2 text-gray-500">
+                        <button onclick="toggleMobileNotification()" class="relative p-2 text-gray-500">
                             <i class="fas fa-bell text-lg"></i>
-                            <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">3</span>
+                            <span id="mobileNotifBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">3</span>
                         </button>
                         <div class="w-8 h-8 bg-gradient-to-br from-[#007AFF] to-[#5856D6] rounded-full flex items-center justify-center" onclick="toggleMobileUserMenu()">
                             <i class="fas fa-user text-white text-xs"></i>
                         </div>
                     </div>
                 </div>
-                <!-- 모바일 사용자 메뉴 (모바일 레이아웃 전용) -->
-                <div id="mobileLayoutUserMenu" class="hidden absolute right-4 top-14 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-[60]">
+                <!-- 모바일 알림 패널 -->
+                <div id="mobileNotifPanel" class="hidden fixed right-4 top-14 bg-white rounded-2xl shadow-xl border border-gray-100 w-72 max-h-80 overflow-hidden z-[70]">
+                    <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                        <h4 class="font-semibold text-gray-800 text-sm">알림</h4>
+                        <button onclick="document.getElementById('mobileNotifPanel').classList.add('hidden')" class="text-xs text-blue-500">닫기</button>
+                    </div>
+                    <div id="mobileNotifList" class="overflow-y-auto max-h-60 p-2 space-y-2"></div>
+                </div>
+                <!-- 모바일 사용자 메뉴 -->
+                <div id="mobileLayoutUserMenu" class="hidden fixed right-4 top-14 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-[70]">
                     <div class="px-4 py-2 border-b border-gray-100">
                         <p class="text-xs text-gray-400">로그인 계정</p>
                         <p id="mobileLayoutUserMenuName" class="font-medium text-gray-800">사용자</p>
@@ -4315,6 +4323,31 @@
             if (layoutMenu) layoutMenu.classList.toggle('hidden');
             // 알림 패널 닫기
             document.getElementById('notificationPanel').classList.add('hidden');
+            const mp = document.getElementById('mobileNotifPanel');
+            if (mp) mp.classList.add('hidden');
+        }
+
+        // 모바일 알림 패널 토글
+        function toggleMobileNotification() {
+            const panel = document.getElementById('mobileNotifPanel');
+            if (panel) {
+                panel.classList.toggle('hidden');
+                // 알림 목록 동기화
+                if (!panel.classList.contains('hidden')) {
+                    const list = document.getElementById('mobileNotifList');
+                    if (list) {
+                        list.innerHTML = notifications.filter(n => !n.read).map(n => `
+                            <div class="p-2 bg-gray-50 rounded-xl">
+                                <p class="text-xs font-medium text-gray-800">${n.title}</p>
+                                <p class="text-[10px] text-gray-500 mt-1">${getNotificationMessage(n)}</p>
+                            </div>
+                        `).join('') || '<p class="text-xs text-gray-400 text-center py-4">새 알림이 없습니다</p>';
+                    }
+                }
+            }
+            // 사용자 메뉴 닫기
+            const lm = document.getElementById('mobileLayoutUserMenu');
+            if (lm) lm.classList.add('hidden');
         }
 
         // 알림 데이터
@@ -4460,6 +4493,12 @@
             if (!notifTrigger && !notifPanel.contains(e.target)) {
                 notifPanel.classList.add('hidden');
             }
+            // 모바일 알림 패널
+            const mobileNotifPanel = document.getElementById('mobileNotifPanel');
+            const mobileNotifTrigger = e.target.closest('[onclick="toggleMobileNotification()"]');
+            if (!mobileNotifTrigger && mobileNotifPanel && !mobileNotifPanel.contains(e.target)) {
+                mobileNotifPanel.classList.add('hidden');
+            }
         });
 
         // 로그아웃
@@ -4501,7 +4540,7 @@
                     // 관리자 등급 배지 (일단 모두 Master)
                     if (user.user_type === 'admin' || user.userType === 'admin') {
                         const badgeInfo = { text: 'M', cls: 'badge-master', title: 'Master' };
-                        ['adminBadge'].forEach(id => {
+                        ['adminBadge', 'adminBadgeMobile'].forEach(id => {
                             const el = document.getElementById(id);
                             if (el) {
                                 el.textContent = badgeInfo.text;
