@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    container_name: kwv-app
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.6
+    container_name: kwv-db
+    environment:
+      MYSQL_ROOT_PASSWORD: KWV2026!@#
+      MYSQL_DATABASE: koreaworkingvisa
+      MYSQL_USER: kwvuser
+      MYSQL_PASSWORD: KWV2026!@#
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

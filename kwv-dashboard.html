@@ -1,0 +1,2995 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KoreaWorkingVisa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif; }
+        body { background: #f5f5f7; }
+        .glass { background: rgba(255,255,255,0.72); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); }
+        .card { background: #fff; border-radius: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .stat-card { background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%); }
+        .stat-card.green { background: linear-gradient(135deg, #34C759 0%, #30D158 100%); }
+        .stat-card.orange { background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%); }
+        .stat-card.blue { background: linear-gradient(135deg, #32ADE6 0%, #007AFF 100%); }
+        .stat-card.pink { background: linear-gradient(135deg, #FF2D55 0%, #FF375F 100%); }
+        .btn-primary { background: #007AFF; color: white; border-radius: 12px; padding: 12px 24px; font-weight: 600; transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        .btn-primary:hover { background: #0066CC; transform: scale(1.02); }
+        .input-apple { border: 1px solid #d1d1d6; border-radius: 10px; padding: 12px 16px; transition: all 0.2s; background: #fff; }
+        .input-apple:focus { border-color: #007AFF; box-shadow: 0 0 0 4px rgba(0,122,255,0.15); outline: none; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1a6; }
+    </style>
+</head>
+<body class="min-h-screen"><script>if(localStorage.getItem("kwv_logged_in")!=="true"&&sessionStorage.getItem("kwv_logged_in")!=="true"){window.location.href="/login.html";}</script>
+    <!-- 로그인 체크 -->
+    <script>
+        (function() {
+            const loggedIn = sessionStorage.getItem('kwv_logged_in');
+            const user = sessionStorage.getItem('kwv_user');
+            if (loggedIn !== 'true' || !user) {
+                window.location.replace('/kwv-login.html');
+            }
+        })();
+    </script>
+
+    <!-- 헤더 -->
+    <nav class="glass sticky top-0 z-50 border-b border-gray-200/50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-[#007AFF] to-[#5856D6] rounded-xl flex items-center justify-center">
+                        <i class="fas fa-globe-asia text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900" data-i18n="siteName">KoreaWorkingVisa</h1>
+                        <p class="text-xs text-gray-500" data-i18n="siteDesc">한국 취업 비자 플랫폼</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="relative p-2 text-gray-500 hover:text-gray-700 transition">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                    </button>
+                    <div class="flex items-center space-x-3 bg-gray-100 rounded-full px-4 py-2 cursor-pointer" onclick="toggleUserMenu()">
+                        <div class="w-8 h-8 bg-gradient-to-br from-[#007AFF] to-[#5856D6] rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <span id="userName" class="text-sm font-medium text-gray-700">관리자</span>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </div>
+                    <!-- 사용자 드롭다운 메뉴 -->
+                    <div id="userMenu" class="hidden absolute right-6 top-16 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-50">
+                        <div class="px-4 py-2 border-b border-gray-100">
+                            <p class="text-xs text-gray-400" data-i18n="loginAccount">로그인 계정</p>
+                            <p id="userMenuName" class="font-medium text-gray-800">관리자</p>
+                        </div>
+                        <button onclick="logout()" class="w-full px-4 py-3 text-left text-red-500 hover:bg-red-50 transition flex items-center">
+                            <i class="fas fa-sign-out-alt mr-3"></i><span data-i18n="logout">로그아웃</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 메뉴 탭 -->
+    <div class="glass border-b border-gray-200/50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex space-x-1">
+                <button onclick="showTab('dashboard')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-blue-600 bg-white/50" data-tab="dashboard">
+                    <i class="fas fa-chart-pie mr-2"></i><span data-i18n="tabDashboard">대시보드</span>
+                </button>
+                <button onclick="showTab('visa')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="visa">
+                    <i class="fas fa-passport mr-2"></i><span data-i18n="tabVisa">비자 관리</span>
+                </button>
+                <button onclick="showTab('regions')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="regions">
+                    <i class="fas fa-map-marker-alt mr-2"></i><span data-i18n="tabRegions">지자체</span>
+                </button>
+                <button onclick="showTab('jobs')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="jobs">
+                    <i class="fas fa-briefcase mr-2"></i><span data-i18n="tabJobs">구인/구직</span>
+                </button>
+                <button onclick="showTab('applicants')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="applicants">
+                    <i class="fas fa-users mr-2"></i><span data-i18n="tabApplicants">지원자</span>
+                </button>
+                <button onclick="showTab('settings')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="settings">
+                    <i class="fas fa-cog mr-2"></i><span data-i18n="tabSettings">설정</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- ==================== 대시보드 탭 ==================== -->
+        <div id="tab-dashboard" class="tab-content active">
+            <!-- 환영 카드 -->
+            <div class="card p-8 mb-8 bg-gradient-to-r from-[#007AFF] via-[#5856D6] to-[#AF52DE] text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-blue-100 text-sm mb-1" id="todayDate">2026년 2월 4일</p>
+                        <h2 id="welcomeMessage" class="text-3xl font-bold mb-2">안녕하세요, 관리자님 👋</h2>
+                        <p class="text-white/80" id="waitingApplicantsMsg">새로운 지원자 <span class="font-bold text-yellow-300">3명</span>이 승인을 기다리고 있습니다</p>
+                    </div>
+                    <button onclick="showTab('applicants')" class="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition hidden md:block">
+                        <span data-i18n="checkApplicantsBtn">지원자 확인</span> <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 통계 카드 -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                <div class="stat-card rounded-2xl p-5 text-white cursor-pointer" onclick="showTab('jobs')">
+                    <p class="text-white/70 text-sm" data-i18n="totalJobs">총 구인</p>
+                    <p class="text-3xl font-bold mt-1" id="totalJobs">-</p>
+                    <div class="mt-3 flex items-center text-sm text-white/70">
+                        <i class="fas fa-briefcase mr-2"></i><span data-i18n="unit_count">건</span>
+                    </div>
+                </div>
+                <div class="stat-card green rounded-2xl p-5 text-white">
+                    <p class="text-white/70 text-sm" data-i18n="totalPositions">모집 인원</p>
+                    <p class="text-3xl font-bold mt-1" id="totalPositions">-</p>
+                    <div class="mt-3 flex items-center text-sm text-white/70">
+                        <i class="fas fa-users mr-2"></i><span data-i18n="unit_people">명</span>
+                    </div>
+                </div>
+                <div class="stat-card orange rounded-2xl p-5 text-white cursor-pointer" onclick="showTab('regions')">
+                    <p class="text-white/70 text-sm" data-i18n="krRegions">한국 지자체</p>
+                    <p class="text-3xl font-bold mt-1" id="krRegions">-</p>
+                    <div class="mt-3 flex items-center text-sm text-white/70">
+                        <i class="fas fa-flag mr-2"></i><span data-i18n="unit_place">곳</span>
+                    </div>
+                </div>
+                <div class="stat-card blue rounded-2xl p-5 text-white cursor-pointer" onclick="showTab('regions')">
+                    <p class="text-white/70 text-sm" data-i18n="foreignRegions">해외 지자체</p>
+                    <p class="text-3xl font-bold mt-1" id="foreignRegions">-</p>
+                    <div class="mt-3 flex items-center text-sm text-white/70">
+                        <i class="fas fa-globe mr-2"></i><span data-i18n="unit_place">곳</span>
+                    </div>
+                </div>
+                <div class="stat-card pink rounded-2xl p-5 text-white cursor-pointer" onclick="showTab('visa')">
+                    <p class="text-white/70 text-sm" data-i18n="visaTypes">비자 종류</p>
+                    <p class="text-3xl font-bold mt-1" id="visaTypes">-</p>
+                    <div class="mt-3 flex items-center text-sm text-white/70">
+                        <i class="fas fa-passport mr-2"></i><span data-i18n="unit_type">종</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 빠른 액션 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <button onclick="showTab('jobs')" class="card p-5 flex items-center space-x-4 hover:bg-gray-50">
+                    <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-plus text-blue-600 text-lg"></i>
+                    </div>
+                    <span class="font-medium text-gray-800" data-i18n="registerJob">구인 등록</span>
+                </button>
+                <button onclick="showTab('applicants')" class="card p-5 flex items-center space-x-4 hover:bg-gray-50">
+                    <div class="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-user-check text-green-600 text-lg"></i>
+                    </div>
+                    <span class="font-medium text-gray-800" data-i18n="manageApplicants">지원자 관리</span>
+                </button>
+                <button onclick="showTab('regions')" class="card p-5 flex items-center space-x-4 hover:bg-gray-50">
+                    <div class="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-map text-purple-600 text-lg"></i>
+                    </div>
+                    <span class="font-medium text-gray-800" data-i18n="manageRegions">지자체 관리</span>
+                </button>
+                <button onclick="showTab('visa')" class="card p-5 flex items-center space-x-4 hover:bg-gray-50">
+                    <div class="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-file-alt text-orange-600 text-lg"></i>
+                    </div>
+                    <span class="font-medium text-gray-800" data-i18n="visaGuide">비자 안내</span>
+                </button>
+            </div>
+
+            <!-- 차트 섹션 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" data-i18n="visaApplicationStatus">비자별 지원 현황</h3>
+                    <div class="relative">
+                        <canvas id="visaChart" height="220"></canvas>
+                        <div id="visaChartCenter" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="text-center">
+                                <p class="text-3xl font-bold text-gray-800">170</p>
+                                <p class="text-sm text-gray-500">총 지원</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="visaLegend" class="mt-4 space-y-2"></div>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" data-i18n="monthlyTrend">월별 지원자 추이</h3>
+                    <canvas id="monthlyChart" height="280"></canvas>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" data-i18n="countryStatus">국가별 지원 현황</h3>
+                    <div class="relative">
+                        <canvas id="countryChart" height="220"></canvas>
+                        <div id="countryChartCenter" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="text-center">
+                                <p class="text-3xl font-bold text-gray-800">170</p>
+                                <p class="text-sm text-gray-500">총 지원</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="countryLegend" class="mt-4 space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- 하단 섹션 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 공지사항 -->
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800" data-i18n="notices">📢 공지사항</h3>
+                        <button onclick="openNoticeModal()" class="text-blue-500 text-sm font-medium hover:text-blue-700" data-i18n="viewMore">더보기</button>
+                    </div>
+                    <div class="space-y-3" id="noticeList"></div>
+                </div>
+
+                <!-- 최근 지원자 -->
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800" data-i18n="recentApplicants">👥 최근 지원자</h3>
+                        <button onclick="showTab('applicants')" class="text-blue-500 text-sm font-medium hover:text-blue-700" data-i18n="viewAll">전체보기</button>
+                    </div>
+                    <div class="space-y-3" id="recentApplicants"></div>
+                </div>
+
+                <!-- 최근 활동 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" data-i18n="recentActivity">🕐 최근 활동</h3>
+                    <div class="space-y-4" id="recentActivity">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-check text-green-500 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-800"><span class="font-medium">Nguyen Van A</span> 지원 승인</p>
+                                <p class="text-xs text-gray-400">10분 전</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-file-plus text-blue-500 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-800">새 구인: <span class="font-medium">딸기 농장 근로자</span></p>
+                                <p class="text-xs text-gray-400">1시간 전</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-user-plus text-purple-500 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-800"><span class="font-medium">Maria C</span> 새 지원</p>
+                                <p class="text-xs text-gray-400">2시간 전</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 비자 & 구인 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800" data-i18n="visaTypesTitle">🛂 비자 종류</h3>
+                        <button onclick="showTab('visa')" class="text-blue-500 text-sm font-medium hover:text-blue-700" data-i18n="viewAll">전체보기</button>
+                    </div>
+                    <div id="visaList" class="space-y-3"></div>
+                </div>
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800" data-i18n="recentJobs">💼 최근 구인</h3>
+                        <button onclick="showTab('jobs')" class="text-blue-500 text-sm font-medium hover:text-blue-700" data-i18n="viewAll">전체보기</button>
+                    </div>
+                    <div id="jobList" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 비자 관리 탭 ==================== -->
+        <div id="tab-visa" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" data-i18n="visaGuideTitle">🛂 비자 종류 안내</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="visaCards"></div>
+        </div>
+
+        <!-- ==================== 지자체 탭 ==================== -->
+        <div id="tab-regions" class="tab-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6" data-i18n="regionInfo">📍 지자체 정보</h2>
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4" data-i18n="krRegionsTitle">🇰🇷 한국 지자체</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="krRegionCards"></div>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-4" data-i18n="foreignPartners">🌏 해외 파트너 지자체</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="foreignRegionCards"></div>
+            </div>
+        </div>
+
+        <!-- ==================== 구인/구직 탭 ==================== -->
+        <div id="tab-jobs" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" data-i18n="jobList">💼 구인 목록</h2>
+                <select id="filterVisa" class="input-apple" onchange="filterJobs()">
+                    <option value="" data-i18n="allVisa">모든 비자</option>
+                    <option value="E8">E8 계절근로</option>
+                    <option value="D2">D2 유학</option>
+                    <option value="D4">D4 어학연수</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="jobCards"></div>
+        </div>
+
+        <!-- ==================== 지원자 탭 ==================== -->
+        <div id="tab-applicants" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" data-i18n="applicantManagement">👥 지원자 관리</h2>
+                <select id="filterStatus" class="input-apple" onchange="filterApplicants()">
+                    <option value="" data-i18n="allStatus">전체 상태</option>
+                    <option value="pending" data-i18n="pending">대기중</option>
+                    <option value="approved" data-i18n="approved">승인</option>
+                    <option value="rejected" data-i18n="rejected">거절</option>
+                </select>
+            </div>
+            <div class="card overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="name">이름</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="nationality">국적</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="appliedPosition">지원 포지션</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="visa">비자</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="status">상태</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="manage">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="applicantTable" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== 설정 탭 ==================== -->
+        <div id="tab-settings" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" data-i18n="settingsTitle">⚙️ 설정</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 내 프로필 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+                            <i class="fas fa-user-circle text-[#007AFF] text-lg"></i>
+                        </div>
+                        <span data-i18n="myProfile">내 프로필</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4" data-i18n="myProfileDesc">개인정보 및 계정 설정을 관리합니다.</p>
+                    <div class="space-y-3">
+                        <button onclick="openProfileModal()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-edit text-gray-400 mr-3"></i>
+                                <span class="text-sm text-gray-700" data-i18n="editProfile">프로필 수정</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
+                        </button>
+                        <button onclick="openPasswordModal()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-key text-gray-400 mr-3"></i>
+                                <span class="text-sm text-gray-700" data-i18n="changePassword">비밀번호 변경</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 알림 설정 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mr-3">
+                            <i class="fas fa-bell text-[#FF9500] text-lg"></i>
+                        </div>
+                        <span data-i18n="notificationSettings">알림 설정</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4" data-i18n="notificationDesc">알림 수신 방법을 설정합니다.</p>
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-envelope text-gray-400 mr-3"></i>
+                                <span class="text-sm text-gray-700" data-i18n="emailNotification">이메일 알림</span>
+                            </div>
+                            <input type="checkbox" id="emailNotif" checked class="w-5 h-5 accent-[#007AFF]">
+                        </label>
+                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-sms text-gray-400 mr-3"></i>
+                                <span class="text-sm text-gray-700" data-i18n="smsNotification">SMS 알림</span>
+                            </div>
+                            <input type="checkbox" id="smsNotif" class="w-5 h-5 accent-[#007AFF]">
+                        </label>
+                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-clipboard-check text-gray-400 mr-3"></i>
+                                <span class="text-sm text-gray-700" data-i18n="statusNotification">지원 현황 알림</span>
+                            </div>
+                            <input type="checkbox" id="statusNotif" checked class="w-5 h-5 accent-[#007AFF]">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 언어 설정 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
+                            <i class="fas fa-globe text-[#34C759] text-lg"></i>
+                        </div>
+                        <span data-i18n="languageSettings">언어 설정</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4" data-i18n="languageDesc">서비스 표시 언어를 선택합니다.</p>
+                    <select id="langSetting" class="w-full input-apple text-sm" onchange="changeLanguage()">
+                        <option value="ko">🇰🇷 한국어</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="vi">🇻🇳 Tiếng Việt</option>
+                        <option value="th">🇹🇭 ภาษาไทย</option>
+                        <option value="ph">🇵🇭 Filipino</option>
+                    </select>
+                    <p class="text-xs text-gray-400 mt-3" data-i18n="languageNote"><i class="fas fa-info-circle mr-1"></i>현재 한국어만 완전히 지원됩니다.</p>
+                </div>
+
+                <!-- 테마 설정 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
+                            <i class="fas fa-palette text-[#AF52DE] text-lg"></i>
+                        </div>
+                        <span data-i18n="themeSettings">테마 설정</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4" data-i18n="themeDesc">화면 테마를 선택합니다.</p>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="setTheme('light')" class="theme-btn p-4 bg-white border-2 border-[#007AFF] rounded-xl text-center transition hover:shadow-md" data-theme="light">
+                            <i class="fas fa-sun text-yellow-500 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700" data-i18n="themeLight">라이트</p>
+                        </button>
+                        <button onclick="setTheme('dark')" class="theme-btn p-4 bg-gray-100 border-2 border-transparent rounded-xl text-center transition hover:shadow-md hover:border-gray-300" data-theme="dark">
+                            <i class="fas fa-moon text-gray-600 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700" data-i18n="themeDark">다크</p>
+                        </button>
+                        <button onclick="setTheme('auto')" class="theme-btn p-4 bg-gray-100 border-2 border-transparent rounded-xl text-center transition hover:shadow-md hover:border-gray-300" data-theme="auto">
+                            <i class="fas fa-adjust text-gray-600 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700" data-i18n="themeAuto">자동</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 데이터 관리 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center mr-3">
+                            <i class="fas fa-database text-cyan-500 text-lg"></i>
+                        </div>
+                        <span data-i18n="dataManagement">데이터 관리</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4" data-i18n="dataDesc">개인 데이터를 관리합니다.</p>
+                    <div class="space-y-3">
+                        <button onclick="exportData()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-download text-gray-400 mr-3"></i>
+                                <span class="text-sm text-gray-700" data-i18n="exportData">데이터 내보내기</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
+                        </button>
+                        <button onclick="exportData('csv')" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-csv text-gray-400 mr-3"></i>
+                                <span class="text-sm text-gray-700" data-i18n="exportCSV">CSV로 내보내기</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 계정 관리 -->
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mr-3">
+                            <i class="fas fa-user-cog text-[#FF3B30] text-lg"></i>
+                        </div>
+                        <span data-i18n="accountManagement">계정 관리</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4" data-i18n="accountDesc">계정 상태를 관리합니다.</p>
+                    <div class="space-y-3">
+                        <button onclick="logout()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-sign-out-alt text-gray-400 mr-3"></i>
+                                <span class="text-sm text-gray-700" data-i18n="logout">로그아웃</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
+                        </button>
+                        <button onclick="confirmDeleteAccount()" class="w-full flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition">
+                            <div class="flex items-center">
+                                <i class="fas fa-trash text-red-400 mr-3"></i>
+                                <span class="text-sm text-red-600" data-i18n="deleteAccount">계정 삭제</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-red-300"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 공지사항 모달 -->
+    <div id="noticeModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-50">
+        <div class="bg-white rounded-3xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <div class="px-8 py-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800">📢 공지사항</h3>
+                <button onclick="closeNoticeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+                    <i class="fas fa-times text-gray-500"></i>
+                </button>
+            </div>
+            <div class="p-8 overflow-y-auto max-h-[60vh]" id="noticeModalContent"></div>
+        </div>
+    </div>
+
+    <!-- 비자 상세 모달 -->
+    <div id="visaModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-50 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-hidden">
+            <div class="sticky top-0 bg-white border-b px-8 py-6 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800" id="visaModalTitle">비자 상세</h3>
+                <button onclick="closeVisaModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+                    <i class="fas fa-times text-gray-500"></i>
+                </button>
+            </div>
+            <div class="p-8 overflow-y-auto" id="visaModalContent"></div>
+        </div>
+    </div>
+
+    <!-- 지원 모달 -->
+    <div id="applyModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-50">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold text-gray-800 mb-6" data-i18n="applyTitle">✈️ 지원하기</h3>
+            <form id="applyForm">
+                <input type="hidden" id="applyJobId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="name">이름</label>
+                        <input type="text" id="applyName" class="w-full input-apple" data-i18n-placeholder="enterName" placeholder="이름을 입력하세요" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="nationality">국적</label>
+                        <select id="applyCountry" class="w-full input-apple" required>
+                            <option value="VN" data-i18n="countryVN">🇻🇳 베트남</option>
+                            <option value="TH" data-i18n="countryTH">🇹🇭 태국</option>
+                            <option value="PH" data-i18n="countryPH">🇵🇭 필리핀</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="contact">연락처</label>
+                        <input type="tel" id="applyPhone" class="w-full input-apple" placeholder="010-0000-0000" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="experience">경력 사항</label>
+                        <textarea id="applyExperience" class="w-full input-apple" rows="3" data-i18n-placeholder="enterExperience" placeholder="관련 경력을 입력하세요"></textarea>
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-8">
+                    <button type="button" onclick="closeApplyModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition" data-i18n="cancel">취소</button>
+                    <button type="submit" class="flex-1 btn-primary" data-i18n="applyBtn">지원하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/kwv';
+        let allJobs = [];
+        let currentLang = localStorage.getItem('kwv_language') || 'ko';
+
+        // ==================== 다국어 번역 데이터 ====================
+        const translations = {
+            ko: {
+                // 헤더
+                siteName: 'KoreaWorkingVisa',
+                siteDesc: '한국 취업 비자 플랫폼',
+                loginAccount: '로그인 계정',
+                logout: '로그아웃',
+
+                // 탭 메뉴
+                tabDashboard: '대시보드',
+                tabVisa: '비자 관리',
+                tabRegions: '지자체',
+                tabJobs: '구인/구직',
+                tabApplicants: '지원자',
+                tabSettings: '설정',
+
+                // 대시보드
+                hello: '안녕하세요',
+                welcomeSuffix: '님 👋',
+                newApplicants: '새로운 지원자',
+                waitingApproval: '명이 승인을 기다리고 있습니다',
+                checkApplicants: '지원자 확인',
+                totalJobs: '총 구인',
+                totalPositions: '모집 인원',
+                krRegions: '한국 지자체',
+                foreignRegions: '해외 지자체',
+                visaTypes: '비자 종류',
+                unit_count: '건',
+                unit_people: '명',
+                unit_place: '곳',
+                unit_type: '종',
+
+                // 빠른 액션
+                registerJob: '구인 등록',
+                manageApplicants: '지원자 관리',
+                manageRegions: '지자체 관리',
+                visaGuide: '비자 안내',
+
+                // 차트
+                visaApplicationStatus: '비자별 지원 현황',
+                monthlyTrend: '월별 지원자 추이',
+                countryStatus: '국가별 지원 현황',
+                totalApplications: '총 지원',
+
+                // 섹션 제목
+                notices: '📢 공지사항',
+                recentApplicants: '👥 최근 지원자',
+                recentActivity: '🕐 최근 활동',
+                visaTypesTitle: '🛂 비자 종류',
+                recentJobs: '💼 최근 구인',
+                viewMore: '더보기',
+                viewAll: '전체보기',
+
+                // 비자 관리
+                visaGuideTitle: '🛂 비자 종류 안내',
+                viewDetail: '상세 보기',
+
+                // 지자체
+                regionInfo: '📍 지자체 정보',
+                krRegionsTitle: '🇰🇷 한국 지자체',
+                foreignPartners: '🌏 해외 파트너 지자체',
+                climate: '기후',
+                mainIndustry: '주요 산업',
+                population: '인구',
+                neededWorkers: '필요 인력',
+
+                // 구인/구직
+                jobList: '💼 구인 목록',
+                allVisa: '모든 비자',
+                apply: '지원하기',
+                salary: '급여',
+                period: '기간',
+                benefits: '혜택',
+
+                // 지원자
+                applicantManagement: '👥 지원자 관리',
+                allStatus: '전체 상태',
+                pending: '대기중',
+                approved: '승인',
+                rejected: '거절',
+                name: '이름',
+                nationality: '국적',
+                appliedPosition: '지원 포지션',
+                visa: '비자',
+                status: '상태',
+                manage: '관리',
+
+                // 설정
+                settingsTitle: '⚙️ 설정',
+                myProfile: '내 프로필',
+                myProfileDesc: '개인정보 및 계정 설정을 관리합니다.',
+                editProfile: '프로필 수정',
+                changePassword: '비밀번호 변경',
+                notificationSettings: '알림 설정',
+                notificationDesc: '알림 수신 방법을 설정합니다.',
+                emailNotification: '이메일 알림',
+                smsNotification: 'SMS 알림',
+                statusNotification: '지원 현황 알림',
+                languageSettings: '언어 설정',
+                languageDesc: '서비스 표시 언어를 선택합니다.',
+                languageNote: '현재 한국어만 완전히 지원됩니다.',
+                themeSettings: '테마 설정',
+                themeDesc: '화면 테마를 선택합니다.',
+                themeLight: '라이트',
+                themeDark: '다크',
+                themeAuto: '자동',
+                dataManagement: '데이터 관리',
+                dataDesc: '개인 데이터를 관리합니다.',
+                exportData: '데이터 내보내기',
+                exportCSV: 'CSV로 내보내기',
+                accountManagement: '계정 관리',
+                accountDesc: '계정 상태를 관리합니다.',
+                deleteAccount: '계정 삭제',
+
+                // 모달
+                applyTitle: '✈️ 지원하기',
+                applyBtn: '지원하기',
+                enterName: '이름을 입력하세요',
+                contact: '연락처',
+                experience: '경력 사항',
+                enterExperience: '관련 경력을 입력하세요',
+                cancel: '취소',
+                save: '저장',
+                change: '변경',
+                countryVN: '🇻🇳 베트남',
+                countryTH: '🇹🇭 태국',
+                countryPH: '🇵🇭 필리핀',
+
+                // 대시보드 환영 메시지
+                checkApplicantsBtn: '지원자 확인',
+
+                // 알림 메시지
+                profileUpdated: '프로필이 업데이트되었습니다!',
+                passwordChanged: '비밀번호가 변경되었습니다!',
+                passwordMismatch: '새 비밀번호가 일치하지 않습니다.',
+                applicationComplete: '지원이 완료되었습니다!',
+                dataDownloaded: '데이터가 다운로드되었습니다!',
+                csvDownloaded: 'CSV 파일이 다운로드되었습니다!',
+                approvedMsg: '승인되었습니다!',
+                rejectedMsg: '거절되었습니다!',
+
+                // 활동 로그
+                applicationApproved: '지원 승인',
+                newJob: '새 구인',
+                newApplication: '새 지원',
+                minutesAgo: '분 전',
+                hoursAgo: '시간 전',
+
+                // 비자 종류
+                visa_E8: 'E8 계절근로',
+                visa_E8_name: '계절근로 비자',
+                visa_E8_desc: '농업, 어업 등 계절성 산업 분야에서 일정 기간 근로하기 위한 비자입니다.',
+                visa_D2: 'D2 유학',
+                visa_D2_name: '유학 비자',
+                visa_D2_desc: '한국의 대학교 또는 대학원에서 정규 학위 과정을 이수하기 위한 비자입니다.',
+                visa_D4: 'D4 어학연수',
+                visa_D4_name: '어학연수 비자',
+                visa_D4_desc: '한국어 학습을 위해 어학원이나 대학 부설 어학당에서 연수를 받기 위한 비자입니다.',
+                visa_D10: 'D10 구직',
+                visa_D10_name: '구직 비자',
+                visa_D10_desc: '한국에서 취업을 위한 구직 활동을 하기 위한 비자입니다.',
+                visa_F4: 'F4 재외동포',
+                visa_F4_name: '재외동포 비자',
+                visa_F4_desc: '해외에 거주하는 한국계 외국인을 위한 비자입니다.',
+                duration: '체류 기간',
+                visaType: '비자 유형',
+                estimatedCost: '예상 비용',
+                requirements: '신청 자격',
+                requirementsTitle: '✅ 신청 자격',
+                documents: '필요 서류',
+                documentsTitle: '📄 필요 서류',
+                process: '신청 절차',
+                processTitle: '📋 신청 절차',
+                faq: '자주 묻는 질문',
+                faqTitle: '❓ 자주 묻는 질문',
+
+                // 비자 신청 자격 (원문 키 사용)
+                '만 18세 이상 40세 이하': '만 18세 이상 40세 이하',
+                '범죄경력 없음': '범죄경력 없음',
+                '건강 상태 양호': '건강 상태 양호',
+                '해당 국가 지자체 추천': '해당 국가 지자체 추천',
+                '학사 학위 이상': '학사 학위 이상',
+                '한국어 능력 (TOPIK 3급 이상)': '한국어 능력 (TOPIK 3급 이상)',
+                '재정 증명': '재정 증명',
+                '대학 입학 허가서': '대학 입학 허가서',
+                '전문대 이상 졸업자': '전문대 이상 졸업자',
+                '취업 목적': '취업 목적',
+                '재외동포 자격': '재외동포 자격',
+
+                // 비자 비용
+                '약 50~100만원 (국가별 상이)': '약 50~100만원 (국가별 상이)',
+                '약 100~200만원': '약 100~200만원',
+                '약 30~50만원': '약 30~50만원',
+                '약 50만원': '약 50만원',
+                '무료~50만원': '무료~50만원',
+
+                // 필요 서류
+                '여권 사본': '여권 사본',
+                '증명사진': '증명사진',
+                '비자 신청서': '비자 신청서',
+                '고용계약서': '고용계약서',
+                '건강진단서': '건강진단서',
+                '범죄경력증명서': '범죄경력증명서',
+                '졸업증명서': '졸업증명서',
+                '입학허가서': '입학허가서',
+                '재정증명서': '재정증명서',
+                'TOPIK 성적표': 'TOPIK 성적표',
+                '이력서': '이력서',
+                '포트폴리오': '포트폴리오',
+                '어학원 등록증': '어학원 등록증',
+                '학업계획서': '학업계획서',
+                '구직활동 계획서': '구직활동 계획서',
+                '재외동포 증명서류': '재외동포 증명서류',
+
+                // 신청 절차
+                '서류 준비': '서류 준비',
+                '필요 서류 수집': '필요 서류 수집',
+                '신청서 작성': '신청서 작성',
+                '온라인 접수': '온라인 접수',
+                '대사관 방문': '대사관 방문',
+                '인터뷰 진행': '인터뷰 진행',
+                '심사 대기': '심사 대기',
+                '결과 확인': '결과 확인',
+                '비자 수령': '비자 수령',
+                '여권에 부착': '여권에 부착',
+
+                // 지자체
+                region_seocheon: '서천군',
+                region_seocheon_province: '충청남도',
+                region_haenam: '해남군',
+                region_haenam_province: '전라남도',
+                climate_warm: '온난습윤',
+                climate_mild: '온화한 해양성',
+                industry_agri: '농업, 수산업',
+                industry_agrifish: '농업, 어업',
+
+                // 구인
+                positions: '모집인원',
+                accommodationMeals: '숙소, 식사 제공',
+                insurance: '4대 보험',
+                bonus: '성과급',
+
+                // 국가
+                country_VN: '베트남',
+                country_TH: '태국',
+                country_PH: '필리핀',
+
+                // 비자 상세 정보 (API 데이터 번역)
+                '4-8개월': '4-8개월',
+                '2년+': '2년+',
+                '최대2년': '최대2년',
+                '6개월-1년': '6개월-1년',
+                '무제한': '무제한',
+                '단수': '단수',
+                '연장가능': '연장가능',
+                '복수': '복수',
+                '농업': '농업',
+                '어업': '어업',
+                '농업, 어업': '농업, 어업',
+                '교육': '교육',
+                '전 업종': '전 업종',
+                '전문직': '전문직',
+                '제조업': '제조업',
+                '서비스업': '서비스업',
+                '전체': '전체',
+                '6개월-2년': '6개월-2년',
+                '3년+': '3년+',
+                '최대1년': '최대1년',
+                '최대6개월': '최대6개월',
+
+                // 지역명
+                '서천군': '서천군',
+                '해남군': '해남군',
+                '영덕군': '영덕군',
+                '고성군': '고성군',
+                '충남': '충남',
+                '전남': '전남',
+                '경북': '경북',
+                '강원': '강원',
+
+                // 기후
+                '온난': '온난',
+                '해양성': '해양성',
+                '냉대': '냉대',
+
+                // 급여 및 복리후생
+                '월': '월',
+                '만원': '만원',
+                '숙소제공': '숙소제공',
+                '식사제공': '식사제공',
+                '귀국항공료': '귀국항공료'
+            },
+            en: {
+                siteName: 'KoreaWorkingVisa',
+                siteDesc: 'Korea Working Visa Platform',
+                loginAccount: 'Login Account',
+                logout: 'Logout',
+
+                tabDashboard: 'Dashboard',
+                tabVisa: 'Visa Management',
+                tabRegions: 'Regions',
+                tabJobs: 'Jobs',
+                tabApplicants: 'Applicants',
+                tabSettings: 'Settings',
+
+                hello: 'Hello',
+                welcomeSuffix: ' 👋',
+                newApplicants: 'New applicants',
+                waitingApproval: ' are waiting for approval',
+                checkApplicants: 'Check Applicants',
+                totalJobs: 'Total Jobs',
+                totalPositions: 'Positions',
+                krRegions: 'Korean Regions',
+                foreignRegions: 'Foreign Regions',
+                visaTypes: 'Visa Types',
+                unit_count: '',
+                unit_people: '',
+                unit_place: '',
+                unit_type: '',
+
+                registerJob: 'Register Job',
+                manageApplicants: 'Manage Applicants',
+                manageRegions: 'Manage Regions',
+                visaGuide: 'Visa Guide',
+
+                visaApplicationStatus: 'Visa Application Status',
+                monthlyTrend: 'Monthly Applicant Trend',
+                countryStatus: 'Applications by Country',
+                totalApplications: 'Total',
+
+                notices: '📢 Notices',
+                recentApplicants: '👥 Recent Applicants',
+                recentActivity: '🕐 Recent Activity',
+                visaTypesTitle: '🛂 Visa Types',
+                recentJobs: '💼 Recent Jobs',
+                viewMore: 'More',
+                viewAll: 'View All',
+
+                visaGuideTitle: '🛂 Visa Type Guide',
+                viewDetail: 'View Details',
+
+                regionInfo: '📍 Region Information',
+                krRegionsTitle: '🇰🇷 Korean Regions',
+                foreignPartners: '🌏 Foreign Partner Regions',
+                climate: 'Climate',
+                mainIndustry: 'Main Industry',
+                population: 'Population',
+                neededWorkers: 'Workers Needed',
+
+                jobList: '💼 Job List',
+                allVisa: 'All Visas',
+                apply: 'Apply',
+                salary: 'Salary',
+                period: 'Period',
+                benefits: 'Benefits',
+
+                applicantManagement: '👥 Applicant Management',
+                allStatus: 'All Status',
+                pending: 'Pending',
+                approved: 'Approved',
+                rejected: 'Rejected',
+                name: 'Name',
+                nationality: 'Nationality',
+                appliedPosition: 'Position',
+                visa: 'Visa',
+                status: 'Status',
+                manage: 'Manage',
+
+                settingsTitle: '⚙️ Settings',
+                myProfile: 'My Profile',
+                myProfileDesc: 'Manage personal info and account settings.',
+                editProfile: 'Edit Profile',
+                changePassword: 'Change Password',
+                notificationSettings: 'Notifications',
+                notificationDesc: 'Set notification preferences.',
+                emailNotification: 'Email Notifications',
+                smsNotification: 'SMS Notifications',
+                statusNotification: 'Status Notifications',
+                languageSettings: 'Language',
+                languageDesc: 'Select display language.',
+                languageNote: 'Only Korean is fully supported.',
+                themeSettings: 'Theme',
+                themeDesc: 'Select screen theme.',
+                themeLight: 'Light',
+                themeDark: 'Dark',
+                themeAuto: 'Auto',
+                dataManagement: 'Data Management',
+                dataDesc: 'Manage your personal data.',
+                exportData: 'Export Data',
+                exportCSV: 'Export as CSV',
+                accountManagement: 'Account',
+                accountDesc: 'Manage account status.',
+                deleteAccount: 'Delete Account',
+
+                applyTitle: '✈️ Apply',
+                applyBtn: 'Apply',
+                enterName: 'Enter your name',
+                contact: 'Contact',
+                experience: 'Experience',
+                enterExperience: 'Enter your experience',
+                cancel: 'Cancel',
+                save: 'Save',
+                change: 'Change',
+                countryVN: '🇻🇳 Vietnam',
+                countryTH: '🇹🇭 Thailand',
+                countryPH: '🇵🇭 Philippines',
+                checkApplicantsBtn: 'Check Applicants',
+
+                profileUpdated: 'Profile updated!',
+                passwordChanged: 'Password changed!',
+                passwordMismatch: 'Passwords do not match.',
+                applicationComplete: 'Application complete!',
+                dataDownloaded: 'Data downloaded!',
+                csvDownloaded: 'CSV file downloaded!',
+                approvedMsg: 'Approved!',
+                rejectedMsg: 'Rejected!',
+
+                applicationApproved: 'Application approved',
+                newJob: 'New job',
+                newApplication: 'New application',
+                minutesAgo: 'min ago',
+                hoursAgo: 'hr ago',
+
+                // 비자 종류
+                visa_E8: 'E8 Seasonal Work',
+                visa_E8_name: 'Seasonal Worker Visa',
+                visa_E8_desc: 'Visa for working in seasonal industries such as agriculture and fishery.',
+                visa_D2: 'D2 Study',
+                visa_D2_name: 'Student Visa',
+                visa_D2_desc: 'Visa for pursuing a regular degree program at a Korean university.',
+                visa_D4: 'D4 Language Training',
+                visa_D4_name: 'Language Training Visa',
+                visa_D4_desc: 'Visa for Korean language training at language institutes.',
+                visa_D10: 'D10 Job Seeking',
+                visa_D10_name: 'Job Seeking Visa',
+                visa_D10_desc: 'Visa for job seeking activities in Korea.',
+                visa_F4: 'F4 Overseas Korean',
+                visa_F4_name: 'Overseas Korean Visa',
+                visa_F4_desc: 'Visa for ethnic Koreans residing overseas.',
+                duration: 'Duration',
+                visaType: 'Visa Type',
+                estimatedCost: 'Est. Cost',
+                requirements: 'Requirements',
+                requirementsTitle: '✅ Requirements',
+                documents: 'Required Documents',
+                documentsTitle: '📄 Required Documents',
+                process: 'Application Process',
+                processTitle: '📋 Application Process',
+                faq: 'FAQ',
+                faqTitle: '❓ FAQ',
+
+                // 비자 신청 자격 (원문 키 사용)
+                '만 18세 이상 40세 이하': 'Age 18-40',
+                '범죄경력 없음': 'No criminal record',
+                '건강 상태 양호': 'Good health condition',
+                '해당 국가 지자체 추천': 'Recommended by local government',
+                '학사 학위 이상': 'Bachelor\'s degree or higher',
+                '한국어 능력 (TOPIK 3급 이상)': 'Korean proficiency (TOPIK Level 3+)',
+                '재정 증명': 'Financial proof',
+                '대학 입학 허가서': 'University admission letter',
+                '전문대 이상 졸업자': 'Associate degree or higher',
+                '취업 목적': 'Employment purpose',
+                '재외동포 자격': 'Overseas Korean status',
+
+                // 비자 비용
+                '약 50~100만원 (국가별 상이)': 'Approx. $400-800 (varies by country)',
+                '약 100~200만원': 'Approx. $800-1,600',
+                '약 30~50만원': 'Approx. $250-400',
+                '약 50만원': 'Approx. $400',
+                '무료~50만원': 'Free - $400',
+
+                // 필요 서류
+                '여권 사본': 'Passport copy',
+                '증명사진': 'ID photo',
+                '비자 신청서': 'Visa application form',
+                '고용계약서': 'Employment contract',
+                '건강진단서': 'Health certificate',
+                '범죄경력증명서': 'Criminal record certificate',
+                '졸업증명서': 'Graduation certificate',
+                '입학허가서': 'Admission letter',
+                '재정증명서': 'Financial statement',
+                'TOPIK 성적표': 'TOPIK score',
+                '이력서': 'Resume',
+                '포트폴리오': 'Portfolio',
+                '어학원 등록증': 'Language school enrollment',
+                '학업계획서': 'Study plan',
+                '구직활동 계획서': 'Job seeking plan',
+                '재외동포 증명서류': 'Overseas Korean documents',
+
+                // 신청 절차
+                '서류 준비': 'Prepare Documents',
+                '필요 서류 수집': 'Gather required docs',
+                '신청서 작성': 'Fill Application',
+                '온라인 접수': 'Submit online',
+                '대사관 방문': 'Visit Embassy',
+                '인터뷰 진행': 'Interview',
+                '심사 대기': 'Wait for Review',
+                '결과 확인': 'Check result',
+                '비자 수령': 'Receive Visa',
+                '여권에 부착': 'Attach to passport',
+
+                // 지자체
+                region_seocheon: 'Seocheon County',
+                region_seocheon_province: 'South Chungcheong',
+                region_haenam: 'Haenam County',
+                region_haenam_province: 'South Jeolla',
+                climate_warm: 'Warm & Humid',
+                climate_mild: 'Mild Oceanic',
+                industry_agri: 'Agriculture, Fishery',
+                industry_agrifish: 'Agriculture, Fishing',
+
+                // 구인
+                positions: 'Positions',
+                accommodationMeals: 'Accommodation, Meals',
+                insurance: 'Insurance',
+                bonus: 'Bonus',
+
+                // 국가
+                country_VN: 'Vietnam',
+                country_TH: 'Thailand',
+                country_PH: 'Philippines',
+
+                // 비자 상세 정보 (API 데이터 번역)
+                '4-8개월': '4-8 months',
+                '2년+': '2+ years',
+                '최대2년': 'Up to 2 years',
+                '6개월-1년': '6 months - 1 year',
+                '무제한': 'Unlimited',
+                '단수': 'Single',
+                '연장가능': 'Extendable',
+                '복수': 'Multiple',
+                '농업': 'Agriculture',
+                '어업': 'Fishery',
+                '농업, 어업': 'Agriculture, Fishery',
+                '교육': 'Education',
+                '전 업종': 'All Industries',
+                '전문직': 'Professional',
+                '제조업': 'Manufacturing',
+                '서비스업': 'Service',
+                '전체': 'All',
+                '6개월-2년': '6 months - 2 years',
+                '3년+': '3+ years',
+                '최대1년': 'Up to 1 year',
+                '최대6개월': 'Up to 6 months',
+
+                // 지역명
+                '서천군': 'Seocheon',
+                '해남군': 'Haenam',
+                '영덕군': 'Yeongdeok',
+                '고성군': 'Goseong',
+                '충남': 'South Chungcheong',
+                '전남': 'South Jeolla',
+                '경북': 'North Gyeongsang',
+                '강원': 'Gangwon',
+
+                // 기후
+                '온난': 'Warm',
+                '해양성': 'Oceanic',
+                '냉대': 'Cold',
+
+                // 급여 및 복리후생
+                '월': 'Monthly',
+                '만원': '0,000 KRW',
+                '숙소제공': 'Housing',
+                '식사제공': 'Meals',
+                '귀국항공료': 'Return Flight'
+            },
+            vi: {
+                siteName: 'KoreaWorkingVisa',
+                siteDesc: 'Nền tảng Visa Làm việc Hàn Quốc',
+                loginAccount: 'Tài khoản đăng nhập',
+                logout: 'Đăng xuất',
+
+                tabDashboard: 'Bảng điều khiển',
+                tabVisa: 'Quản lý Visa',
+                tabRegions: 'Khu vực',
+                tabJobs: 'Việc làm',
+                tabApplicants: 'Ứng viên',
+                tabSettings: 'Cài đặt',
+
+                hello: 'Xin chào',
+                welcomeSuffix: ' 👋',
+                newApplicants: 'Ứng viên mới',
+                waitingApproval: ' đang chờ phê duyệt',
+                checkApplicants: 'Kiểm tra ứng viên',
+                totalJobs: 'Tổng việc làm',
+                totalPositions: 'Vị trí',
+                krRegions: 'Khu vực Hàn Quốc',
+                foreignRegions: 'Khu vực nước ngoài',
+                visaTypes: 'Loại Visa',
+                unit_count: '',
+                unit_people: '',
+                unit_place: '',
+                unit_type: '',
+
+                registerJob: 'Đăng việc làm',
+                manageApplicants: 'Quản lý ứng viên',
+                manageRegions: 'Quản lý khu vực',
+                visaGuide: 'Hướng dẫn Visa',
+
+                visaApplicationStatus: 'Tình trạng đơn xin Visa',
+                monthlyTrend: 'Xu hướng ứng viên hàng tháng',
+                countryStatus: 'Đơn theo quốc gia',
+                totalApplications: 'Tổng',
+
+                notices: '📢 Thông báo',
+                recentApplicants: '👥 Ứng viên gần đây',
+                recentActivity: '🕐 Hoạt động gần đây',
+                visaTypesTitle: '🛂 Loại Visa',
+                recentJobs: '💼 Việc làm gần đây',
+                viewMore: 'Xem thêm',
+                viewAll: 'Xem tất cả',
+
+                visaGuideTitle: '🛂 Hướng dẫn loại Visa',
+                viewDetail: 'Xem chi tiết',
+
+                regionInfo: '📍 Thông tin khu vực',
+                krRegionsTitle: '🇰🇷 Khu vực Hàn Quốc',
+                foreignPartners: '🌏 Khu vực đối tác nước ngoài',
+                climate: 'Khí hậu',
+                mainIndustry: 'Ngành chính',
+                population: 'Dân số',
+                neededWorkers: 'Cần lao động',
+
+                jobList: '💼 Danh sách việc làm',
+                allVisa: 'Tất cả Visa',
+                apply: 'Ứng tuyển',
+                salary: 'Lương',
+                period: 'Thời gian',
+                benefits: 'Phúc lợi',
+
+                applicantManagement: '👥 Quản lý ứng viên',
+                allStatus: 'Tất cả trạng thái',
+                pending: 'Đang chờ',
+                approved: 'Đã duyệt',
+                rejected: 'Từ chối',
+                name: 'Tên',
+                nationality: 'Quốc tịch',
+                appliedPosition: 'Vị trí ứng tuyển',
+                visa: 'Visa',
+                status: 'Trạng thái',
+                manage: 'Quản lý',
+
+                settingsTitle: '⚙️ Cài đặt',
+                myProfile: 'Hồ sơ của tôi',
+                myProfileDesc: 'Quản lý thông tin cá nhân và tài khoản.',
+                editProfile: 'Chỉnh sửa hồ sơ',
+                changePassword: 'Đổi mật khẩu',
+                notificationSettings: 'Thông báo',
+                notificationDesc: 'Cài đặt tùy chọn thông báo.',
+                emailNotification: 'Thông báo Email',
+                smsNotification: 'Thông báo SMS',
+                statusNotification: 'Thông báo trạng thái',
+                languageSettings: 'Ngôn ngữ',
+                languageDesc: 'Chọn ngôn ngữ hiển thị.',
+                languageNote: 'Chỉ hỗ trợ đầy đủ tiếng Hàn.',
+                themeSettings: 'Giao diện',
+                themeDesc: 'Chọn giao diện màn hình.',
+                themeLight: 'Sáng',
+                themeDark: 'Tối',
+                themeAuto: 'Tự động',
+                dataManagement: 'Quản lý dữ liệu',
+                dataDesc: 'Quản lý dữ liệu cá nhân.',
+                exportData: 'Xuất dữ liệu',
+                exportCSV: 'Xuất CSV',
+                accountManagement: 'Tài khoản',
+                accountDesc: 'Quản lý trạng thái tài khoản.',
+                deleteAccount: 'Xóa tài khoản',
+
+                applyTitle: '✈️ Ứng tuyển',
+                applyBtn: 'Ứng tuyển',
+                enterName: 'Nhập tên của bạn',
+                contact: 'Liên hệ',
+                experience: 'Kinh nghiệm',
+                enterExperience: 'Nhập kinh nghiệm của bạn',
+                cancel: 'Hủy',
+                save: 'Lưu',
+                change: 'Thay đổi',
+                countryVN: '🇻🇳 Việt Nam',
+                countryTH: '🇹🇭 Thái Lan',
+                countryPH: '🇵🇭 Philippines',
+                checkApplicantsBtn: 'Xem ứng viên',
+
+                profileUpdated: 'Hồ sơ đã cập nhật!',
+                passwordChanged: 'Mật khẩu đã thay đổi!',
+                passwordMismatch: 'Mật khẩu không khớp.',
+                applicationComplete: 'Đã ứng tuyển thành công!',
+                dataDownloaded: 'Đã tải dữ liệu!',
+                csvDownloaded: 'Đã tải file CSV!',
+                approvedMsg: 'Đã phê duyệt!',
+                rejectedMsg: 'Đã từ chối!',
+
+                applicationApproved: 'Đơn được duyệt',
+                newJob: 'Việc làm mới',
+                newApplication: 'Đơn ứng tuyển mới',
+                minutesAgo: 'phút trước',
+                hoursAgo: 'giờ trước',
+
+                // 비자 종류
+                visa_E8: 'E8 Lao động thời vụ',
+                visa_E8_name: 'Visa Lao động thời vụ',
+                visa_E8_desc: 'Visa làm việc trong các ngành theo mùa như nông nghiệp và thủy sản.',
+                visa_D2: 'D2 Du học',
+                visa_D2_name: 'Visa Du học',
+                visa_D2_desc: 'Visa theo học chương trình đại học tại Hàn Quốc.',
+                visa_D4: 'D4 Học tiếng',
+                visa_D4_name: 'Visa Học tiếng',
+                visa_D4_desc: 'Visa học tiếng Hàn tại các trung tâm ngôn ngữ.',
+                visa_D10: 'D10 Tìm việc',
+                visa_D10_name: 'Visa Tìm việc',
+                visa_D10_desc: 'Visa cho hoạt động tìm kiếm việc làm tại Hàn Quốc.',
+                visa_F4: 'F4 Kiều bào',
+                visa_F4_name: 'Visa Kiều bào',
+                visa_F4_desc: 'Visa dành cho người Hàn Quốc ở nước ngoài.',
+                duration: 'Thời hạn',
+                visaType: 'Loại visa',
+                estimatedCost: 'Chi phí ước tính',
+                requirements: 'Yêu cầu',
+                documents: 'Giấy tờ cần thiết',
+                process: 'Quy trình nộp đơn',
+                faq: 'Câu hỏi thường gặp',
+                requirementsTitle: '✅ Yêu cầu',
+                documentsTitle: '📄 Giấy tờ cần thiết',
+                processTitle: '📋 Quy trình nộp đơn',
+                faqTitle: '❓ Câu hỏi thường gặp',
+
+                // 비자 신청 자격
+                '만 18세 이상 40세 이하': 'Tuổi 18-40',
+                '범죄경력 없음': 'Không có tiền án',
+                '건강 상태 양호': 'Sức khỏe tốt',
+                '해당 국가 지자체 추천': 'Được chính quyền địa phương giới thiệu',
+                '학사 학위 이상': 'Bằng cử nhân trở lên',
+                '한국어 능력 (TOPIK 3급 이상)': 'Tiếng Hàn (TOPIK cấp 3+)',
+                '전문대 이상 졸업자': 'Tốt nghiệp cao đẳng trở lên',
+                '취업 목적': 'Mục đích việc làm',
+                '재외동포 자격': 'Tư cách Hàn kiều',
+
+                // 비자 비용
+                '약 50~100만원 (국가별 상이)': 'Khoảng 10-20 triệu VND',
+                '약 100~200만원': 'Khoảng 20-40 triệu VND',
+                '약 30~50만원': 'Khoảng 6-10 triệu VND',
+                '약 50만원': 'Khoảng 10 triệu VND',
+                '무료~50만원': 'Miễn phí - 10 triệu VND',
+
+                // 필요 서류
+                '여권 사본': 'Bản sao hộ chiếu',
+                '증명사진': 'Ảnh chân dung',
+                '비자 신청서': 'Đơn xin visa',
+                '고용계약서': 'Hợp đồng lao động',
+                '건강진단서': 'Giấy khám sức khỏe',
+                '범죄경력증명서': 'Lý lịch tư pháp',
+                '졸업증명서': 'Bằng tốt nghiệp',
+                '입학허가서': 'Giấy nhập học',
+                '재정증명서': 'Chứng minh tài chính',
+                'TOPIK 성적표': 'Điểm TOPIK',
+                '이력서': 'Sơ yếu lý lịch',
+                '포트폴리오': 'Portfolio',
+                '어학원 등록증': 'Giấy đăng ký học tiếng',
+                '학업계획서': 'Kế hoạch học tập',
+                '구직활동 계획서': 'Kế hoạch tìm việc',
+                '재외동포 증명서류': 'Giấy tờ Hàn kiều',
+
+                // 신청 절차
+                '서류 준비': 'Chuẩn bị hồ sơ',
+                '필요 서류 수집': 'Thu thập giấy tờ',
+                '신청서 작성': 'Điền đơn',
+                '온라인 접수': 'Nộp online',
+                '대사관 방문': 'Đến đại sứ quán',
+                '인터뷰 진행': 'Phỏng vấn',
+                '심사 대기': 'Chờ xét duyệt',
+                '결과 확인': 'Xem kết quả',
+                '비자 수령': 'Nhận visa',
+                '여권에 부착': 'Dán vào hộ chiếu',
+
+                // 지자체
+                region_seocheon: 'Huyện Seocheon',
+                region_seocheon_province: 'Nam Chungcheong',
+                region_haenam: 'Huyện Haenam',
+                region_haenam_province: 'Nam Jeolla',
+                climate_warm: 'Ấm & Ẩm',
+                climate_mild: 'Ôn hòa',
+                industry_agri: 'Nông nghiệp, Thủy sản',
+                industry_agrifish: 'Nông nghiệp, Đánh cá',
+
+                // 구인
+                positions: 'Vị trí',
+                accommodationMeals: 'Chỗ ở, Ăn uống',
+                insurance: 'Bảo hiểm',
+                bonus: 'Thưởng',
+
+                // 국가
+                country_VN: 'Việt Nam',
+                country_TH: 'Thái Lan',
+                country_PH: 'Philippines',
+
+                // 비자 상세 정보 (API 데이터 번역)
+                '4-8개월': '4-8 tháng',
+                '2년+': '2+ năm',
+                '최대2년': 'Tối đa 2 năm',
+                '6개월-1년': '6 tháng - 1 năm',
+                '무제한': 'Không giới hạn',
+                '단수': 'Đơn',
+                '연장가능': 'Có thể gia hạn',
+                '복수': 'Nhiều lần',
+                '농업': 'Nông nghiệp',
+                '어업': 'Thủy sản',
+                '농업, 어업': 'Nông nghiệp, Thủy sản',
+                '교육': 'Giáo dục',
+                '전 업종': 'Tất cả ngành',
+                '전문직': 'Chuyên nghiệp',
+                '제조업': 'Sản xuất',
+                '서비스업': 'Dịch vụ',
+                '전체': 'Tất cả',
+                '6개월-2년': '6 tháng - 2 năm',
+                '3년+': '3+ năm',
+                '최대1년': 'Tối đa 1 năm',
+                '최대6개월': 'Tối đa 6 tháng',
+
+                // 지역명
+                '서천군': 'Seocheon',
+                '해남군': 'Haenam',
+                '영덕군': 'Yeongdeok',
+                '고성군': 'Goseong',
+                '충남': 'Nam Chungcheong',
+                '전남': 'Nam Jeolla',
+                '경북': 'Bắc Gyeongsang',
+                '강원': 'Gangwon',
+
+                // 기후
+                '온난': 'Ấm',
+                '해양성': 'Hải dương',
+                '냉대': 'Lạnh',
+
+                // 급여 및 복리후생
+                '월': 'Tháng',
+                '만원': ' triệu KRW',
+                '숙소제공': 'Chỗ ở',
+                '식사제공': 'Bữa ăn',
+                '귀국항공료': 'Vé máy bay về'
+            },
+            th: {
+                siteName: 'KoreaWorkingVisa',
+                siteDesc: 'แพลตฟอร์มวีซ่าทำงานเกาหลี',
+                loginAccount: 'บัญชีเข้าสู่ระบบ',
+                logout: 'ออกจากระบบ',
+
+                tabDashboard: 'แดชบอร์ด',
+                tabVisa: 'จัดการวีซ่า',
+                tabRegions: 'ภูมิภาค',
+                tabJobs: 'งาน',
+                tabApplicants: 'ผู้สมัคร',
+                tabSettings: 'ตั้งค่า',
+
+                hello: 'สวัสดี',
+                welcomeSuffix: ' 👋',
+                newApplicants: 'ผู้สมัครใหม่',
+                waitingApproval: ' กำลังรอการอนุมัติ',
+                checkApplicants: 'ตรวจสอบผู้สมัคร',
+                totalJobs: 'งานทั้งหมด',
+                totalPositions: 'ตำแหน่ง',
+                krRegions: 'ภูมิภาคเกาหลี',
+                foreignRegions: 'ภูมิภาคต่างประเทศ',
+                visaTypes: 'ประเภทวีซ่า',
+                unit_count: '',
+                unit_people: '',
+                unit_place: '',
+                unit_type: '',
+
+                registerJob: 'ลงทะเบียนงาน',
+                manageApplicants: 'จัดการผู้สมัคร',
+                manageRegions: 'จัดการภูมิภาค',
+                visaGuide: 'คู่มือวีซ่า',
+
+                visaApplicationStatus: 'สถานะใบสมัครวีซ่า',
+                monthlyTrend: 'แนวโน้มผู้สมัครรายเดือน',
+                countryStatus: 'ใบสมัครตามประเทศ',
+                totalApplications: 'ทั้งหมด',
+
+                notices: '📢 ประกาศ',
+                recentApplicants: '👥 ผู้สมัครล่าสุด',
+                recentActivity: '🕐 กิจกรรมล่าสุด',
+                visaTypesTitle: '🛂 ประเภทวีซ่า',
+                recentJobs: '💼 งานล่าสุด',
+                viewMore: 'เพิ่มเติม',
+                viewAll: 'ดูทั้งหมด',
+
+                visaGuideTitle: '🛂 คู่มือประเภทวีซ่า',
+                viewDetail: 'ดูรายละเอียด',
+
+                regionInfo: '📍 ข้อมูลภูมิภาค',
+                krRegionsTitle: '🇰🇷 ภูมิภาคเกาหลี',
+                foreignPartners: '🌏 ภูมิภาคพันธมิตรต่างประเทศ',
+                climate: 'สภาพอากาศ',
+                mainIndustry: 'อุตสาหกรรมหลัก',
+                population: 'ประชากร',
+                neededWorkers: 'ต้องการแรงงาน',
+
+                jobList: '💼 รายการงาน',
+                allVisa: 'วีซ่าทั้งหมด',
+                apply: 'สมัคร',
+                salary: 'เงินเดือน',
+                period: 'ระยะเวลา',
+                benefits: 'สวัสดิการ',
+
+                applicantManagement: '👥 จัดการผู้สมัคร',
+                allStatus: 'สถานะทั้งหมด',
+                pending: 'รอดำเนินการ',
+                approved: 'อนุมัติ',
+                rejected: 'ปฏิเสธ',
+                name: 'ชื่อ',
+                nationality: 'สัญชาติ',
+                appliedPosition: 'ตำแหน่งที่สมัคร',
+                visa: 'วีซ่า',
+                status: 'สถานะ',
+                manage: 'จัดการ',
+
+                settingsTitle: '⚙️ ตั้งค่า',
+                myProfile: 'โปรไฟล์ของฉัน',
+                myProfileDesc: 'จัดการข้อมูลส่วนตัวและบัญชี',
+                editProfile: 'แก้ไขโปรไฟล์',
+                changePassword: 'เปลี่ยนรหัสผ่าน',
+                notificationSettings: 'การแจ้งเตือน',
+                notificationDesc: 'ตั้งค่าการแจ้งเตือน',
+                emailNotification: 'แจ้งเตือนทางอีเมล',
+                smsNotification: 'แจ้งเตือนทาง SMS',
+                statusNotification: 'แจ้งเตือนสถานะ',
+                languageSettings: 'ภาษา',
+                languageDesc: 'เลือกภาษาที่แสดง',
+                languageNote: 'รองรับเฉพาะภาษาเกาหลีเต็มรูปแบบ',
+                themeSettings: 'ธีม',
+                themeDesc: 'เลือกธีมหน้าจอ',
+                themeLight: 'สว่าง',
+                themeDark: 'มืด',
+                themeAuto: 'อัตโนมัติ',
+                dataManagement: 'จัดการข้อมูล',
+                dataDesc: 'จัดการข้อมูลส่วนตัว',
+                exportData: 'ส่งออกข้อมูล',
+                exportCSV: 'ส่งออก CSV',
+                accountManagement: 'บัญชี',
+                accountDesc: 'จัดการสถานะบัญชี',
+                deleteAccount: 'ลบบัญชี',
+
+                applyTitle: '✈️ สมัคร',
+                applyBtn: 'สมัคร',
+                enterName: 'กรอกชื่อของคุณ',
+                contact: 'ติดต่อ',
+                experience: 'ประสบการณ์',
+                enterExperience: 'กรอกประสบการณ์ของคุณ',
+                cancel: 'ยกเลิก',
+                save: 'บันทึก',
+                change: 'เปลี่ยน',
+                countryVN: '🇻🇳 เวียดนาม',
+                countryTH: '🇹🇭 ไทย',
+                countryPH: '🇵🇭 ฟิลิปปินส์',
+                checkApplicantsBtn: 'ดูผู้สมัคร',
+
+                profileUpdated: 'อัปเดตโปรไฟล์แล้ว!',
+                passwordChanged: 'เปลี่ยนรหัสผ่านแล้ว!',
+                passwordMismatch: 'รหัสผ่านไม่ตรงกัน',
+                applicationComplete: 'สมัครเสร็จสิ้น!',
+                dataDownloaded: 'ดาวน์โหลดข้อมูลแล้ว!',
+                csvDownloaded: 'ดาวน์โหลดไฟล์ CSV แล้ว!',
+                approvedMsg: 'อนุมัติแล้ว!',
+                rejectedMsg: 'ปฏิเสธแล้ว!',
+
+                applicationApproved: 'อนุมัติใบสมัคร',
+                newJob: 'งานใหม่',
+                newApplication: 'ใบสมัครใหม่',
+                minutesAgo: 'นาทีที่แล้ว',
+                hoursAgo: 'ชั่วโมงที่แล้ว',
+
+                // 비자 종류
+                visa_E8: 'E8 งานตามฤดูกาล',
+                visa_E8_name: 'วีซ่าทำงานตามฤดูกาล',
+                visa_E8_desc: 'วีซ่าสำหรับทำงานในอุตสาหกรรมตามฤดูกาล เช่น เกษตรกรรมและประมง',
+                visa_D2: 'D2 เรียน',
+                visa_D2_name: 'วีซ่านักศึกษา',
+                visa_D2_desc: 'วีซ่าสำหรับศึกษาในมหาวิทยาลัยเกาหลี',
+                visa_D4: 'D4 เรียนภาษา',
+                visa_D4_name: 'วีซ่าเรียนภาษา',
+                visa_D4_desc: 'วีซ่าสำหรับเรียนภาษาเกาหลีที่สถาบันภาษา',
+                visa_D10: 'D10 หางาน',
+                visa_D10_name: 'วีซ่าหางาน',
+                visa_D10_desc: 'วีซ่าสำหรับกิจกรรมหางานในเกาหลี',
+                visa_F4: 'F4 คนเกาหลีโพ้นทะเล',
+                visa_F4_name: 'วีซ่าคนเกาหลีโพ้นทะเล',
+                visa_F4_desc: 'วีซ่าสำหรับชาวเกาหลีที่อาศัยในต่างประเทศ',
+                duration: 'ระยะเวลา',
+                visaType: 'ประเภทวีซ่า',
+                estimatedCost: 'ค่าใช้จ่ายโดยประมาณ',
+                requirements: 'คุณสมบัติ',
+                documents: 'เอกสารที่ต้องใช้',
+                process: 'ขั้นตอนการสมัคร',
+                faq: 'คำถามที่พบบ่อย',
+                requirementsTitle: '✅ คุณสมบัติ',
+                documentsTitle: '📄 เอกสารที่ต้องใช้',
+                processTitle: '📋 ขั้นตอนการสมัคร',
+                faqTitle: '❓ คำถามที่พบบ่อย',
+
+                // 비자 신청 자격
+                '만 18세 이상 40세 이하': 'อายุ 18-40 ปี',
+                '범죄경력 없음': 'ไม่มีประวัติอาชญากรรม',
+                '건강 상태 양호': 'สุขภาพดี',
+                '해당 국가 지자체 추천': 'แนะนำโดยรัฐบาลท้องถิ่น',
+                '학사 학위 이상': 'ปริญญาตรีขึ้นไป',
+                '한국어 능력 (TOPIK 3급 이상)': 'ภาษาเกาหลี (TOPIK ระดับ 3+)',
+                '전문대 이상 졸업자': 'จบอนุปริญญาขึ้นไป',
+                '취업 목적': 'วัตถุประสงค์การทำงาน',
+                '재외동포 자격': 'สถานะชาวเกาหลีโพ้นทะเล',
+
+                // 비자 비용
+                '약 50~100만원 (국가별 상이)': 'ประมาณ 13,000-26,000 บาท',
+                '약 100~200만원': 'ประมาณ 26,000-52,000 บาท',
+                '약 30~50만원': 'ประมาณ 8,000-13,000 บาท',
+                '약 50만원': 'ประมาณ 13,000 บาท',
+                '무료~50만원': 'ฟรี - 13,000 บาท',
+
+                // 필요 서류
+                '여권 사본': 'สำเนาหนังสือเดินทาง',
+                '증명사진': 'รูปถ่าย',
+                '비자 신청서': 'ใบสมัครวีซ่า',
+                '고용계약서': 'สัญญาจ้างงาน',
+                '건강진단서': 'ใบรับรองแพทย์',
+                '범죄경력증명서': 'ใบรับรองประวัติอาชญากรรม',
+                '졸업증명서': 'ใบรับรองการศึกษา',
+                '입학허가서': 'จดหมายตอบรับ',
+                '재정증명서': 'หลักฐานทางการเงิน',
+                'TOPIK 성적표': 'คะแนน TOPIK',
+                '이력서': 'ประวัติย่อ',
+                '포트폴리오': 'ผลงาน',
+                '어학원 등록증': 'ใบลงทะเบียนโรงเรียนภาษา',
+                '학업계획서': 'แผนการศึกษา',
+                '구직활동 계획서': 'แผนหางาน',
+                '재외동포 증명서류': 'เอกสารชาวเกาหลีโพ้นทะเล',
+
+                // 신청 절차
+                '서류 준비': 'เตรียมเอกสาร',
+                '필요 서류 수집': 'รวบรวมเอกสาร',
+                '신청서 작성': 'กรอกใบสมัคร',
+                '온라인 접수': 'ส่งออนไลน์',
+                '대사관 방문': 'ไปสถานทูต',
+                '인터뷰 진행': 'สัมภาษณ์',
+                '심사 대기': 'รอพิจารณา',
+                '결과 확인': 'ตรวจสอบผล',
+                '비자 수령': 'รับวีซ่า',
+                '여권에 부착': 'ติดในหนังสือเดินทาง',
+
+                // 지자체
+                region_seocheon: 'อำเภอซอชอน',
+                region_seocheon_province: 'ชุงชองใต้',
+                region_haenam: 'อำเภอแฮนัม',
+                region_haenam_province: 'ชอลลาใต้',
+                climate_warm: 'อบอุ่นและชื้น',
+                climate_mild: 'อากาศอบอุ่น',
+                industry_agri: 'เกษตรกรรม, ประมง',
+                industry_agrifish: 'เกษตรกรรม, การประมง',
+
+                // 구인
+                positions: 'ตำแหน่ง',
+                accommodationMeals: 'ที่พัก, อาหาร',
+                insurance: 'ประกัน',
+                bonus: 'โบนัส',
+
+                // 국가
+                country_VN: 'เวียดนาม',
+                country_TH: 'ไทย',
+                country_PH: 'ฟิลิปปินส์',
+
+                // 비자 상세 정보 (API 데이터 번역)
+                '4-8개월': '4-8 เดือน',
+                '2년+': '2+ ปี',
+                '최대2년': 'สูงสุด 2 ปี',
+                '6개월-1년': '6 เดือน - 1 ปี',
+                '무제한': 'ไม่จำกัด',
+                '단수': 'ครั้งเดียว',
+                '연장가능': 'ต่ออายุได้',
+                '복수': 'หลายครั้ง',
+                '농업': 'เกษตรกรรม',
+                '어업': 'ประมง',
+                '농업, 어업': 'เกษตรกรรม, ประมง',
+                '교육': 'การศึกษา',
+                '전 업종': 'ทุกอุตสาหกรรม',
+                '전문직': 'วิชาชีพ',
+                '제조업': 'การผลิต',
+                '서비스업': 'บริการ',
+                '전체': 'ทั้งหมด',
+                '6개월-2년': '6 เดือน - 2 ปี',
+                '3년+': '3+ ปี',
+                '최대1년': 'สูงสุด 1 ปี',
+                '최대6개월': 'สูงสุด 6 เดือน',
+
+                // 지역명
+                '서천군': 'ซอชอน',
+                '해남군': 'แฮนัม',
+                '영덕군': 'ยองด็อก',
+                '고성군': 'โกซอง',
+                '충남': 'ชุงชองใต้',
+                '전남': 'ชอลลาใต้',
+                '경북': 'คยองซังเหนือ',
+                '강원': 'คังวอน',
+
+                // 기후
+                '온난': 'อบอุ่น',
+                '해양성': 'ทะเล',
+                '냉대': 'หนาว',
+
+                // 급여 및 복리후생
+                '월': 'ต่อเดือน',
+                '만원': ' หมื่นวอน',
+                '숙소제공': 'ที่พัก',
+                '식사제공': 'อาหาร',
+                '귀국항공료': 'ตั๋วเครื่องบินกลับ'
+            },
+            ph: {
+                siteName: 'KoreaWorkingVisa',
+                siteDesc: 'Korea Working Visa Platform',
+                loginAccount: 'Login Account',
+                logout: 'Mag-logout',
+
+                tabDashboard: 'Dashboard',
+                tabVisa: 'Pamamahala ng Visa',
+                tabRegions: 'Mga Rehiyon',
+                tabJobs: 'Mga Trabaho',
+                tabApplicants: 'Mga Aplikante',
+                tabSettings: 'Mga Setting',
+
+                hello: 'Kumusta',
+                welcomeSuffix: ' 👋',
+                newApplicants: 'Mga bagong aplikante',
+                waitingApproval: ' ang naghihintay ng approval',
+                checkApplicants: 'Tingnan ang Aplikante',
+                totalJobs: 'Kabuuang Trabaho',
+                totalPositions: 'Mga Posisyon',
+                krRegions: 'Rehiyon ng Korea',
+                foreignRegions: 'Dayuhang Rehiyon',
+                visaTypes: 'Mga Uri ng Visa',
+                unit_count: '',
+                unit_people: '',
+                unit_place: '',
+                unit_type: '',
+
+                registerJob: 'Mag-register ng Trabaho',
+                manageApplicants: 'Pamahalaan ang Aplikante',
+                manageRegions: 'Pamahalaan ang Rehiyon',
+                visaGuide: 'Gabay sa Visa',
+
+                visaApplicationStatus: 'Status ng Aplikasyon ng Visa',
+                monthlyTrend: 'Buwanang Trend ng Aplikante',
+                countryStatus: 'Aplikasyon ayon sa Bansa',
+                totalApplications: 'Kabuuan',
+
+                notices: '📢 Mga Paunawa',
+                recentApplicants: '👥 Kamakailang Aplikante',
+                recentActivity: '🕐 Kamakailang Aktibidad',
+                visaTypesTitle: '🛂 Mga Uri ng Visa',
+                recentJobs: '💼 Kamakailang Trabaho',
+                viewMore: 'Higit pa',
+                viewAll: 'Tingnan Lahat',
+
+                visaGuideTitle: '🛂 Gabay sa Uri ng Visa',
+                viewDetail: 'Tingnan ang Detalye',
+
+                regionInfo: '📍 Impormasyon ng Rehiyon',
+                krRegionsTitle: '🇰🇷 Mga Rehiyon ng Korea',
+                foreignPartners: '🌏 Dayuhang Partner Rehiyon',
+                climate: 'Klima',
+                mainIndustry: 'Pangunahing Industriya',
+                population: 'Populasyon',
+                neededWorkers: 'Kailangan ng Manggagawa',
+
+                jobList: '💼 Listahan ng Trabaho',
+                allVisa: 'Lahat ng Visa',
+                apply: 'Mag-apply',
+                salary: 'Sahod',
+                period: 'Panahon',
+                benefits: 'Mga Benepisyo',
+
+                applicantManagement: '👥 Pamamahala ng Aplikante',
+                allStatus: 'Lahat ng Status',
+                pending: 'Naghihintay',
+                approved: 'Aprubado',
+                rejected: 'Tinanggihan',
+                name: 'Pangalan',
+                nationality: 'Nasyonalidad',
+                appliedPosition: 'Posisyon',
+                visa: 'Visa',
+                status: 'Status',
+                manage: 'Pamahalaan',
+
+                settingsTitle: '⚙️ Mga Setting',
+                myProfile: 'Aking Profile',
+                myProfileDesc: 'Pamahalaan ang personal na impormasyon.',
+                editProfile: 'I-edit ang Profile',
+                changePassword: 'Palitan ang Password',
+                notificationSettings: 'Mga Notification',
+                notificationDesc: 'Itakda ang mga notification.',
+                emailNotification: 'Email Notification',
+                smsNotification: 'SMS Notification',
+                statusNotification: 'Status Notification',
+                languageSettings: 'Wika',
+                languageDesc: 'Pumili ng wika.',
+                languageNote: 'Korean lang ang fully supported.',
+                themeSettings: 'Tema',
+                themeDesc: 'Pumili ng tema ng screen.',
+                themeLight: 'Maliwanag',
+                themeDark: 'Madilim',
+                themeAuto: 'Auto',
+                dataManagement: 'Pamamahala ng Data',
+                dataDesc: 'Pamahalaan ang personal na data.',
+                exportData: 'I-export ang Data',
+                exportCSV: 'I-export bilang CSV',
+                accountManagement: 'Account',
+                accountDesc: 'Pamahalaan ang status ng account.',
+                deleteAccount: 'Burahin ang Account',
+
+                applyTitle: '✈️ Mag-apply',
+                applyBtn: 'Mag-apply',
+                enterName: 'Ilagay ang pangalan mo',
+                contact: 'Kontak',
+                experience: 'Karanasan',
+                enterExperience: 'Ilagay ang karanasan mo',
+                cancel: 'Kanselahin',
+                save: 'I-save',
+                change: 'Palitan',
+                countryVN: '🇻🇳 Vietnam',
+                countryTH: '🇹🇭 Thailand',
+                countryPH: '🇵🇭 Pilipinas',
+                checkApplicantsBtn: 'Tingnan Aplikante',
+
+                profileUpdated: 'Na-update ang profile!',
+                passwordChanged: 'Napalitan ang password!',
+                passwordMismatch: 'Hindi tugma ang password.',
+                applicationComplete: 'Kumpleto ang aplikasyon!',
+                dataDownloaded: 'Na-download ang data!',
+                csvDownloaded: 'Na-download ang CSV file!',
+                approvedMsg: 'Aprubado!',
+                rejectedMsg: 'Tinanggihan!',
+
+                applicationApproved: 'Aprubado ang aplikasyon',
+                newJob: 'Bagong trabaho',
+                newApplication: 'Bagong aplikasyon',
+                minutesAgo: 'minuto ang nakalipas',
+                hoursAgo: 'oras ang nakalipas',
+
+                // 비자 종류
+                visa_E8: 'E8 Seasonal Work',
+                visa_E8_name: 'Seasonal Worker Visa',
+                visa_E8_desc: 'Visa para sa pagtatrabaho sa mga industriyang pana-panahon tulad ng agrikultura at pangingisda.',
+                visa_D2: 'D2 Pag-aaral',
+                visa_D2_name: 'Student Visa',
+                visa_D2_desc: 'Visa para sa pag-aaral sa unibersidad ng Korea.',
+                visa_D4: 'D4 Language Training',
+                visa_D4_name: 'Language Training Visa',
+                visa_D4_desc: 'Visa para sa pag-aaral ng Korean sa mga language institute.',
+                visa_D10: 'D10 Job Seeking',
+                visa_D10_name: 'Job Seeking Visa',
+                visa_D10_desc: 'Visa para sa paghahanap ng trabaho sa Korea.',
+                visa_F4: 'F4 Overseas Korean',
+                visa_F4_name: 'Overseas Korean Visa',
+                visa_F4_desc: 'Visa para sa mga ethnic Korean na nakatira sa ibang bansa.',
+                duration: 'Tagal',
+                visaType: 'Uri ng Visa',
+                estimatedCost: 'Est. Gastos',
+                requirements: 'Mga Kinakailangan',
+                documents: 'Mga Kailangang Dokumento',
+                process: 'Proseso ng Aplikasyon',
+                faq: 'Mga FAQ',
+                requirementsTitle: '✅ Mga Kinakailangan',
+                documentsTitle: '📄 Mga Dokumento',
+                processTitle: '📋 Proseso ng Aplikasyon',
+                faqTitle: '❓ Mga FAQ',
+
+                // 비자 신청 자격
+                '만 18세 이상 40세 이하': 'Age 18-40',
+                '범죄경력 없음': 'No criminal record',
+                '건강 상태 양호': 'Good health',
+                '해당 국가 지자체 추천': 'Recommended by local government',
+                '학사 학위 이상': 'Bachelor\'s degree or higher',
+                '한국어 능력 (TOPIK 3급 이상)': 'Korean (TOPIK Level 3+)',
+                '전문대 이상 졸업자': 'Associate degree or higher',
+                '취업 목적': 'Employment purpose',
+                '재외동포 자격': 'Overseas Korean status',
+
+                // 비자 비용
+                '약 50~100만원 (국가별 상이)': 'Approx. ₱22,000-44,000',
+                '약 100~200만원': 'Approx. ₱44,000-88,000',
+                '약 30~50만원': 'Approx. ₱13,000-22,000',
+                '약 50만원': 'Approx. ₱22,000',
+                '무료~50만원': 'Free - ₱22,000',
+
+                // 필요 서류
+                '여권 사본': 'Passport copy',
+                '증명사진': 'ID photo',
+                '비자 신청서': 'Visa application',
+                '고용계약서': 'Employment contract',
+                '건강진단서': 'Medical certificate',
+                '범죄경력증명서': 'NBI clearance',
+                '졸업증명서': 'Diploma',
+                '입학허가서': 'Admission letter',
+                '재정증명서': 'Bank statement',
+                'TOPIK 성적표': 'TOPIK score',
+                '이력서': 'Resume',
+                '포트폴리오': 'Portfolio',
+                '어학원 등록증': 'Language school enrollment',
+                '학업계획서': 'Study plan',
+                '구직활동 계획서': 'Job seeking plan',
+                '재외동포 증명서류': 'Overseas Korean documents',
+
+                // 신청 절차
+                '서류 준비': 'Prepare Documents',
+                '필요 서류 수집': 'Gather documents',
+                '신청서 작성': 'Fill Application',
+                '온라인 접수': 'Submit online',
+                '대사관 방문': 'Visit Embassy',
+                '인터뷰 진행': 'Interview',
+                '심사 대기': 'Wait for Review',
+                '결과 확인': 'Check result',
+                '비자 수령': 'Receive Visa',
+                '여권에 부착': 'Attach to passport',
+
+                // 지자체
+                region_seocheon: 'Seocheon County',
+                region_seocheon_province: 'South Chungcheong',
+                region_haenam: 'Haenam County',
+                region_haenam_province: 'South Jeolla',
+                climate_warm: 'Mainit at Mamasa-masa',
+                climate_mild: 'Mild Oceanic',
+                industry_agri: 'Agrikultura, Pangingisda',
+                industry_agrifish: 'Agrikultura, Fishing',
+
+                // 구인
+                positions: 'Mga Posisyon',
+                accommodationMeals: 'Tirahan, Pagkain',
+                insurance: 'Insurance',
+                bonus: 'Bonus',
+
+                // 국가
+                country_VN: 'Vietnam',
+                country_TH: 'Thailand',
+                country_PH: 'Pilipinas',
+
+                // 비자 상세 정보 (기간)
+                '4-8개월': '4-8 months',
+                '2년+': '2+ years',
+                '최대2년': 'Up to 2 years',
+                '최대1년': 'Up to 1 year',
+                '최대6개월': 'Up to 6 months',
+                // 비자 유형
+                '단수': 'Single',
+                '연장가능': 'Extendable',
+                // 산업 분야
+                '농업': 'Agriculture',
+                '어업': 'Fishery',
+                '농업, 어업': 'Agriculture, Fishery',
+                '교육': 'Education',
+                '전 업종': 'All Industries',
+                '전문직': 'Professional',
+                '제조업': 'Manufacturing',
+                '서비스업': 'Services',
+                '전체': 'All',
+                '6개월-2년': '6 months - 2 years',
+                '3년+': '3+ years',
+                '6개월-1년': '6 months - 1 year',
+                '무제한': 'Unlimited',
+                '복수': 'Multiple',
+
+                // 지역명
+                '서천군': 'Seocheon',
+                '해남군': 'Haenam',
+                '영덕군': 'Yeongdeok',
+                '고성군': 'Goseong',
+                '충남': 'South Chungcheong',
+                '전남': 'South Jeolla',
+                '경북': 'North Gyeongsang',
+                '강원': 'Gangwon',
+
+                // 기후
+                '온난': 'Warm',
+                '해양성': 'Oceanic',
+                '냉대': 'Cold',
+
+                // 급여 및 복리후생
+                '월': 'Monthly',
+                '만원': '0,000 KRW',
+                '숙소제공': 'Housing',
+                '식사제공': 'Meals',
+                '귀국항공료': 'Return Flight'
+            }
+        };
+
+        // 번역 함수
+        function t(key) {
+            return translations[currentLang]?.[key] || translations['ko'][key] || key;
+        }
+        let applicants = [
+            {id: 1, name: "Nguyen Van A", country: "VN", job: "딸기 농장 근로자", visa: "E8", status: "pending", date: "2026-02-04"},
+            {id: 2, name: "Somchai B", country: "TH", job: "배추 농장 근로자", visa: "E8", status: "approved", date: "2026-02-03"},
+            {id: 3, name: "Maria C", country: "PH", job: "수산물 가공 근로자", visa: "E8", status: "rejected", date: "2026-02-02"},
+            {id: 4, name: "Tran Thi B", country: "VN", job: "딸기 농장 근로자", visa: "E8", status: "pending", date: "2026-02-04"},
+            {id: 5, name: "Pham Van C", country: "VN", job: "배추 농장 근로자", visa: "E8", status: "pending", date: "2026-02-04"},
+        ];
+        
+        // 다국어 공지사항 데이터
+        const noticesData = {
+            ko: [
+                {id: 1, title: "🔥 2026년 E8 비자 신청 시작", content: "2026년도 E8 계절근로 비자 신청이 시작되었습니다. 올해는 총 50,000명 모집 예정이며, 베트남, 태국, 필리핀 등에서 신청 가능합니다.", date: "2026.02.01", important: true},
+                {id: 2, title: "서천군 계절근로자 100명 모집", content: "충남 서천군에서 딸기 농장 계절근로자 100명을 모집합니다. 근무기간은 3월부터 10월까지이며, 숙소와 식사가 제공됩니다.", date: "2026.01.28", important: false},
+                {id: 3, title: "시스템 점검 안내 (2/5)", content: "2월 5일 오전 2시부터 6시까지 시스템 점검이 예정되어 있습니다. 해당 시간에는 서비스 이용이 제한될 수 있습니다.", date: "2026.01.25", important: false},
+                {id: 4, title: "해남군 배추 농장 80명 추가 모집", content: "전남 해남군에서 배추 농장 근로자를 추가로 80명 모집합니다. 월 200만원 급여에 숙소 제공됩니다.", date: "2026.01.20", important: false},
+                {id: 5, title: "비자 서류 제출 기한 연장 안내", content: "코로나19로 인한 서류 발급 지연을 고려하여 비자 서류 제출 기한이 2주 연장되었습니다.", date: "2026.01.15", important: false},
+            ],
+            en: [
+                {id: 1, title: "🔥 2026 E8 Visa Application Started", content: "The 2026 E8 seasonal worker visa application has begun. This year, 50,000 workers will be recruited from Vietnam, Thailand, Philippines, etc.", date: "2026.02.01", important: true},
+                {id: 2, title: "Seocheon County Recruiting 100 Workers", content: "Seocheon County is recruiting 100 strawberry farm workers. Work period is March to October with accommodation and meals provided.", date: "2026.01.28", important: false},
+                {id: 3, title: "System Maintenance Notice (2/5)", content: "System maintenance is scheduled from 2 AM to 6 AM on February 5th. Services may be limited during this time.", date: "2026.01.25", important: false},
+                {id: 4, title: "Haenam County Additional 80 Workers", content: "Haenam County is recruiting 80 additional cabbage farm workers. Monthly salary of 2 million KRW with accommodation.", date: "2026.01.20", important: false},
+                {id: 5, title: "Visa Document Deadline Extended", content: "Considering delays in document issuance due to COVID-19, the visa document submission deadline has been extended by 2 weeks.", date: "2026.01.15", important: false},
+            ],
+            vi: [
+                {id: 1, title: "🔥 Bắt đầu nộp đơn Visa E8 2026", content: "Đơn xin visa lao động thời vụ E8 năm 2026 đã bắt đầu. Năm nay sẽ tuyển 50.000 người từ Việt Nam, Thái Lan, Philippines.", date: "2026.02.01", important: true},
+                {id: 2, title: "Huyện Seocheon tuyển 100 lao động", content: "Huyện Seocheon đang tuyển 100 công nhân trang trại dâu tây. Thời gian làm việc từ tháng 3 đến tháng 10, có chỗ ở và ăn uống.", date: "2026.01.28", important: false},
+                {id: 3, title: "Thông báo bảo trì hệ thống (2/5)", content: "Hệ thống sẽ bảo trì từ 2 giờ sáng đến 6 giờ sáng ngày 5 tháng 2. Dịch vụ có thể bị hạn chế.", date: "2026.01.25", important: false},
+                {id: 4, title: "Huyện Haenam tuyển thêm 80 người", content: "Huyện Haenam đang tuyển thêm 80 công nhân trang trại bắp cải. Lương tháng 2 triệu KRW có chỗ ở.", date: "2026.01.20", important: false},
+                {id: 5, title: "Gia hạn nộp hồ sơ visa", content: "Do sự chậm trễ trong việc cấp giấy tờ vì COVID-19, thời hạn nộp hồ sơ visa đã được gia hạn 2 tuần.", date: "2026.01.15", important: false},
+            ],
+            th: [
+                {id: 1, title: "🔥 เริ่มสมัครวีซ่า E8 ปี 2026", content: "เปิดรับสมัครวีซ่าแรงงานตามฤดูกาล E8 ปี 2026 แล้ว ปีนี้รับสมัคร 50,000 คน จากเวียดนาม ไทย ฟิลิปปินส์", date: "2026.02.01", important: true},
+                {id: 2, title: "อำเภอซอชอนรับสมัคร 100 คน", content: "อำเภอซอชอนรับสมัครแรงงานสวนสตรอว์เบอร์รี่ 100 คน ทำงานมีนาคม-ตุลาคม มีที่พักและอาหาร", date: "2026.01.28", important: false},
+                {id: 3, title: "แจ้งปิดปรับปรุงระบบ (2/5)", content: "ระบบจะปิดปรับปรุงตั้งแต่ 02:00-06:00 น. วันที่ 5 กุมภาพันธ์ บริการอาจถูกจำกัด", date: "2026.01.25", important: false},
+                {id: 4, title: "อำเภอแฮนัมรับเพิ่ม 80 คน", content: "อำเภอแฮนัมรับสมัครแรงงานสวนกะหล่ำปลีเพิ่ม 80 คน เงินเดือน 2 ล้านวอน มีที่พัก", date: "2026.01.20", important: false},
+                {id: 5, title: "ขยายเวลายื่นเอกสารวีซ่า", content: "เนื่องจากความล่าช้าในการออกเอกสารจากโควิด-19 ได้ขยายเวลายื่นเอกสารวีซ่าออกไป 2 สัปดาห์", date: "2026.01.15", important: false},
+            ],
+            ph: [
+                {id: 1, title: "🔥 2026 E8 Visa Application Started", content: "Nagsimula na ang aplikasyon ng E8 seasonal worker visa para sa 2026. 50,000 manggagawa ang kukunin mula sa Vietnam, Thailand, Philippines.", date: "2026.02.01", important: true},
+                {id: 2, title: "Seocheon County Nag-recruit ng 100", content: "Nag-recruit ang Seocheon County ng 100 strawberry farm workers. Trabaho mula Marso hanggang Oktubre na may tirahan at pagkain.", date: "2026.01.28", important: false},
+                {id: 3, title: "System Maintenance (2/5)", content: "May system maintenance mula 2 AM hanggang 6 AM sa Feb 5. Maaaring malimitahan ang serbisyo.", date: "2026.01.25", important: false},
+                {id: 4, title: "Haenam County Dagdag 80 Workers", content: "Nag-recruit ang Haenam County ng dagdag na 80 cabbage farm workers. 2 million KRW monthly na may tirahan.", date: "2026.01.20", important: false},
+                {id: 5, title: "Visa Document Deadline Extended", content: "Dahil sa pagkaantala ng dokumento dahil sa COVID-19, na-extend ng 2 linggo ang deadline ng visa documents.", date: "2026.01.15", important: false},
+            ]
+        };
+
+        // 현재 언어에 맞는 공지사항 가져오기
+        function getNotices() {
+            return noticesData[currentLang] || noticesData['ko'];
+        }
+
+        // 직업 이름 다국어 변환
+        const jobNames = {
+            ko: {
+                '딸기 농장 근로자': '딸기 농장 근로자',
+                '배추 농장 근로자': '배추 농장 근로자',
+                '수산물 가공 근로자': '수산물 가공 근로자'
+            },
+            en: {
+                '딸기 농장 근로자': 'Strawberry Farm Worker',
+                '배추 농장 근로자': 'Cabbage Farm Worker',
+                '수산물 가공 근로자': 'Seafood Processing Worker'
+            },
+            vi: {
+                '딸기 농장 근로자': 'Công nhân trang trại dâu',
+                '배추 농장 근로자': 'Công nhân trang trại bắp cải',
+                '수산물 가공 근로자': 'Công nhân chế biến hải sản'
+            },
+            th: {
+                '딸기 농장 근로자': 'แรงงานสวนสตรอว์เบอร์รี่',
+                '배추 농장 근로자': 'แรงงานสวนกะหล่ำปลี',
+                '수산물 가공 근로자': 'แรงงานแปรรูปอาหารทะเล'
+            },
+            ph: {
+                '딸기 농장 근로자': 'Strawberry Farm Worker',
+                '배추 농장 근로자': 'Cabbage Farm Worker',
+                '수산물 가공 근로자': 'Seafood Processing Worker'
+            }
+        };
+
+        function translateJob(jobName) {
+            return jobNames[currentLang]?.[jobName] || jobNames['ko'][jobName] || jobName;
+        }
+
+        // 급여 번역 (예: "월 220만원" -> "Monthly 2,200,000 KRW")
+        function translateSalary(salary) {
+            if (currentLang === 'ko') return salary;
+            // "월 220만원" 형식 파싱
+            const match = salary.match(/월\s*(\d+)만원/);
+            if (match) {
+                const amount = parseInt(match[1]) * 10000;
+                return `${t('월')} ${amount.toLocaleString()} KRW`;
+            }
+            return salary;
+        }
+
+        // 탭 전환
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('text-blue-600', 'bg-white/50');
+                el.classList.add('text-gray-500');
+            });
+            document.getElementById('tab-' + tabName).classList.add('active');
+            const btn = document.querySelector(`[data-tab="${tabName}"]`);
+            if (btn) {
+                btn.classList.add('text-blue-600', 'bg-white/50');
+                btn.classList.remove('text-gray-500');
+            }
+        }
+
+        // 공지사항 로드
+        function loadNotices() {
+            const container = document.getElementById('noticeList');
+            const notices = getNotices();
+            container.innerHTML = '';
+            notices.slice(0, 3).forEach(n => {
+                container.innerHTML += `
+                    <div class="p-4 rounded-xl ${n.important ? 'bg-red-50 border border-red-100' : 'bg-gray-50'} cursor-pointer hover:bg-gray-100 transition" onclick="openNoticeDetail(${n.id})">
+                        <p class="font-medium text-gray-800 text-sm">${n.title}</p>
+                        <p class="text-xs text-gray-400 mt-1">${n.date}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function openNoticeModal() {
+            const notices = getNotices();
+            const content = document.getElementById('noticeModalContent');
+            content.innerHTML = notices.map(n => `
+                <div class="p-5 rounded-2xl ${n.important ? 'bg-red-50 border border-red-100' : 'bg-gray-50'} mb-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <p class="font-semibold text-gray-800">${n.title}</p>
+                        <span class="text-xs text-gray-400">${n.date}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">${n.content}</p>
+                </div>
+            `).join('');
+            document.getElementById('noticeModal').classList.add('active');
+        }
+
+        function closeNoticeModal() {
+            document.getElementById('noticeModal').classList.remove('active');
+        }
+
+        function openNoticeDetail(id) {
+            openNoticeModal();
+        }
+
+        // 차트 초기화
+        function initCharts() {
+            const visaData = {labels: ['E8 계절근로', 'D2 유학', 'D4 어학연수', 'D10 구직', 'F4 재외동포'], data: [110, 25, 17, 10, 8]};
+            const visaTotal = visaData.data.reduce((a, b) => a + b, 0);
+            const visaColors = ['#007aff', '#34c759', '#af52de', '#ff9500', '#ff2d55'];
+            
+            new Chart(document.getElementById('visaChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: visaData.labels,
+                    datasets: [{ data: visaData.data, backgroundColor: visaColors, borderWidth: 0 }]
+                },
+                options: { 
+                    responsive: true, 
+                    cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            document.getElementById('visaChartCenter').innerHTML = `<div class="text-center"><p class="text-3xl font-bold text-gray-800">${visaTotal}</p><p class="text-sm text-gray-500">총 지원</p></div>`;
+            
+            const visaLegend = document.getElementById('visaLegend');
+            visaLegend.innerHTML = visaData.labels.map((label, i) => {
+                const pct = ((visaData.data[i] / visaTotal) * 100).toFixed(1);
+                return `<div class="flex items-center justify-between"><div class="flex items-center"><span class="w-3 h-3 rounded-full mr-2" style="background:${visaColors[i]}"></span><span class="text-sm text-gray-600">${label}</span></div><span class="text-sm font-medium">${visaData.data[i]}명 (${pct}%)</span></div>`;
+            }).join('');
+
+            // 월별 차트
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'line',
+                data: {
+                    labels: ['9월', '10월', '11월', '12월', '1월', '2월'],
+                    datasets: [{
+                        label: '지원자',
+                        data: [30, 45, 60, 80, 95, 120],
+                        borderColor: '#007aff',
+                        backgroundColor: 'rgba(0,122,255,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#007aff',
+                        pointRadius: 4
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } } }
+            });
+
+            // 국가별 차트 (원그래프)
+            const countryData = {labels: ['🇻🇳 베트남', '🇹🇭 태국', '🇵🇭 필리핀'], data: [85, 45, 40]};
+            const countryTotal = countryData.data.reduce((a, b) => a + b, 0);
+            const countryColors = ['#ff3b30', '#007aff', '#34c759'];
+
+            new Chart(document.getElementById('countryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: countryData.labels,
+                    datasets: [{ data: countryData.data, backgroundColor: countryColors, borderWidth: 0 }]
+                },
+                options: { 
+                    responsive: true, 
+                    cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            document.getElementById('countryChartCenter').innerHTML = `<div class="text-center"><p class="text-3xl font-bold text-gray-800">${countryTotal}</p><p class="text-sm text-gray-500">총 지원</p></div>`;
+
+            const countryLegend = document.getElementById('countryLegend');
+            countryLegend.innerHTML = countryData.labels.map((label, i) => {
+                const pct = ((countryData.data[i] / countryTotal) * 100).toFixed(1);
+                return `<div class="flex items-center justify-between"><div class="flex items-center"><span class="w-3 h-3 rounded-full mr-2" style="background:${countryColors[i]}"></span><span class="text-sm text-gray-600">${label}</span></div><span class="text-sm font-medium">${countryData.data[i]}명 (${pct}%)</span></div>`;
+            }).join('');
+        }
+
+        // 최근 지원자
+        function loadRecentApplicants() {
+            const container = document.getElementById('recentApplicants');
+            const flags = {VN: '🇻🇳', TH: '🇹🇭', PH: '🇵🇭'};
+            const statusColors = {pending: 'bg-yellow-100 text-yellow-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700'};
+            const statusText = {pending: t('pending'), approved: t('approved'), rejected: t('rejected')};
+
+            container.innerHTML = applicants.slice(0, 4).map(a => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">${flags[a.country]}</span>
+                        <div>
+                            <p class="font-medium text-gray-800 text-sm">${a.name}</p>
+                            <p class="text-xs text-gray-400">${translateJob(a.job)}</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 rounded-lg text-xs font-medium ${statusColors[a.status]}">${statusText[a.status]}</span>
+                </div>
+            `).join('');
+        }
+
+        // 통계
+        async function loadStats() {
+            try {
+                const res = await fetch(API_BASE + '/dashboard/stats');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('totalJobs').textContent = data.data.total_jobs;
+                    document.getElementById('totalPositions').textContent = data.data.total_positions;
+                    document.getElementById('krRegions').textContent = data.data.kr_regions;
+                    document.getElementById('foreignRegions').textContent = data.data.foreign_regions;
+                    document.getElementById('visaTypes').textContent = data.data.visa_types;
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        // 비자 이름 다국어 변환
+        function getVisaName(type) {
+            return t(`visa_${type}_name`) || type;
+        }
+
+        function getVisaDesc(type) {
+            return t(`visa_${type}_desc`) || '';
+        }
+
+        // 비자
+        async function loadVisaTypes() {
+            try {
+                const res = await fetch(API_BASE + '/visa');
+                const data = await res.json();
+                if (data.success) {
+                    const list = document.getElementById('visaList');
+                    list.innerHTML = '';
+                    for (const [type, info] of Object.entries(data.data)) {
+                        const visaName = currentLang === 'ko' ? info.name : getVisaName(type);
+                        const visaSubName = currentLang === 'ko' ? info.name_en : t(`visa_${type}`);
+                        list.innerHTML += `
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-blue-50 cursor-pointer transition" onclick="openVisaModal('${type}')">
+                                <div class="flex items-center space-x-3">
+                                    <span class="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center font-bold text-sm">${type}</span>
+                                    <div>
+                                        <p class="font-medium text-gray-800">${visaName}</p>
+                                        <p class="text-xs text-gray-400">${visaSubName}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-500">${t(info.duration)}</span>
+                                    <i class="fas fa-chevron-right text-gray-300"></i>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    const cards = document.getElementById('visaCards');
+                    cards.innerHTML = '';
+                    const colors = {E8: ['from-blue-500', 'to-blue-600'], D2: ['from-green-500', 'to-green-600'], D4: ['from-purple-500', 'to-purple-600'], D10: ['from-orange-500', 'to-orange-600'], F4: ['from-pink-500', 'to-pink-600']};
+                    const icons = {E8: 'tractor', D2: 'graduation-cap', D4: 'language', D10: 'search', F4: 'users'};
+
+                    for (const [type, info] of Object.entries(data.data)) {
+                        const [c1, c2] = colors[type] || ['from-gray-500', 'to-gray-600'];
+                        const icon = icons[type] || 'passport';
+                        const visaName = currentLang === 'ko' ? info.name : getVisaName(type);
+                        const visaSubName = currentLang === 'ko' ? info.name_en : t(`visa_${type}`);
+                        cards.innerHTML += `
+                            <div class="card p-6 cursor-pointer hover:shadow-xl transition" onclick="openVisaModal('${type}')">
+                                <div class="w-14 h-14 bg-gradient-to-br ${c1} ${c2} rounded-2xl flex items-center justify-center mb-4">
+                                    <i class="fas fa-${icon} text-white text-xl"></i>
+                                </div>
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <span class="px-2 py-1 bg-gray-100 rounded-lg text-xs font-bold text-gray-600">${type}</span>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-800 mb-1">${visaName}</h3>
+                                <p class="text-sm text-gray-400 mb-4">${visaSubName}</p>
+                                <div class="space-y-2 text-sm text-gray-500">
+                                    <p><i class="fas fa-clock mr-2 w-4"></i>${t(info.duration)}</p>
+                                    <p><i class="fas fa-tag mr-2 w-4"></i>${t(info.type)}</p>
+                                    <p><i class="fas fa-industry mr-2 w-4"></i>${info.industries.map(ind => t(ind)).join(', ')}</p>
+                                </div>
+                                <button class="w-full mt-6 bg-gradient-to-r ${c1} ${c2} text-white py-3 rounded-xl font-medium hover:opacity-90 transition">
+                                    ${t('viewDetail')}
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function openVisaModal(visaType) {
+            try {
+                const res = await fetch(API_BASE + '/visa/' + visaType + '/detail');
+                const data = await res.json();
+                if (data.success) {
+                    const v = data.data;
+                    const visaName = currentLang === 'ko' ? v.name : getVisaName(visaType);
+                    const visaDesc = currentLang === 'ko' ? v.description : getVisaDesc(visaType);
+                    document.getElementById('visaModalTitle').innerHTML = `🛂 ${visaName} (${visaType})`;
+                    document.getElementById('visaModalContent').innerHTML = `
+                        <div class="space-y-8">
+                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-6 rounded-2xl text-white">
+                                <p class="text-lg">${visaDesc}</p>
+                                <div class="grid grid-cols-3 gap-4 mt-6">
+                                    <div class="bg-white/20 rounded-xl p-4 text-center"><p class="text-white/70 text-sm">${t('duration')}</p><p class="font-bold text-lg">${t(v.duration)}</p></div>
+                                    <div class="bg-white/20 rounded-xl p-4 text-center"><p class="text-white/70 text-sm">${t('visaType')}</p><p class="font-bold text-lg">${t(v.type)}</p></div>
+                                    <div class="bg-white/20 rounded-xl p-4 text-center"><p class="text-white/70 text-sm">${t('estimatedCost')}</p><p class="font-bold text-lg">${t(v.cost)}</p></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-4">${t('requirementsTitle')}</h4>
+                                <div class="space-y-2">${v.requirements.map(r => `<div class="flex items-center p-3 bg-green-50 rounded-xl"><i class="fas fa-check text-green-500 mr-3"></i><span class="text-gray-700">${t(r)}</span></div>`).join('')}</div>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-4">${t('documentsTitle')}</h4>
+                                <div class="grid grid-cols-2 gap-3">${v.documents.map(d => `<div class="flex items-center p-3 bg-gray-50 rounded-xl"><i class="fas fa-file text-gray-400 mr-3"></i><span class="text-gray-700 text-sm">${t(d)}</span></div>`).join('')}</div>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-4">${t('processTitle')}</h4>
+                                <div class="grid grid-cols-5 gap-2">${v.process.map(p => `<div class="text-center"><div class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto font-bold">${p.step}</div><p class="font-medium mt-2 text-sm">${t(p.title)}</p><p class="text-xs text-gray-400">${t(p.desc)}</p></div>`).join('')}</div>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-4">${t('faqTitle')}</h4>
+                                <div class="space-y-3">${v.faq.map(f => `<div class="bg-gray-50 p-4 rounded-xl"><p class="font-medium text-blue-600 mb-2">Q. ${t(f.q)}</p><p class="text-gray-600 text-sm">A. ${t(f.a)}</p></div>`).join('')}</div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('visaModal').classList.add('active');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function closeVisaModal() { document.getElementById('visaModal').classList.remove('active'); }
+
+        // 구인
+        async function loadJobs() {
+            try {
+                const res = await fetch(API_BASE + '/jobs');
+                const data = await res.json();
+                if (data.success) {
+                    allJobs = data.data;
+                    renderJobs(allJobs);
+                    document.getElementById('jobList').innerHTML = data.data.map(job => `
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-green-50 cursor-pointer transition" onclick="showTab('jobs')">
+                            <div>
+                                <p class="font-medium text-gray-800">${job.title}</p>
+                                <p class="text-xs text-gray-400">${job.region} · ${job.visa_type}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-green-600 font-bold">${job.positions}명</p>
+                                <p class="text-xs text-gray-400">${job.salary}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function renderJobs(jobs) {
+            const posUnit = currentLang === 'ko' ? '명' : '';
+            document.getElementById('jobCards').innerHTML = jobs.map(job => `
+                <div class="card p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">${job.visa_type}</span>
+                        <span class="text-2xl font-bold text-blue-500">${job.positions}${posUnit}</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">${translateJob(job.title)}</h3>
+                    <p class="text-gray-400 mb-4"><i class="fas fa-map-marker-alt mr-2"></i>${t(job.region)}</p>
+                    <div class="space-y-2 text-sm text-gray-500 mb-6">
+                        <p><i class="fas fa-won-sign mr-2 w-4"></i>${translateSalary(job.salary)}</p>
+                        <p><i class="fas fa-calendar mr-2 w-4"></i>${job.period}</p>
+                        <p><i class="fas fa-gift mr-2 w-4"></i>${job.benefits.map(b => t(b)).join(', ')}</p>
+                    </div>
+                    <button onclick="openApplyModal(${job.id})" class="w-full btn-primary">
+                        <i class="fas fa-paper-plane mr-2"></i>${t('apply')}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function filterJobs() {
+            const visa = document.getElementById('filterVisa').value;
+            renderJobs(visa ? allJobs.filter(j => j.visa_type === visa) : allJobs);
+        }
+
+        // 지자체
+        async function loadRegions() {
+            try {
+                const krRes = await fetch(API_BASE + '/regions/kr');
+                const krData = await krRes.json();
+                const posUnit = currentLang === 'ko' ? '명' : '';
+                if (krData.success) {
+                    document.getElementById('krRegionCards').innerHTML = krData.data.map(r => `
+                        <div class="card p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mr-4">
+                                    <i class="fas fa-map-marker-alt text-blue-500 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800">${t(r.name)}</h3>
+                                    <p class="text-gray-400">${t(r.province)}</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-gray-50 p-3 rounded-xl"><p class="text-xs text-gray-400">${t('climate')}</p><p class="font-medium text-gray-800">${t(r.climate)}</p></div>
+                                <div class="bg-gray-50 p-3 rounded-xl"><p class="text-xs text-gray-400">${t('mainIndustry')}</p><p class="font-medium text-gray-800">${t(r.main_industry)}</p></div>
+                                <div class="bg-gray-50 p-3 rounded-xl"><p class="text-xs text-gray-400">${t('population')}</p><p class="font-medium text-gray-800">${r.population.toLocaleString()}${posUnit}</p></div>
+                                <div class="bg-blue-50 p-3 rounded-xl"><p class="text-xs text-blue-400">${t('neededWorkers')}</p><p class="font-bold text-blue-600">${r.needed_workers}${posUnit}</p></div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                const foreignRes = await fetch(API_BASE + '/regions/foreign');
+                const foreignData = await foreignRes.json();
+                if (foreignData.success) {
+                    const flags = {VN: '🇻🇳', TH: '🇹🇭', PH: '🇵🇭'};
+                    const countryNames = {VN: t('country_VN'), TH: t('country_TH'), PH: t('country_PH')};
+                    document.getElementById('foreignRegionCards').innerHTML = foreignData.data.map(r => `
+                        <div class="card p-6 text-center">
+                            <span class="text-5xl mb-4 block">${flags[r.country_code] || '🌍'}</span>
+                            <h3 class="text-xl font-bold text-gray-800">${r.name}</h3>
+                            <p class="text-gray-400">${countryNames[r.country_code] || r.country}</p>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        // 지원자
+        function renderApplicants(filter = '') {
+            const table = document.getElementById('applicantTable');
+            const flags = {VN: '🇻🇳', TH: '🇹🇭', PH: '🇵🇭'};
+            const countryNames = {VN: t('country_VN'), TH: t('country_TH'), PH: t('country_PH')};
+            const statusColors = {pending: 'bg-yellow-100 text-yellow-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700'};
+            const statusText = {pending: t('pending'), approved: t('approved'), rejected: t('rejected')};
+
+            const filtered = filter ? applicants.filter(a => a.status === filter) : applicants;
+            table.innerHTML = filtered.map(a => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-medium text-gray-800">${a.name}</td>
+                    <td class="px-6 py-4">${flags[a.country]} ${countryNames[a.country]}</td>
+                    <td class="px-6 py-4 text-gray-600">${translateJob(a.job)}</td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 bg-blue-100 text-blue-600 rounded-lg text-sm">${a.visa}</span></td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 rounded-lg text-sm font-medium ${statusColors[a.status]}">${statusText[a.status]}</span></td>
+                    <td class="px-6 py-4">
+                        <button onclick="updateStatus(${a.id}, 'approved')" class="w-8 h-8 bg-green-100 text-green-500 rounded-lg hover:bg-green-200 mr-1"><i class="fas fa-check"></i></button>
+                        <button onclick="updateStatus(${a.id}, 'rejected')" class="w-8 h-8 bg-red-100 text-red-500 rounded-lg hover:bg-red-200"><i class="fas fa-times"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterApplicants() { renderApplicants(document.getElementById('filterStatus').value); }
+
+        function updateStatus(id, status) {
+            applicants = applicants.map(a => a.id === id ? {...a, status} : a);
+            renderApplicants(document.getElementById('filterStatus').value);
+            loadRecentApplicants();
+            alert(status === 'approved' ? `✅ ${t('approvedMsg')}` : `❌ ${t('rejectedMsg')}`);
+        }
+
+        // 지원 모달
+        function openApplyModal(jobId) {
+            document.getElementById('applyJobId').value = jobId;
+            document.getElementById('applyModal').classList.add('active');
+        }
+        function closeApplyModal() { document.getElementById('applyModal').classList.remove('active'); }
+
+        document.getElementById('applyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('applyName').value;
+            const country = document.getElementById('applyCountry').value;
+            const jobId = document.getElementById('applyJobId').value;
+            const job = allJobs.find(j => j.id == jobId);
+            applicants.unshift({ id: applicants.length + 1, name, country, job: job?.title || '', visa: job?.visa_type || '', status: 'pending', date: new Date().toISOString().split('T')[0] });
+            alert('✅ 지원이 완료되었습니다!');
+            closeApplyModal();
+            this.reset();
+            renderApplicants();
+            loadRecentApplicants();
+        });
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeVisaModal(); closeApplyModal(); closeNoticeModal(); } });
+
+        // 사용자 메뉴 토글
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // 다른 곳 클릭 시 메뉴 닫기
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('userMenu');
+            const trigger = e.target.closest('[onclick="toggleUserMenu()"]');
+            if (!trigger && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // 로그아웃
+        function logout() {
+            sessionStorage.removeItem('kwv_logged_in');
+            sessionStorage.removeItem('kwv_user');
+            sessionStorage.removeItem('kwv_user_type');
+            window.location.href = '/kwv-login.html';
+        }
+
+        // 사용자 정보 로드
+        function loadUserInfo() {
+            // 오늘 날짜 표시 (다국어)
+            const today = new Date();
+            let dateStr;
+            if (currentLang === 'ko') {
+                dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            } else if (currentLang === 'vi') {
+                dateStr = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+            } else if (currentLang === 'th') {
+                const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                dateStr = `${today.getDate()} ${thaiMonths[today.getMonth()]} ${today.getFullYear() + 543}`;
+            } else {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                dateStr = `${months[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
+            }
+            document.getElementById('todayDate').textContent = dateStr;
+
+            const userStr = sessionStorage.getItem('kwv_user');
+            let name = currentLang === 'ko' ? '사용자' : 'User';
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    // 영문 이름 (First Name + Last Name)
+                    const firstName = user.firstName || user.first_name || '';
+                    const lastName = user.lastName || user.last_name || '';
+                    name = (firstName + ' ' + lastName).trim() || name;
+                } catch(e) {
+                    console.error('사용자 정보 파싱 오류:', e);
+                }
+            }
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userMenuName').textContent = name;
+            document.getElementById('welcomeMessage').textContent = `${t('hello')}, ${name}${t('welcomeSuffix')}`;
+
+            // 대기 중인 지원자 메시지 업데이트
+            const pendingCount = applicants.filter(a => a.status === 'pending').length;
+            const waitingMsg = document.getElementById('waitingApplicantsMsg');
+            if (waitingMsg) {
+                waitingMsg.innerHTML = `${t('newApplicants')} <span class="font-bold text-yellow-300">${pendingCount}</span>${t('waitingApproval')}`;
+            }
+        }
+
+        // ==================== 설정 패널 함수들 ====================
+
+        // 프로필 수정 모달
+        function openProfileModal() {
+            const userStr = sessionStorage.getItem('kwv_user');
+            let user = {};
+            if (userStr) {
+                try { user = JSON.parse(userStr); } catch(e) {}
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'profileModal';
+            modal.className = 'modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">👤 프로필 수정</h3>
+                        <button onclick="closeProfileModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+                            <i class="fas fa-times text-gray-500"></i>
+                        </button>
+                    </div>
+                    <form id="profileForm">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+                                <input type="email" id="profileEmail" value="${user.email || ''}" class="w-full input-apple bg-gray-100" readonly>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                                    <input type="text" id="profileFirstName" value="${user.firstName || user.first_name || ''}" class="w-full input-apple" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                                    <input type="text" id="profileLastName" value="${user.lastName || user.last_name || ''}" class="w-full input-apple" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">한국어 이름 (선택)</label>
+                                <input type="text" id="profileKoreanName" value="${user.koreanName || user.korean_name || ''}" class="w-full input-apple" placeholder="홍길동">
+                            </div>
+                        </div>
+                        <div class="flex space-x-3 mt-8">
+                            <button type="button" onclick="closeProfileModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">취소</button>
+                            <button type="submit" class="flex-1 btn-primary">저장</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('profileForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const firstName = document.getElementById('profileFirstName').value;
+                const lastName = document.getElementById('profileLastName').value;
+                const koreanName = document.getElementById('profileKoreanName').value;
+
+                // 로컬 세션 업데이트
+                if (userStr) {
+                    const updatedUser = { ...user, firstName, lastName, koreanName };
+                    sessionStorage.setItem('kwv_user', JSON.stringify(updatedUser));
+                    loadUserInfo();
+                }
+
+                alert('✅ 프로필이 업데이트되었습니다!');
+                closeProfileModal();
+            });
+        }
+
+        function closeProfileModal() {
+            const modal = document.getElementById('profileModal');
+            if (modal) modal.remove();
+        }
+
+        // 비밀번호 변경 모달
+        function openPasswordModal() {
+            const modal = document.createElement('div');
+            modal.id = 'passwordModal';
+            modal.className = 'modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">🔐 비밀번호 변경</h3>
+                        <button onclick="closePasswordModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+                            <i class="fas fa-times text-gray-500"></i>
+                        </button>
+                    </div>
+                    <form id="passwordForm">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">현재 비밀번호</label>
+                                <input type="password" id="currentPassword" class="w-full input-apple" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">새 비밀번호</label>
+                                <input type="password" id="newPassword" class="w-full input-apple" minlength="8" required>
+                                <p class="text-xs text-gray-400 mt-1">8자 이상 입력해주세요</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">새 비밀번호 확인</label>
+                                <input type="password" id="confirmPassword" class="w-full input-apple" required>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3 mt-8">
+                            <button type="button" onclick="closePasswordModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">취소</button>
+                            <button type="submit" class="flex-1 btn-primary">변경</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newPw = document.getElementById('newPassword').value;
+                const confirmPw = document.getElementById('confirmPassword').value;
+
+                if (newPw !== confirmPw) {
+                    alert('❌ 새 비밀번호가 일치하지 않습니다.');
+                    return;
+                }
+
+                // API 호출 (추후 구현)
+                alert('✅ 비밀번호가 변경되었습니다!');
+                closePasswordModal();
+            });
+        }
+
+        function closePasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            if (modal) modal.remove();
+        }
+
+        // 언어 설정
+        function changeLanguage() {
+            const lang = document.getElementById('langSetting').value;
+            localStorage.setItem('kwv_language', lang);
+            currentLang = lang;
+            applyLanguage();
+
+            // 동적 콘텐츠 다시 로드
+            loadUserInfo();
+            loadNotices();
+            renderApplicants();
+            loadRecentApplicants();
+            loadVisaTypes();
+            loadJobs();
+            loadRegions();
+        }
+
+        // 언어 적용 함수
+        function applyLanguage() {
+            // HTML lang 속성 변경
+            document.documentElement.lang = currentLang === 'ko' ? 'ko' :
+                                            currentLang === 'vi' ? 'vi' :
+                                            currentLang === 'th' ? 'th' :
+                                            currentLang === 'ph' ? 'fil' : 'en';
+
+            // data-i18n 속성이 있는 모든 요소에 번역 적용
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const text = t(key);
+                if (text) {
+                    // 아이콘이 있는 경우 아이콘 유지
+                    if (key === 'languageNote') {
+                        el.innerHTML = `<i class="fas fa-info-circle mr-1"></i>${text}`;
+                    } else {
+                        el.textContent = text;
+                    }
+                }
+            });
+
+            // placeholder 번역
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                const text = t(key);
+                if (text) el.placeholder = text;
+            });
+
+            // select 옵션 번역 (필터)
+            const filterStatus = document.getElementById('filterStatus');
+            if (filterStatus) {
+                filterStatus.options[0].textContent = t('allStatus');
+                filterStatus.options[1].textContent = t('pending');
+                filterStatus.options[2].textContent = t('approved');
+                filterStatus.options[3].textContent = t('rejected');
+            }
+
+            const filterVisa = document.getElementById('filterVisa');
+            if (filterVisa) {
+                filterVisa.options[0].textContent = t('allVisa');
+            }
+
+            // 지원 모달 국가 선택 번역
+            const applyCountry = document.getElementById('applyCountry');
+            if (applyCountry) {
+                applyCountry.options[0].textContent = t('countryVN');
+                applyCountry.options[1].textContent = t('countryTH');
+                applyCountry.options[2].textContent = t('countryPH');
+            }
+        }
+
+        // 테마 설정
+        function setTheme(theme) {
+            localStorage.setItem('kwv_theme', theme);
+
+            // 버튼 스타일 업데이트
+            const themeButtons = document.querySelectorAll('.theme-btn');
+            themeButtons.forEach(btn => {
+                btn.classList.remove('border-[#007AFF]', 'bg-white');
+                btn.classList.add('border-transparent', 'bg-gray-100');
+            });
+
+            const activeBtn = document.querySelector(`.theme-btn[data-theme="${theme}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('border-[#007AFF]', 'bg-white');
+                activeBtn.classList.remove('border-transparent', 'bg-gray-100');
+            }
+
+            // 다크 모드 적용 (추후 CSS 추가 필요)
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else if (theme === 'light') {
+                document.body.classList.remove('dark-mode');
+            } else {
+                // 자동: 시스템 설정 따름
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            }
+        }
+
+        // 데이터 내보내기
+        function exportData(format = 'json') {
+            const userStr = sessionStorage.getItem('kwv_user');
+            let userData = {};
+            if (userStr) {
+                try { userData = JSON.parse(userStr); } catch(e) {}
+            }
+
+            const dateStr = new Date().toISOString().split('T')[0];
+
+            if (format === 'csv') {
+                // CSV 형식으로 지원자 데이터 내보내기
+                const headers = ['ID', '이름', '국적', '지원 포지션', '비자', '상태', '지원일'];
+                const statusText = {pending: '대기중', approved: '승인', rejected: '거절'};
+                const rows = applicants.map(a => [
+                    a.id,
+                    a.name,
+                    a.country,
+                    a.job,
+                    a.visa,
+                    statusText[a.status] || a.status,
+                    a.date
+                ]);
+
+                const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+                const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `kwv-applicants-${dateStr}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alert('✅ CSV 파일이 다운로드되었습니다!');
+            } else {
+                // JSON 형식
+                const exportObj = {
+                    user: userData,
+                    applicants: applicants,
+                    exportDate: new Date().toISOString(),
+                    settings: {
+                        language: localStorage.getItem('kwv_language') || 'ko',
+                        theme: localStorage.getItem('kwv_theme') || 'light',
+                        notifications: {
+                            email: document.getElementById('emailNotif')?.checked || false,
+                            sms: document.getElementById('smsNotif')?.checked || false,
+                            status: document.getElementById('statusNotif')?.checked || false
+                        }
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `kwv-data-${dateStr}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alert('✅ JSON 데이터가 다운로드되었습니다!');
+            }
+        }
+
+        // 계정 삭제 확인
+        function confirmDeleteAccount() {
+            const modal = document.createElement('div');
+            modal.id = 'deleteModal';
+            modal.className = 'modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4">
+                    <div class="text-center mb-6">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">계정 삭제</h3>
+                        <p class="text-gray-500">정말로 계정을 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.</p>
+                    </div>
+                    <div class="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
+                        <p class="text-sm text-red-600"><i class="fas fa-info-circle mr-2"></i>모든 지원 내역과 개인정보가 영구적으로 삭제됩니다.</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="closeDeleteModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">취소</button>
+                        <button onclick="deleteAccount()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition">삭제</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            if (modal) modal.remove();
+        }
+
+        function deleteAccount() {
+            // API 호출 (추후 구현)
+            sessionStorage.clear();
+            localStorage.removeItem('kwv_logged_in');
+            alert('계정이 삭제되었습니다.');
+            window.location.href = '/kwv-login.html';
+        }
+
+        // 알림 설정 저장 (체크박스 변경 시 자동 저장)
+        function initNotificationSettings() {
+            const emailNotif = document.getElementById('emailNotif');
+            const smsNotif = document.getElementById('smsNotif');
+            const statusNotif = document.getElementById('statusNotif');
+
+            // 저장된 설정 로드
+            const savedNotifs = JSON.parse(localStorage.getItem('kwv_notifications') || '{}');
+            if (emailNotif) emailNotif.checked = savedNotifs.email !== false;
+            if (smsNotif) smsNotif.checked = savedNotifs.sms === true;
+            if (statusNotif) statusNotif.checked = savedNotifs.status !== false;
+
+            // 변경 시 저장
+            [emailNotif, smsNotif, statusNotif].forEach(el => {
+                if (el) {
+                    el.addEventListener('change', () => {
+                        localStorage.setItem('kwv_notifications', JSON.stringify({
+                            email: emailNotif?.checked,
+                            sms: smsNotif?.checked,
+                            status: statusNotif?.checked
+                        }));
+                    });
+                }
+            });
+        }
+
+        // 저장된 테마/언어 설정 로드
+        function loadSavedSettings() {
+            const savedTheme = localStorage.getItem('kwv_theme') || 'light';
+            const savedLang = localStorage.getItem('kwv_language') || 'ko';
+
+            // 언어 설정
+            currentLang = savedLang;
+            const langSelect = document.getElementById('langSetting');
+            if (langSelect) langSelect.value = savedLang;
+
+            // 언어 적용
+            applyLanguage();
+
+            // 테마 설정
+            setTheme(savedTheme);
+
+            // 알림 설정
+            initNotificationSettings();
+        }
+
+        // 초기 로드
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserInfo();
+            loadStats();
+            loadVisaTypes();
+            loadJobs();
+            loadRegions();
+            loadNotices();
+            renderApplicants();
+            loadRecentApplicants();
+            initCharts();
+            loadSavedSettings();
+        });
+    </script>
+</body>
+</html>

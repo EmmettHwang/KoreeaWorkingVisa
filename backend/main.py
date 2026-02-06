@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Form, Request
+# KWV Auth Module
+from auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -87,6 +89,9 @@ if os.path.exists(frontend_dir):
 
 # public 폴더의 GLB 파일을 frontend에서 직접 접근 가능하도록 심볼릭 링크 또는 복사
 # 또는 별도 라우트로 서빙
+
+# KWV 인증 라우터 등록
+app.include_router(auth_router)
 
 # CORS 설정
 app.add_middleware(
@@ -5484,13 +5489,8 @@ async def change_password(data: dict):
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    """프론트엔드 index.html 서빙"""
-    try:
-        index_path = os.path.join(frontend_dir, "index.html")
-        with open(index_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Frontend not found")
+    """로그인 페이지로 리다이렉트"""
+    return RedirectResponse(url="/kwv-login.html", status_code=302)
 
 # ==================== 팀 활동일지 API ====================
 
@@ -11118,3 +11118,299 @@ async def test_ftp_connection():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# ================================================
+# KoreaWorkingVisa API 추가
+# ================================================
+
+# 비자 종류
+VISA_TYPES = {
+    "E8": {"name": "계절근로비자", "name_en": "Seasonal Worker", "duration": "4-8개월", "type": "단수", "industries": ["농업", "어업"]},
+    "D2": {"name": "유학비자", "name_en": "Student Visa", "duration": "2년+", "type": "연장가능", "industries": ["교육"]},
+    "D4": {"name": "어학연수비자", "name_en": "Language Training", "duration": "최대2년", "type": "연장가능", "industries": ["교육"]},
+    "D10": {"name": "구직비자", "name_en": "Job Seeker", "duration": "6개월-2년", "type": "연장가능", "industries": ["전체"]},
+    "F4": {"name": "재외동포비자", "name_en": "Overseas Korean", "duration": "3년+", "type": "복수", "industries": ["전체"]},
+}
+
+# 한국 지자체
+KR_REGIONS = [
+    {"id": 1, "name": "서천군", "province": "충남", "population": 50000, "climate": "온난", "main_industry": "농업", "needed_workers": 100},
+    {"id": 2, "name": "해남군", "province": "전남", "population": 68000, "climate": "온난", "main_industry": "농업", "needed_workers": 150},
+    {"id": 3, "name": "영덕군", "province": "경북", "population": 35000, "climate": "해양성", "main_industry": "어업", "needed_workers": 80},
+    {"id": 4, "name": "고성군", "province": "강원", "population": 27000, "climate": "냉대", "main_industry": "농업", "needed_workers": 60},
+]
+
+# 해외 지자체
+FOREIGN_REGIONS = [
+    {"id": 1, "name": "하노이", "country": "베트남", "country_code": "VN"},
+    {"id": 2, "name": "호치민", "country": "베트남", "country_code": "VN"},
+    {"id": 3, "name": "방콕", "country": "태국", "country_code": "TH"},
+    {"id": 4, "name": "마닐라", "country": "필리핀", "country_code": "PH"},
+    {"id": 5, "name": "세부", "country": "필리핀", "country_code": "PH"},
+]
+
+# 구인 정보
+JOB_LISTINGS = [
+    {"id": 1, "region_id": 1, "region": "서천군", "visa_type": "E8", "title": "딸기 농장 근로자", "positions": 50, "salary": "월 220만원", "period": "2026.03 - 2026.10", "benefits": ["숙소제공", "식사제공"]},
+    {"id": 2, "region_id": 2, "region": "해남군", "visa_type": "E8", "title": "배추 농장 근로자", "positions": 80, "salary": "월 200만원", "period": "2026.04 - 2026.11", "benefits": ["숙소제공"]},
+    {"id": 3, "region_id": 3, "region": "영덕군", "visa_type": "E8", "title": "수산물 가공 근로자", "positions": 40, "salary": "월 230만원", "period": "2026.05 - 2026.12", "benefits": ["숙소제공", "식사제공", "귀국항공료"]},
+]
+
+# ========== KoreaWorkingVisa API ==========
+
+@app.get("/api/kwv/visa")
+async def get_visa_types():
+    """비자 종류 조회"""
+    return {"success": True, "data": VISA_TYPES}
+
+@app.get("/api/kwv/visa/{visa_type}")
+async def get_visa_detail(visa_type: str):
+    """비자 상세 정보"""
+    if visa_type.upper() in VISA_TYPES:
+        return {"success": True, "data": VISA_TYPES[visa_type.upper()]}
+    return {"success": False, "message": "비자 타입을 찾을 수 없습니다"}
+
+@app.get("/api/kwv/regions/kr")
+async def get_kr_regions():
+    """한국 지자체 목록"""
+    return {"success": True, "data": KR_REGIONS}
+
+@app.get("/api/kwv/regions/foreign")
+async def get_foreign_regions():
+    """해외 지자체 목록"""
+    return {"success": True, "data": FOREIGN_REGIONS}
+
+@app.get("/api/kwv/jobs")
+async def get_jobs(visa_type: str = None, region_id: int = None):
+    """구인 목록 조회"""
+    jobs = JOB_LISTINGS
+    if visa_type:
+        jobs = [j for j in jobs if j["visa_type"] == visa_type.upper()]
+    if region_id:
+        jobs = [j for j in jobs if j["region_id"] == region_id]
+    return {"success": True, "data": jobs, "total": len(jobs)}
+
+@app.get("/api/kwv/jobs/{job_id}")
+async def get_job_detail(job_id: int):
+    """구인 상세 정보"""
+    for job in JOB_LISTINGS:
+        if job["id"] == job_id:
+            return {"success": True, "data": job}
+    return {"success": False, "message": "구인 정보를 찾을 수 없습니다"}
+
+@app.post("/api/kwv/applications")
+async def create_application(data: dict):
+    """지원서 제출"""
+    return {
+        "success": True, 
+        "message": "지원이 완료되었습니다",
+        "application_id": 12345
+    }
+
+@app.get("/api/kwv/dashboard/stats")
+async def get_dashboard_stats():
+    """대시보드 통계"""
+    return {
+        "success": True,
+        "data": {
+            "total_jobs": len(JOB_LISTINGS),
+            "total_positions": sum(j["positions"] for j in JOB_LISTINGS),
+            "kr_regions": len(KR_REGIONS),
+            "foreign_regions": len(FOREIGN_REGIONS),
+            "visa_types": len(VISA_TYPES)
+        }
+    }
+
+print("✅ KoreaWorkingVisa API 로드 완료")
+
+# ================================================
+# 비자 상세 정보 API
+# ================================================
+
+VISA_DETAILS = {
+    "E8": {
+        "name": "계절근로비자",
+        "name_en": "Seasonal Worker Visa",
+        "duration": "4-8개월",
+        "type": "단수",
+        "industries": ["농업", "어업"],
+        "description": "농번기 인력 부족을 해소하기 위한 단기 계절근로 비자입니다.",
+        "requirements": [
+            "만 18세 이상 40세 이하",
+            "범죄경력 없음",
+            "건강 상태 양호",
+            "해당 국가 지자체 추천"
+        ],
+        "documents": [
+            "여권 (유효기간 1년 이상)",
+            "비자발급신청서",
+            "증명사진 (3.5x4.5cm) 2매",
+            "건강진단서",
+            "범죄경력증명서",
+            "지자체 추천서",
+            "고용계약서"
+        ],
+        "process": [
+            {"step": 1, "title": "지자체 신청", "desc": "해외 파트너 지자체에 근로 신청"},
+            {"step": 2, "title": "서류 심사", "desc": "한국 지자체에서 서류 검토"},
+            {"step": 3, "title": "고용허가", "desc": "고용노동부 고용허가 발급"},
+            {"step": 4, "title": "비자 신청", "desc": "대한민국 대사관에서 비자 신청"},
+            {"step": 5, "title": "입국", "desc": "한국 입국 및 근무 시작"}
+        ],
+        "cost": "약 50~100만원 (국가별 상이)",
+        "faq": [
+            {"q": "계절근로 후 재입국이 가능한가요?", "a": "네, 성실 근로자는 다음 해 우선 선발됩니다."},
+            {"q": "가족 동반이 가능한가요?", "a": "아니요, 단독 입국만 가능합니다."},
+            {"q": "근무지 변경이 가능한가요?", "a": "원칙적으로 불가하나, 사업장 폐업 등 특별한 경우 가능합니다."}
+        ]
+    },
+    "D2": {
+        "name": "유학비자",
+        "name_en": "Student Visa",
+        "duration": "2년+",
+        "type": "연장가능",
+        "industries": ["교육"],
+        "description": "한국의 대학(원)에서 정규 학위과정을 이수하기 위한 비자입니다.",
+        "requirements": [
+            "고등학교 졸업 이상",
+            "한국어능력시험(TOPIK) 3급 이상 또는 영어능력 증빙",
+            "학비 및 생활비 지불 능력",
+            "입학허가서 보유"
+        ],
+        "documents": [
+            "여권",
+            "비자발급신청서",
+            "증명사진 2매",
+            "입학허가서",
+            "최종학력 증명서",
+            "재정능력 증빙 (은행잔고증명 등)",
+            "한국어/영어 능력 증명서"
+        ],
+        "process": [
+            {"step": 1, "title": "학교 선택", "desc": "한국 대학 검색 및 선택"},
+            {"step": 2, "title": "입학 지원", "desc": "온라인 또는 오프라인 입학 신청"},
+            {"step": 3, "title": "입학허가", "desc": "대학으로부터 입학허가서 수령"},
+            {"step": 4, "title": "비자 신청", "desc": "대사관에서 D-2 비자 신청"},
+            {"step": 5, "title": "입국 및 등록", "desc": "한국 입국 후 외국인등록"}
+        ],
+        "cost": "비자 수수료 약 6~8만원",
+        "faq": [
+            {"q": "아르바이트가 가능한가요?", "a": "네, 출입국관리사무소 허가 후 주 20시간 가능합니다."},
+            {"q": "D-2에서 취업비자로 변경 가능한가요?", "a": "네, 졸업 후 D-10 또는 E-7 등으로 변경 가능합니다."},
+            {"q": "휴학 중에도 체류 가능한가요?", "a": "휴학 시 D-2 자격 유지가 어려울 수 있으니 출입국사무소 상담이 필요합니다."}
+        ]
+    },
+    "D4": {
+        "name": "어학연수비자",
+        "name_en": "Language Training Visa",
+        "duration": "최대 2년",
+        "type": "연장가능",
+        "industries": ["교육"],
+        "description": "한국어 연수기관에서 한국어를 배우기 위한 비자입니다.",
+        "requirements": [
+            "고등학교 졸업 이상",
+            "등록금 납부 능력",
+            "정부 인가 어학원 등록"
+        ],
+        "documents": [
+            "여권",
+            "비자발급신청서",
+            "증명사진 2매",
+            "어학원 입학허가서",
+            "최종학력 증명서",
+            "재정능력 증빙"
+        ],
+        "process": [
+            {"step": 1, "title": "어학원 선택", "desc": "정부 인가 어학원 검색"},
+            {"step": 2, "title": "등록 신청", "desc": "어학원에 등록 및 등록금 납부"},
+            {"step": 3, "title": "입학허가", "desc": "어학원 입학허가서 수령"},
+            {"step": 4, "title": "비자 신청", "desc": "대사관에서 D-4 비자 신청"},
+            {"step": 5, "title": "입국", "desc": "한국 입국 후 연수 시작"}
+        ],
+        "cost": "비자 수수료 약 6~8만원",
+        "faq": [
+            {"q": "D-4에서 D-2로 변경 가능한가요?", "a": "네, 대학 입학 시 D-2로 자격 변경 가능합니다."},
+            {"q": "아르바이트가 가능한가요?", "a": "6개월 이상 체류 후 허가받아 가능합니다."},
+            {"q": "연장은 어떻게 하나요?", "a": "출석률 70% 이상 유지 시 연장 가능합니다."}
+        ]
+    },
+    "D10": {
+        "name": "구직비자",
+        "name_en": "Job Seeker Visa",
+        "duration": "6개월-2년",
+        "type": "연장가능",
+        "industries": ["전체"],
+        "description": "한국에서 취업 활동을 하기 위한 구직 비자입니다.",
+        "requirements": [
+            "학사 학위 이상 (한국 또는 해외)",
+            "또는 전문학사 + 경력",
+            "범죄경력 없음"
+        ],
+        "documents": [
+            "여권",
+            "비자발급신청서",
+            "증명사진 2매",
+            "학위증명서",
+            "성적증명서",
+            "경력증명서 (해당자)",
+            "구직활동계획서"
+        ],
+        "process": [
+            {"step": 1, "title": "자격 확인", "desc": "D-10 신청 자격 요건 확인"},
+            {"step": 2, "title": "서류 준비", "desc": "필요 서류 준비 및 번역/공증"},
+            {"step": 3, "title": "비자 신청", "desc": "출입국사무소 또는 대사관 신청"},
+            {"step": 4, "title": "구직 활동", "desc": "한국에서 적극적인 구직 활동"},
+            {"step": 5, "title": "취업비자 변경", "desc": "취업 시 해당 비자로 변경"}
+        ],
+        "cost": "비자 수수료 약 13만원",
+        "faq": [
+            {"q": "D-10 기간 중 아르바이트 가능한가요?", "a": "허가받아 제한적으로 가능합니다."},
+            {"q": "연장은 몇 번까지 가능한가요?", "a": "최대 2년까지 연장 가능합니다."},
+            {"q": "취업하면 어떤 비자로 변경하나요?", "a": "E-7(특정활동), H-1(워킹홀리데이) 등으로 변경합니다."}
+        ]
+    },
+    "F4": {
+        "name": "재외동포비자",
+        "name_en": "Overseas Korean Visa",
+        "duration": "3년+",
+        "type": "복수",
+        "industries": ["전체"],
+        "description": "재외동포의 한국 내 자유로운 경제활동을 위한 비자입니다.",
+        "requirements": [
+            "대한민국 국적 보유 후 외국 국적 취득자",
+            "또는 부모/조부모가 대한민국 국적 보유자",
+            "범죄경력 없음"
+        ],
+        "documents": [
+            "여권",
+            "비자발급신청서",
+            "증명사진 2매",
+            "가족관계 증빙서류",
+            "국적 상실/이탈 증빙",
+            "범죄경력증명서"
+        ],
+        "process": [
+            {"step": 1, "title": "자격 확인", "desc": "재외동포 자격 요건 확인"},
+            {"step": 2, "title": "서류 준비", "desc": "가족관계 증빙 등 서류 준비"},
+            {"step": 3, "title": "비자 신청", "desc": "대사관 또는 영사관에서 신청"},
+            {"step": 4, "title": "비자 발급", "desc": "심사 후 F-4 비자 발급"},
+            {"step": 5, "title": "입국 및 등록", "desc": "입국 후 외국인등록"}
+        ],
+        "cost": "비자 수수료 약 6~8만원",
+        "faq": [
+            {"q": "F-4로 어떤 일을 할 수 있나요?", "a": "단순노무직을 제외한 대부분의 직종에서 근무 가능합니다."},
+            {"q": "체류 기간은 얼마나 되나요?", "a": "최대 3년이며, 계속 연장 가능합니다."},
+            {"q": "가족 초청이 가능한가요?", "a": "배우자와 미성년 자녀 초청이 가능합니다."}
+        ]
+    }
+}
+
+@app.get("/api/kwv/visa/{visa_type}/detail")
+async def get_visa_full_detail(visa_type: str):
+    """비자 상세 정보 전체"""
+    vtype = visa_type.upper()
+    if vtype in VISA_DETAILS:
+        return {"success": True, "data": VISA_DETAILS[vtype]}
+    return {"success": False, "message": "비자 정보를 찾을 수 없습니다"}
+
+print("✅ 비자 상세 API 로드 완료")

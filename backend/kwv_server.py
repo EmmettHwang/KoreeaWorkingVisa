@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+KoreaWorkingVisa 독립 서버
+- 기존 RISELMS 서버와 별도로 실행 가능
+"""
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
+import os
+
+# FastAPI 앱 생성
+app = FastAPI(
+    title="Korea Working Visa API",
+    description="비자 신청자 및 관리자 포털",
+    version="1.0.0"
+)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# KWV API 라우터 추가
+from kwv_api import router as kwv_router
+app.include_router(kwv_router)
+
+# 프론트엔드 디렉토리
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+
+# 정적 파일 서빙
+if os.path.exists(frontend_dir):
+    admin_dir = os.path.join(frontend_dir, "admin")
+    if os.path.exists(admin_dir):
+        app.mount("/admin", StaticFiles(directory=admin_dir, html=True), name="admin")
+
+    applicant_dir = os.path.join(frontend_dir, "applicant")
+    if os.path.exists(applicant_dir):
+        app.mount("/applicant", StaticFiles(directory=applicant_dir, html=True), name="applicant")
+
+    js_dir = os.path.join(frontend_dir, "js")
+    if os.path.exists(js_dir):
+        app.mount("/js", StaticFiles(directory=js_dir), name="js")
+
+# 루트 페이지 -> 로그인으로 리다이렉트
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/kwv-login.html")
+
+# 통합 로그인 페이지
+@app.get("/kwv-login.html")
+async def serve_login():
+    login_path = os.path.join(frontend_dir, "kwv-login.html")
+    if os.path.exists(login_path):
+        return FileResponse(login_path, media_type="text/html")
+    return {"error": "Login page not found"}
+
+# 회원가입 페이지
+@app.get("/kwv-register.html")
+async def serve_register():
+    register_path = os.path.join(frontend_dir, "kwv-register.html")
+    if os.path.exists(register_path):
+        return FileResponse(register_path, media_type="text/html")
+    return RedirectResponse(url="/kwv-login.html")
+
+if __name__ == "__main__":
+    import uvicorn
+    print("=" * 50)
+    print("  Korea Working Visa Server")
+    print("=" * 50)
+    print(f"  Login: http://localhost:8000/kwv-login.html")
+    print(f"  Register: http://localhost:8000/kwv-register.html")
+    print(f"  Admin: http://localhost:8000/admin/dashboard.html")
+    print(f"  Applicant: http://localhost:8000/applicant/dashboard.html")
+    print("=" * 50)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

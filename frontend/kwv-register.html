@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Korea Working Visa - Register</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .user-type-btn { transition: all 0.3s ease; cursor: pointer; }
+        .user-type-btn:hover { transform: translateY(-2px); }
+        .user-type-btn.selected { border-color: #3b82f6; background: #eff6ff; }
+        .user-type-btn.selected .check-icon { display: flex; }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+    <div class="fixed top-4 right-4 z-50">
+        <select id="langSelector" onchange="changeLanguage(this.value)" class="px-3 py-2 bg-white/90 rounded-lg shadow-lg text-sm focus:outline-none cursor-pointer">
+            <option value="en">English</option>
+            <option value="ko">한국어</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="th">ภาษาไทย</option>
+            <option value="tl">Filipino</option>
+        </select>
+    </div>
+
+    <div class="w-full max-w-md">
+        <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-green-600 to-blue-600 p-6 text-center">
+                <div class="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
+                    <i class="fas fa-user-plus text-4xl text-green-600"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white" data-i18n="title">Create Account</h1>
+                <p class="text-green-100 text-sm mt-1" data-i18n="subtitle">Join Korea Working Visa</p>
+            </div>
+
+            <div class="p-6">
+                <form id="registerForm" class="space-y-4">
+                    <!-- User Type Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-users mr-1"></i> <span data-i18n="userType">Account Type</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="user-type-btn selected border-2 border-gray-200 rounded-lg p-4 text-center relative" onclick="selectUserType('applicant')" id="btn-applicant">
+                                <div class="check-icon hidden absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full items-center justify-center">
+                                    <i class="fas fa-check text-white text-xs"></i>
+                                </div>
+                                <i class="fas fa-user text-3xl text-blue-500 mb-2"></i>
+                                <p class="font-medium text-gray-700" data-i18n="applicant">Visa Applicant</p>
+                                <p class="text-xs text-gray-500 mt-1" data-i18n="applicantDesc">Foreign Worker</p>
+                            </div>
+                            <div class="user-type-btn border-2 border-gray-200 rounded-lg p-4 text-center relative" onclick="selectUserType('admin')" id="btn-admin">
+                                <div class="check-icon hidden absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full items-center justify-center">
+                                    <i class="fas fa-check text-white text-xs"></i>
+                                </div>
+                                <i class="fas fa-user-shield text-3xl text-purple-500 mb-2"></i>
+                                <p class="font-medium text-gray-700" data-i18n="admin">Administrator</p>
+                                <p class="text-xs text-gray-500 mt-1" data-i18n="adminDesc">Government Official</p>
+                            </div>
+                        </div>
+                        <input type="hidden" id="userType" value="applicant">
+                    </div>
+
+                    <div id="organizationField" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-building mr-1"></i> <span data-i18n="organization">Organization</span>
+                        </label>
+                        <input type="text" id="organization" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Government Agency Name">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-user mr-1"></i> <span data-i18n="name">Full Name</span>
+                        </label>
+                        <input type="text" id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Your full name" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-envelope mr-1"></i> <span data-i18n="email">Email</span>
+                        </label>
+                        <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="your@email.com" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-lock mr-1"></i> <span data-i18n="password">Password</span>
+                        </label>
+                        <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Create a password" required minlength="6">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-lock mr-1"></i> <span data-i18n="confirmPassword">Confirm Password</span>
+                        </label>
+                        <input type="password" id="confirmPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Confirm your password" required>
+                    </div>
+
+                    <div id="errorMessage" class="hidden p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
+                    <div id="successMessage" class="hidden p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm"></div>
+
+                    <button type="submit" id="registerBtn" class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-3 rounded-lg hover:opacity-90 transition transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
+                        <i class="fas fa-user-plus mr-2"></i> <span data-i18n="register">Register</span>
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600 text-sm">
+                        <span data-i18n="hasAccount">Already have an account?</span>
+                        <a href="/kwv-login.html" class="text-blue-600 font-medium hover:underline" data-i18n="login">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/kwv';
+        let selectedUserType = 'applicant';
+
+        const translations = {
+            en: { title: 'Create Account', subtitle: 'Join Korea Working Visa', userType: 'Account Type', applicant: 'Visa Applicant', applicantDesc: 'Foreign Worker', admin: 'Administrator', adminDesc: 'Government Official', organization: 'Organization', name: 'Full Name', email: 'Email', password: 'Password', confirmPassword: 'Confirm Password', register: 'Register', hasAccount: 'Already have an account?', login: 'Login', passwordMismatch: 'Passwords do not match', registrationSuccess: 'Registration successful! Redirecting...' },
+            ko: { title: '회원가입', subtitle: '한국 워킹비자에 가입하세요', userType: '계정 유형', applicant: '비자 신청자', applicantDesc: '외국인 근로자', admin: '관리자', adminDesc: '정부 기관 담당자', organization: '소속 기관', name: '이름', email: '이메일', password: '비밀번호', confirmPassword: '비밀번호 확인', register: '가입하기', hasAccount: '이미 계정이 있으신가요?', login: '로그인', passwordMismatch: '비밀번호가 일치하지 않습니다', registrationSuccess: '가입 완료! 이동 중...' },
+            vi: { title: 'Tạo Tài Khoản', subtitle: 'Tham gia Korea Working Visa', userType: 'Loại Tài Khoản', applicant: 'Người Xin Visa', applicantDesc: 'Lao Động Nước Ngoài', admin: 'Quản Trị Viên', adminDesc: 'Quan Chức Chính Phủ' },
+            th: { title: 'สร้างบัญชี', subtitle: 'เข้าร่วม Korea Working Visa', userType: 'ประเภทบัญชี', applicant: 'ผู้สมัครวีซ่า', applicantDesc: 'แรงงานต่างชาติ', admin: 'ผู้ดูแลระบบ', adminDesc: 'เจ้าหน้าที่รัฐ' },
+            tl: { title: 'Gumawa ng Account', subtitle: 'Sumali sa Korea Working Visa', userType: 'Uri ng Account', applicant: 'Visa Applicant', applicantDesc: 'Dayuhang Manggagawa', admin: 'Administrator', adminDesc: 'Opisyal ng Gobyerno' }
+        };
+
+        let currentLang = localStorage.getItem('kwv_language') || 'en';
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('kwv_language', lang);
+            applyTranslations();
+        }
+
+        function applyTranslations() {
+            const t = translations[currentLang] || translations.en;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+            document.getElementById('langSelector').value = currentLang;
+        }
+
+        function selectUserType(type) {
+            selectedUserType = type;
+            document.getElementById('userType').value = type;
+            document.querySelectorAll('.user-type-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('btn-' + type).classList.add('selected');
+            document.getElementById('organizationField').classList.toggle('hidden', type !== 'admin');
+        }
+
+        function showError(msg) {
+            document.getElementById('errorMessage').textContent = msg;
+            document.getElementById('errorMessage').classList.remove('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('successMessage').textContent = msg;
+            document.getElementById('successMessage').classList.remove('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        function redirectUser(user) {
+            if (user.user_type === 'admin') {
+                setTimeout(() => { window.location.href = '/admin/dashboard.html'; }, 1000);
+            } else {
+                setTimeout(() => { window.location.href = '/applicant/dashboard.html'; }, 1000);
+            }
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const t = translations[currentLang] || translations.en;
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const organization = document.getElementById('organization').value;
+            const registerBtn = document.getElementById('registerBtn');
+
+            if (password !== confirmPassword) {
+                showError(t.passwordMismatch || 'Passwords do not match');
+                return;
+            }
+
+            registerBtn.disabled = true;
+            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Registering...';
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email, password, name,
+                        user_type: selectedUserType,
+                        organization: selectedUserType === 'admin' ? organization : null,
+                        language: currentLang
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Registration failed');
+
+                localStorage.setItem('kwv_token', data.access_token);
+                localStorage.setItem('kwv_user', JSON.stringify(data.user));
+                showSuccess(t.registrationSuccess || 'Registration successful! Redirecting...');
+                redirectUser(data.user);
+            } catch (error) {
+                showError(error.message);
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i> Register';
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', applyTranslations);
+    </script>
+</body>
+</html>
