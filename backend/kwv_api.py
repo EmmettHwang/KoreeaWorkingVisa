@@ -357,7 +357,7 @@ async def login(credentials: UserLogin):
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT id, email, password_hash, name, user_type, admin_level, language, is_active
+            SELECT id, email, password_hash, password_salt, first_name, last_name, status
             FROM kwv_users WHERE email = %s
         """, (credentials.email,))
 
@@ -366,15 +366,20 @@ async def login(credentials: UserLogin):
         if not user:
             raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다")
 
-        user_id, email, password_hash, name, user_type, admin_level, language, is_active = user
+        user_id, email, password_hash, password_salt, first_name, last_name, status = user
+        name = (first_name + ' ' + last_name).strip() if first_name else email
+        user_type = 'admin'
+        admin_level = 1
+        language = 'ko'
 
-        if not is_active:
+        if status != 'active':
             raise HTTPException(status_code=403, detail="비활성화된 계정입니다")
 
-        if not verify_password(credentials.password, password_hash):
+        check_hash = hashlib.sha256((credentials.password + password_salt).encode()).hexdigest()
+        if check_hash != password_hash:
             raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다")
 
-        cursor.execute("UPDATE kwv_users SET last_login_at = NOW() WHERE id = %s", (user_id,))
+        cursor.execute("UPDATE kwv_users SET last_login = NOW() WHERE id = %s", (user_id,))
         conn.commit()
 
         token_data = {
