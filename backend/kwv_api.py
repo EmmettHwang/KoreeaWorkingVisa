@@ -9,7 +9,7 @@ KoreaWorkingVisa API 모듈
 from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.responses import JSONResponse
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from datetime import datetime, timedelta
 import os
 import json
@@ -49,7 +49,7 @@ class UserLogin(BaseModel):
     password: str
 
 class UserRegister(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     name: str
     phone: Optional[str] = None
