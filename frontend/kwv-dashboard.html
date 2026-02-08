@@ -928,9 +928,9 @@
                                 <td class="py-3 px-4 text-center text-gray-500">2026-01-15</td>
                                 <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
                                 <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('yhkim', this.value)" class="text-xs border rounded-lg px-2 py-1">
-                                        <option value="G" selected>G</option>
+                                    <select onchange="changeGrade('yhkim', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="G">
                                         <option value="M">M</option>
+                                        <option value="G" selected>G</option>
                                         <option value="S">S</option>
                                         <option value="-">-</option>
                                     </select>
@@ -943,9 +943,9 @@
                                 <td class="py-3 px-4 text-center text-gray-500">2026-01-20</td>
                                 <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
                                 <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('cspark', this.value)" class="text-xs border rounded-lg px-2 py-1">
-                                        <option value="G" selected>G</option>
+                                    <select onchange="changeGrade('cspark', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="G">
                                         <option value="M">M</option>
+                                        <option value="G" selected>G</option>
                                         <option value="S">S</option>
                                         <option value="-">-</option>
                                     </select>
@@ -958,10 +958,10 @@
                                 <td class="py-3 px-4 text-center text-gray-500">2026-02-01</td>
                                 <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
                                 <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('jilee', this.value)" class="text-xs border rounded-lg px-2 py-1">
-                                        <option value="S" selected>S</option>
+                                    <select onchange="changeGrade('jilee', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="S">
                                         <option value="M">M</option>
                                         <option value="G">G</option>
+                                        <option value="S" selected>S</option>
                                         <option value="-">-</option>
                                     </select>
                                 </td>
@@ -973,10 +973,10 @@
                                 <td class="py-3 px-4 text-center text-gray-500">2026-02-03</td>
                                 <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
                                 <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('tminh', this.value)" class="text-xs border rounded-lg px-2 py-1">
-                                        <option value="S" selected>S</option>
+                                    <select onchange="changeGrade('tminh', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="S">
                                         <option value="M">M</option>
                                         <option value="G">G</option>
+                                        <option value="S" selected>S</option>
                                         <option value="-">-</option>
                                     </select>
                                 </td>
@@ -988,11 +988,11 @@
                                 <td class="py-3 px-4 text-center text-gray-500">2026-02-05</td>
                                 <td class="py-3 px-4 text-center"><span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">미승인</span></td>
                                 <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('mhjung', this.value)" class="text-xs border rounded-lg px-2 py-1">
-                                        <option value="-" selected>-</option>
+                                    <select onchange="changeGrade('mhjung', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="-">
                                         <option value="M">M</option>
                                         <option value="G">G</option>
                                         <option value="S">S</option>
+                                        <option value="-" selected>-</option>
                                     </select>
                                 </td>
                             </tr>
@@ -4856,12 +4856,18 @@
             msg.textContent = opts.message || '';
             btn.textContent = opts.confirmText || '확인';
             btn.className = 'px-5 py-2.5 rounded-xl text-sm font-medium text-white transition ' + (opts.confirmClass || 'bg-blue-500 hover:bg-blue-600');
-            btn.onclick = () => { closePermModal(); if (opts.onConfirm) opts.onConfirm(); };
+            btn.onclick = () => { closePermModal(false); if (opts.onConfirm) opts.onConfirm(); };
+            permModalCancelCallback = opts.onCancel || null;
             modal.classList.add('active');
         }
 
-        function closePermModal() {
+        let permModalCancelCallback = null;
+        function closePermModal(cancelled) {
             document.getElementById('permissionModal').classList.remove('active');
+            if (cancelled !== false && permModalCancelCallback) {
+                permModalCancelCallback();
+                permModalCancelCallback = null;
+            }
         }
 
         function showPermToast(message, type) {
@@ -4919,11 +4925,13 @@
             });
         }
 
-        function changeGrade(userId, newGrade) {
+        function changeGrade(userId, newGrade, selectEl) {
             const gradeNames = { 'M': 'Master', 'G': 'Gold', 'S': 'Silver', '-': '미승인' };
             const gradeIcons = { 'M': 'fa-crown', 'G': 'fa-star', 'S': 'fa-shield-alt', '-': 'fa-minus-circle' };
             const gradeColors = { 'M': 'text-purple-500', 'G': 'text-yellow-500', 'S': 'text-gray-500', '-': 'text-red-400' };
             const gradeBgs = { 'M': 'bg-purple-100', 'G': 'bg-yellow-100', 'S': 'bg-gray-100', '-': 'bg-red-100' };
+            const badgeClasses = { 'M': 'admin-badge badge-master', 'G': 'admin-badge badge-gold', 'S': 'admin-badge badge-silver' };
+            const prevGrade = selectEl.getAttribute('data-prev');
 
             showPermModal({
                 title: '등급 변경',
@@ -4934,7 +4942,22 @@
                 confirmText: `${gradeNames[newGrade]}(으)로 변경`,
                 confirmClass: 'bg-purple-500 hover:bg-purple-600',
                 onConfirm: () => {
+                    // 배지 업데이트
+                    const row = selectEl.closest('tr');
+                    const badgeCell = row.querySelector('td:nth-child(3)');
+                    if (badgeCell) {
+                        if (badgeClasses[newGrade]) {
+                            badgeCell.innerHTML = `<span class="${badgeClasses[newGrade]}">${newGrade}</span>`;
+                        } else {
+                            badgeCell.innerHTML = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-200 text-gray-500 text-xs font-bold">-</span>`;
+                        }
+                    }
+                    selectEl.setAttribute('data-prev', newGrade);
                     showPermToast(`등급이 ${gradeNames[newGrade]}(으)로 변경되었습니다.`, 'success');
+                },
+                onCancel: () => {
+                    // 취소 시 드롭다운 원래 값으로 복원
+                    selectEl.value = prevGrade;
                 }
             });
         }
