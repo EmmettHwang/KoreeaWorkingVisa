@@ -369,7 +369,7 @@ async def login(credentials: UserLogin):
         user_id, email, password_hash, password_salt, first_name, last_name, status = user
         name = (first_name + ' ' + last_name).strip() if first_name else email
         user_type = 'admin'
-        admin_level = 1
+        admin_level = 3
         language = 'ko'
 
         if status != 'active':
