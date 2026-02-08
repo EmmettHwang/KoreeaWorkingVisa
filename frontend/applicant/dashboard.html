@@ -31,11 +31,94 @@
         /* 모바일 최적화 */
         @media (max-width: 768px) {
             .desktop-only { display: none !important; }
+            .mobile-only { display: block !important; }
             .mobile-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
             .mobile-tabs::-webkit-scrollbar { display: none; }
         }
         @media (min-width: 769px) {
             .mobile-only { display: none !important; }
+        }
+
+        /* 모바일 레이아웃 */
+        #mobileLayout { overflow: hidden; }
+
+        /* 모바일 스와이프 컨테이너 */
+        #mobileSwipeContainer {
+            display: flex;
+            width: 200%;
+            transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+            min-height: calc(100vh - 52px);
+        }
+        .mobile-page { width: 50%; min-height: calc(100vh - 52px); overflow-y: auto; }
+
+        /* 모바일 페이드인 애니메이션 */
+        @keyframes mobileFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .mobile-fade-in {
+            animation: mobileFadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* 모바일 메뉴 카드 */
+        .mobile-menu-card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            cursor: pointer;
+        }
+        .mobile-menu-card:active {
+            transform: scale(0.95) !important;
+        }
+
+        /* 페이지 인디케이터 */
+        .mobile-page-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #d1d5db;
+            transition: all 0.3s ease;
+        }
+        .mobile-page-dot.active {
+            width: 24px;
+            border-radius: 4px;
+            background: #007AFF;
+        }
+
+        /* 스와이프 힌트 */
+        @keyframes swipeHint {
+            0%, 100% { transform: translateX(0); opacity: 0.7; }
+            50% { transform: translateX(-10px); opacity: 1; }
+        }
+        .swipe-hint { animation: swipeHint 2s ease-in-out infinite; }
+
+        /* 모바일 통계 카드 그라데이션 */
+        .mobile-stat-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .mobile-stat-green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .mobile-stat-orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+        .mobile-stat-purple { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+
+        /* 모바일 메뉴 그라데이션 */
+        .mobile-menu-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .mobile-menu-green { background: linear-gradient(135deg, #22c55e, #15803d); }
+        .mobile-menu-purple { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+        .mobile-menu-orange { background: linear-gradient(135deg, #f97316, #c2410c); }
+        .mobile-menu-indigo { background: linear-gradient(135deg, #6366f1, #4338ca); }
+        .mobile-menu-pink { background: linear-gradient(135deg, #ec4899, #be185d); }
+        .mobile-menu-teal { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+
+        /* 모바일 헤더 */
+        .mobile-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+
+        /* 모바일 탭 콘텐츠 */
+        #mobileTabContent {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            min-height: 60vh;
         }
     </style>
 </head>
@@ -59,7 +142,7 @@
 </script>
 
 <!-- 헤더 -->
-<header class="glass sticky top-0 z-50 border-b border-gray-200/50">
+<header class="glass sticky top-0 z-50 border-b border-gray-200/50 desktop-only">
     <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center space-x-3">
             <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -100,7 +183,7 @@
 </header>
 
 <!-- 탭 네비게이션 -->
-<nav class="glass border-b border-gray-200/50 sticky top-[57px] z-40">
+<nav class="glass border-b border-gray-200/50 sticky top-[57px] z-40 desktop-only">
     <div class="max-w-5xl mx-auto">
         <div class="mobile-tabs flex">
             <button onclick="showTab('home')" class="tab-btn active flex-shrink-0 px-4 py-3 text-sm font-medium text-blue-600 border-b-2 border-blue-600" data-tab="home">
@@ -129,7 +212,7 @@
 </nav>
 
 <!-- 메인 컨텐츠 -->
-<main class="max-w-5xl mx-auto px-4 py-6">
+<main class="max-w-5xl mx-auto px-4 py-6 desktop-only">
 
     <!-- ==================== 홈 탭 ==================== -->
     <div id="tab-home" class="tab-content active">
@@ -764,9 +847,83 @@
 </main>
 
 <!-- 푸터 -->
-<footer class="text-center py-6 text-gray-400 text-xs">
+<footer class="text-center py-6 text-gray-400 text-xs desktop-only">
     &copy; 2026 Korea Working Visa. All rights reserved.
 </footer>
+
+<!-- ==================== 모바일 전용 레이아웃 ==================== -->
+<div id="mobileLayout" class="mobile-only">
+    <!-- 모바일 헤더 -->
+    <div class="mobile-header sticky top-0 z-50 px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <i class="fas fa-passport text-white text-sm"></i>
+            </div>
+            <span class="font-bold text-gray-900 text-sm">Korea Working Visa</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <select id="mobileLangSelector" onchange="changeLanguage(this.value)" class="text-[10px] border rounded-lg px-1.5 py-1 bg-white">
+                <option value="en">EN</option>
+                <option value="ko">한국어</option>
+                <option value="vi">Tiếng Việt</option>
+                <option value="th">ไทย</option>
+                <option value="tl">Filipino</option>
+            </select>
+            <button onclick="toggleMobileNotification()" class="relative p-2 text-gray-500">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">2</span>
+            </button>
+            <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center cursor-pointer" onclick="toggleMobileUserMenu()">
+                <i class="fas fa-user text-white text-xs"></i>
+            </div>
+        </div>
+    </div>
+    <!-- 모바일 알림 패널 -->
+    <div id="mobileNotifPanel" class="hidden absolute right-4 top-14 bg-white rounded-2xl shadow-xl border border-gray-100 w-72 max-h-80 overflow-hidden z-[70]">
+        <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+            <h4 class="font-semibold text-gray-800 text-sm" data-i18n="recentNotifs">Notifications</h4>
+            <button onclick="document.getElementById('mobileNotifPanel').classList.add('hidden')" class="text-xs text-blue-500" data-i18n="closeBtn">Close</button>
+        </div>
+        <div class="overflow-y-auto max-h-60 p-2 space-y-2" id="mobileNotifList"></div>
+    </div>
+    <!-- 모바일 사용자 메뉴 -->
+    <div id="mobileLayoutUserMenu" class="hidden absolute right-4 top-14 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-[70]">
+        <div class="px-4 py-2 border-b border-gray-100">
+            <p class="text-xs text-gray-400" data-i18n="loggedInAs">Logged in as</p>
+            <p id="mobileLayoutUserMenuName" class="font-medium text-gray-800 text-sm">User</p>
+        </div>
+        <button onclick="showTab('profile');handleMobileMenuClick('profile')" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+            <i class="fas fa-user-edit mr-3 text-gray-400"></i> <span data-i18n="myProfile">My Profile</span>
+        </button>
+        <button onclick="logout()" class="w-full px-4 py-3 text-left text-red-500 hover:bg-red-50 transition flex items-center">
+            <i class="fas fa-sign-out-alt mr-3"></i> <span data-i18n="logoutBtn">Logout</span>
+        </button>
+    </div>
+    <!-- 스와이프 컨테이너 -->
+    <div id="mobileSwipeContainer" style="overflow:hidden;">
+        <!-- 페이지 1: 대시보드 -->
+        <div class="mobile-page" id="mobilePage1" style="padding:0 0 80px 0;">
+            <div id="mobileDashboardContent" class="px-4 pt-4"></div>
+            <div id="mobileSwipeHint" class="swipe-hint fixed bottom-20 right-4 bg-black/60 text-white text-xs px-3 py-2 rounded-full z-50">
+                <i class="fas fa-chevron-left mr-1"></i> <span data-i18n="mobileMenu">Menu</span>
+            </div>
+        </div>
+        <!-- 페이지 2: 메뉴 -->
+        <div class="mobile-page" id="mobilePage2" style="padding:0 0 80px 0;background:#f5f5f7;">
+            <div class="bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center">
+                <button onclick="switchMobilePage(0)" class="mr-3 p-2 text-gray-500"><i class="fas fa-chevron-left"></i></button>
+                <span class="font-bold text-gray-900" data-i18n="mobileMenu">Menu</span>
+            </div>
+            <div id="mobileMenuGrid" class="grid grid-cols-2 gap-3 p-4"></div>
+            <div id="mobileTabContent" class="px-4 pb-4" style="display:none;"></div>
+        </div>
+    </div>
+    <!-- 페이지 인디케이터 -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 z-50">
+        <div class="mobile-page-dot active" data-page="0"></div>
+        <div class="mobile-page-dot" data-page="1"></div>
+    </div>
+</div>
 
 <script>
     const API_BASE = '/api/kwv';
@@ -780,7 +937,68 @@
             tabConsulting: 'Consulting', tabGuide: 'Guide', tabProfile: 'Profile',
             welcomePrefix: 'Hello, ', welcomeSuffix: '!',
             welcomeDesc: 'Check your visa status and manage your application.',
-            logoutBtn: 'Logout', myProfile: 'My Profile', loggedInAs: 'Logged in as'
+            logoutBtn: 'Logout', myProfile: 'My Profile', loggedInAs: 'Logged in as',
+            applicationOverview: 'Application Overview', statusProcessing: 'Processing',
+            stepSubmitted: 'Submitted', stepReceived: 'Received', stepReview: 'Under Review', stepDecision: 'Decision',
+            reviewMsg: 'Your application is currently under review. Expected processing time: 2-3 weeks.',
+            qVisa: 'Visa Status', qDocs: 'Upload Docs', qJobs: 'Find Jobs', qConsult: 'Book Consult',
+            recentNotifs: 'Recent Notifications',
+            notif1Title: 'Document Verified', notif1Desc: 'Your passport copy has been verified successfully.',
+            notif2Title: 'Application Received', notif2Desc: 'Your E-8 visa application has been received and is being processed.',
+            visaTitle: 'Visa Application', currentApp: 'Current Application',
+            visaType: 'Visa Type', appDate: 'Applied Date', nationality: 'Nationality', passportNo: 'Passport No.',
+            timeline: 'Timeline', tl1: 'Application Submitted', tl2: 'Documents Verified',
+            tl3: 'Under Government Review', tl3Desc: 'Estimated completion: 2026-02-20',
+            tl4: 'Final Decision', tl4Desc: 'Pending',
+            visaTypes: 'Visa Types',
+            e8Desc: 'Seasonal Worker visa for agriculture, fishery, etc. Valid for 3-8 months.',
+            e9Desc: 'Non-professional employment visa for manufacturing, construction. Valid up to 3 years.',
+            h2Desc: 'Working Visit visa for ethnic Koreans from specific countries. Valid up to 3 years.',
+            docsTitle: 'Documents', uploadBtn: 'Upload',
+            docPassport: 'Passport Copy', docResume: 'Resume / CV', docHealth: 'Health Certificate',
+            docCriminal: 'Criminal Record Check', docPhoto: 'ID Photo (3.5x4.5cm)',
+            verified: 'Verified', reviewing: 'Reviewing', notUploaded: 'Not uploaded yet', upload: 'Upload',
+            docWarning: 'Please upload all required documents to proceed with your visa application. Missing documents may delay processing.',
+            jobsTitle: 'Job Board',
+            consultTitle: 'Consulting', newBooking: 'New Booking', upcoming: 'Upcoming',
+            consultType1: 'Visa Extension Consultation',
+            consultTypes: 'Consultation Types',
+            ctVisa: 'Visa Consultation', ctVisaDesc: 'Application, extension, status change',
+            ctJob: 'Employment Consultation', ctJobDesc: 'Job search, workplace issues, contracts',
+            ctLegal: 'Legal Consultation', ctLegalDesc: 'Labor rights, disputes, legal advice',
+            free: 'Free',
+            emergency: 'Emergency Contacts', hotline: 'Immigration Hotline', laborHelp: 'Labor Rights Center',
+            guideTitle: 'Visa Guide',
+            faq: 'FAQ',
+            fq1: 'What documents do I need for E-8 visa?',
+            fa1: 'You need: passport, application form, ID photo, employment contract, health certificate, criminal record check, and proof of qualification from your home country.',
+            fq2: 'How long does visa processing take?',
+            fa2: 'E-8 visa typically takes 2-4 weeks. E-9 visa may take 1-3 months depending on the bilateral agreement between countries.',
+            fq3: 'Can I change my employer?',
+            fa3: 'Under E-9 visa, workplace change is allowed under certain conditions such as unfair treatment, company closure, or with approval from the Employment Permit System.',
+            fq4: 'How to extend my visa?',
+            fa4: 'Apply at the local immigration office at least 1 month before expiry. You need employer confirmation, updated health certificate, and extension application form.',
+            checklist: 'Required Documents Checklist',
+            cl1: 'Valid Passport (6+ months remaining)', cl2: 'Passport-size Photo (3.5x4.5cm)',
+            cl3: 'Resume / CV', cl4: 'Health Certificate', cl5: 'Criminal Record Check', cl6: 'Employment Contract',
+            notifsTitle: 'Notifications', markAllRead: 'Mark all as read',
+            n1: 'Document Verified: Passport Copy', n1d: 'Your passport copy has been verified and approved.',
+            n2: 'Application Status Update', n2d: 'Your application has moved to "Under Review" stage.',
+            n3: 'Consultation Confirmed', n3d: 'Your visa extension consultation is confirmed for Feb 15, 10:00 AM.',
+            n4: 'Document Required', n4d: 'Please upload your criminal record check to complete your application.',
+            profileTitle: 'My Profile', applicantBadge: 'Visa Applicant',
+            pfName: 'Full Name', pfEmail: 'Email', pfPhone: 'Phone', pfLang: 'Preferred Language',
+            editBtn: 'Edit', changePw: 'Change Password', updatePw: 'Update Password',
+            accountSettings: 'Account Settings', deleteAccount: 'Delete Account',
+            mobileMenu: 'Menu', closeBtn: 'Close',
+            mobileHome: 'Home', mobileHomeDesc: 'Dashboard overview',
+            mobileVisaDesc: 'Status & apply', mobileDocsDesc: 'Manage files',
+            mobileJobsDesc: 'Find work', mobileConsultDesc: 'Book session',
+            mobileGuideDesc: 'Info & FAQ', mobileProfileDesc: 'My settings',
+            mobileNotifsDesc: 'Alerts',
+            mStatusOverview: 'Application Status', mQuickActions: 'Quick Actions',
+            searchJobs: 'Search jobs...', allRegions: 'All Regions', allTypes: 'All Types',
+            agriculture: 'Agriculture', manufacturing: 'Manufacturing', fishery: 'Fishery'
         },
         ko: {
             tabHome: '홈', tabVisa: '비자 신청', tabDocs: '서류 관리', tabJobs: '구인/구직',
@@ -793,35 +1011,266 @@
             reviewMsg: '신청서가 현재 심사 중입니다. 예상 처리 기간: 2-3주.',
             qVisa: '비자 현황', qDocs: '서류 업로드', qJobs: '일자리 찾기', qConsult: '상담 예약',
             recentNotifs: '최근 알림',
-            visaTitle: '비자 신청', docsTitle: '서류 관리', jobsTitle: '구인/구직',
-            consultTitle: '상담 예약', guideTitle: '비자 가이드', notifsTitle: '알림',
-            profileTitle: '내 정보', changePw: '비밀번호 변경', accountSettings: '계정 관리',
-            editBtn: '수정', uploadBtn: '업로드', verified: '확인됨', reviewing: '검토 중',
-            notUploaded: '미업로드', upload: '업로드',
+            notif1Title: '서류 확인 완료', notif1Desc: '여권 사본이 성공적으로 확인되었습니다.',
+            notif2Title: '신청 접수 완료', notif2Desc: 'E-8 비자 신청이 접수되어 처리 중입니다.',
+            visaTitle: '비자 신청', currentApp: '현재 신청',
+            visaType: '비자 유형', appDate: '신청일', nationality: '국적', passportNo: '여권번호',
+            timeline: '진행 상황', tl1: '신청서 제출', tl2: '서류 확인 완료',
+            tl3: '정부 심사 중', tl3Desc: '예상 완료일: 2026-02-20',
+            tl4: '최종 결정', tl4Desc: '대기 중',
+            visaTypes: '비자 유형 안내',
+            e8Desc: '농업, 어업 등을 위한 계절근로 비자. 유효기간 3-8개월.',
+            e9Desc: '제조업, 건설업 등 비전문직 취업 비자. 최대 3년 유효.',
+            h2Desc: '특정 국가 재외동포를 위한 방문취업 비자. 최대 3년 유효.',
+            docsTitle: '서류 관리', uploadBtn: '업로드',
+            docPassport: '여권 사본', docResume: '이력서', docHealth: '건강검진서',
+            docCriminal: '범죄경력증명서', docPhoto: '증명사진 (3.5x4.5cm)',
+            verified: '확인됨', reviewing: '검토 중', notUploaded: '미업로드', upload: '업로드',
+            docWarning: '비자 신청을 진행하려면 모든 필수 서류를 업로드해주세요. 누락된 서류는 처리 지연의 원인이 될 수 있습니다.',
+            jobsTitle: '구인/구직',
+            consultTitle: '상담 예약', newBooking: '새 예약', upcoming: '다가오는 상담',
+            consultType1: '비자 연장 상담',
+            consultTypes: '상담 유형',
+            ctVisa: '비자 상담', ctVisaDesc: '신청, 연장, 자격 변경',
+            ctJob: '취업 상담', ctJobDesc: '일자리 찾기, 직장 문제, 계약 관련',
+            ctLegal: '법률 상담', ctLegalDesc: '노동 권리, 분쟁, 법적 조언',
+            free: '무료',
             emergency: '긴급 연락처', hotline: '외국인 상담전화', laborHelp: '노동인권 상담',
-            faq: '자주 묻는 질문', checklist: '필요 서류 체크리스트',
-            markAllRead: '모두 읽음',
-            applicantBadge: '비자 신청자',
-            free: '무료', newBooking: '새 예약', upcoming: '다가오는 상담',
-            deleteAccount: '계정 삭제', updatePw: '비밀번호 변경'
+            guideTitle: '비자 가이드',
+            faq: '자주 묻는 질문',
+            fq1: 'E-8 비자에 필요한 서류는 무엇인가요?',
+            fa1: '여권, 신청서, 증명사진, 고용계약서, 건강검진서, 범죄경력증명서, 본국 자격 증명서가 필요합니다.',
+            fq2: '비자 처리 기간은 얼마나 걸리나요?',
+            fa2: 'E-8 비자는 보통 2-4주 소요됩니다. E-9 비자는 국가 간 협정에 따라 1-3개월 걸릴 수 있습니다.',
+            fq3: '고용주를 변경할 수 있나요?',
+            fa3: 'E-9 비자의 경우 부당한 대우, 사업장 폐업, 고용허가제 승인 등 특정 조건에서 사업장 변경이 가능합니다.',
+            fq4: '비자를 연장하려면 어떻게 하나요?',
+            fa4: '만료 최소 1개월 전에 관할 출입국관리사무소에 신청하세요. 고용주 확인서, 최신 건강검진서, 연장 신청서가 필요합니다.',
+            checklist: '필요 서류 체크리스트',
+            cl1: '유효 여권 (잔여기간 6개월 이상)', cl2: '증명사진 (3.5x4.5cm)',
+            cl3: '이력서', cl4: '건강검진서', cl5: '범죄경력증명서', cl6: '고용계약서',
+            notifsTitle: '알림', markAllRead: '모두 읽음',
+            n1: '서류 확인: 여권 사본', n1d: '여권 사본이 확인 및 승인되었습니다.',
+            n2: '신청 상태 업데이트', n2d: '신청이 "심사 중" 단계로 이동했습니다.',
+            n3: '상담 확정', n3d: '비자 연장 상담이 2월 15일 오전 10시로 확정되었습니다.',
+            n4: '서류 필요', n4d: '신청을 완료하려면 범죄경력증명서를 업로드해주세요.',
+            profileTitle: '내 정보', applicantBadge: '비자 신청자',
+            pfName: '이름', pfEmail: '이메일', pfPhone: '전화번호', pfLang: '선호 언어',
+            editBtn: '수정', changePw: '비밀번호 변경', updatePw: '비밀번호 변경',
+            accountSettings: '계정 관리', deleteAccount: '계정 삭제',
+            mobileMenu: '메뉴', closeBtn: '닫기',
+            mobileHome: '홈', mobileHomeDesc: '대시보드 요약',
+            mobileVisaDesc: '현황 및 신청', mobileDocsDesc: '서류 관리',
+            mobileJobsDesc: '일자리 찾기', mobileConsultDesc: '상담 예약',
+            mobileGuideDesc: '안내 및 FAQ', mobileProfileDesc: '내 설정',
+            mobileNotifsDesc: '알림',
+            mStatusOverview: '신청 현황', mQuickActions: '바로가기',
+            searchJobs: '일자리 검색...', allRegions: '전체 지역', allTypes: '전체 유형',
+            agriculture: '농업', manufacturing: '제조업', fishery: '어업'
         },
         vi: {
             tabHome: 'Trang chủ', tabVisa: 'Visa', tabDocs: 'Tài liệu', tabJobs: 'Việc làm',
             tabConsulting: 'Tư vấn', tabGuide: 'Hướng dẫn', tabProfile: 'Hồ sơ',
             welcomePrefix: 'Xin chào, ', welcomeSuffix: '!',
-            logoutBtn: 'Đăng xuất', myProfile: 'Hồ sơ của tôi'
+            welcomeDesc: 'Kiểm tra tình trạng visa và quản lý hồ sơ của bạn.',
+            logoutBtn: 'Đăng xuất', myProfile: 'Hồ sơ của tôi', loggedInAs: 'Đăng nhập với',
+            applicationOverview: 'Tổng quan đơn', statusProcessing: 'Đang xử lý',
+            stepSubmitted: 'Đã nộp', stepReceived: 'Đã nhận', stepReview: 'Đang xem xét', stepDecision: 'Quyết định',
+            reviewMsg: 'Đơn của bạn đang được xem xét. Thời gian xử lý dự kiến: 2-3 tuần.',
+            qVisa: 'Tình trạng Visa', qDocs: 'Tải tài liệu', qJobs: 'Tìm việc', qConsult: 'Đặt tư vấn',
+            recentNotifs: 'Thông báo gần đây',
+            notif1Title: 'Tài liệu đã xác minh', notif1Desc: 'Bản sao hộ chiếu đã được xác minh thành công.',
+            notif2Title: 'Đơn đã được nhận', notif2Desc: 'Đơn xin visa E-8 đã được nhận và đang xử lý.',
+            visaTitle: 'Đơn xin Visa', currentApp: 'Đơn hiện tại',
+            visaType: 'Loại Visa', appDate: 'Ngày nộp', nationality: 'Quốc tịch', passportNo: 'Số hộ chiếu',
+            timeline: 'Tiến trình', tl1: 'Đã nộp đơn', tl2: 'Tài liệu đã xác minh',
+            tl3: 'Đang xem xét', tl3Desc: 'Dự kiến hoàn thành: 20/02/2026',
+            tl4: 'Quyết định cuối', tl4Desc: 'Đang chờ',
+            visaTypes: 'Các loại Visa',
+            e8Desc: 'Visa lao động thời vụ cho nông nghiệp, thủy sản. Hiệu lực 3-8 tháng.',
+            e9Desc: 'Visa việc làm phi chuyên nghiệp cho sản xuất, xây dựng. Hiệu lực đến 3 năm.',
+            h2Desc: 'Visa thăm việc cho người Hàn từ các nước cụ thể. Hiệu lực đến 3 năm.',
+            docsTitle: 'Tài liệu', uploadBtn: 'Tải lên',
+            docPassport: 'Bản sao hộ chiếu', docResume: 'Sơ yếu lý lịch', docHealth: 'Giấy khám sức khỏe',
+            docCriminal: 'Lý lịch tư pháp', docPhoto: 'Ảnh thẻ (3.5x4.5cm)',
+            verified: 'Đã xác minh', reviewing: 'Đang xem xét', notUploaded: 'Chưa tải lên', upload: 'Tải lên',
+            docWarning: 'Vui lòng tải lên tất cả tài liệu cần thiết. Thiếu tài liệu có thể làm chậm quá trình xử lý.',
+            jobsTitle: 'Việc làm',
+            consultTitle: 'Tư vấn', newBooking: 'Đặt mới', upcoming: 'Sắp tới',
+            consultType1: 'Tư vấn gia hạn visa',
+            consultTypes: 'Loại tư vấn',
+            ctVisa: 'Tư vấn Visa', ctVisaDesc: 'Nộp đơn, gia hạn, thay đổi tình trạng',
+            ctJob: 'Tư vấn việc làm', ctJobDesc: 'Tìm việc, vấn đề nơi làm việc',
+            ctLegal: 'Tư vấn pháp lý', ctLegalDesc: 'Quyền lao động, tranh chấp',
+            free: 'Miễn phí',
+            emergency: 'Liên hệ khẩn cấp', hotline: 'Đường dây nhập cư', laborHelp: 'Trung tâm quyền lao động',
+            guideTitle: 'Hướng dẫn Visa',
+            faq: 'Câu hỏi thường gặp',
+            fq1: 'Cần những tài liệu gì cho visa E-8?',
+            fa1: 'Bạn cần: hộ chiếu, đơn đăng ký, ảnh thẻ, hợp đồng lao động, giấy khám sức khỏe, lý lịch tư pháp và chứng nhận từ nước bạn.',
+            fq2: 'Thời gian xử lý visa mất bao lâu?',
+            fa2: 'Visa E-8 thường mất 2-4 tuần. Visa E-9 có thể mất 1-3 tháng tùy hiệp định giữa các nước.',
+            fq3: 'Tôi có thể thay đổi chủ sử dụng lao động không?',
+            fa3: 'Với visa E-9, cho phép thay đổi nơi làm việc trong điều kiện bị đối xử bất công, công ty đóng cửa hoặc được phê duyệt.',
+            fq4: 'Làm thế nào để gia hạn visa?',
+            fa4: 'Nộp đơn tại văn phòng nhập cư ít nhất 1 tháng trước khi hết hạn. Cần xác nhận của chủ lao động và giấy khám sức khỏe.',
+            checklist: 'Danh sách tài liệu cần thiết',
+            cl1: 'Hộ chiếu còn hạn (trên 6 tháng)', cl2: 'Ảnh thẻ (3.5x4.5cm)',
+            cl3: 'Sơ yếu lý lịch', cl4: 'Giấy khám sức khỏe', cl5: 'Lý lịch tư pháp', cl6: 'Hợp đồng lao động',
+            notifsTitle: 'Thông báo', markAllRead: 'Đánh dấu đã đọc',
+            n1: 'Tài liệu đã xác minh: Hộ chiếu', n1d: 'Bản sao hộ chiếu đã được xác minh và phê duyệt.',
+            n2: 'Cập nhật tình trạng', n2d: 'Đơn đã chuyển sang giai đoạn "Đang xem xét".',
+            n3: 'Tư vấn đã xác nhận', n3d: 'Tư vấn gia hạn visa đã được xác nhận ngày 15/02, 10:00.',
+            n4: 'Cần tài liệu', n4d: 'Vui lòng tải lên lý lịch tư pháp để hoàn thành đơn.',
+            profileTitle: 'Hồ sơ của tôi', applicantBadge: 'Người xin Visa',
+            pfName: 'Họ tên', pfEmail: 'Email', pfPhone: 'Điện thoại', pfLang: 'Ngôn ngữ',
+            editBtn: 'Sửa', changePw: 'Đổi mật khẩu', updatePw: 'Cập nhật mật khẩu',
+            accountSettings: 'Cài đặt tài khoản', deleteAccount: 'Xóa tài khoản',
+            mobileMenu: 'Menu', closeBtn: 'Đóng',
+            mobileHome: 'Trang chủ', mobileHomeDesc: 'Tổng quan',
+            mobileVisaDesc: 'Tình trạng & nộp đơn', mobileDocsDesc: 'Quản lý tài liệu',
+            mobileJobsDesc: 'Tìm việc', mobileConsultDesc: 'Đặt lịch tư vấn',
+            mobileGuideDesc: 'Thông tin & FAQ', mobileProfileDesc: 'Cài đặt',
+            mobileNotifsDesc: 'Thông báo',
+            mStatusOverview: 'Tình trạng đơn', mQuickActions: 'Truy cập nhanh',
+            searchJobs: 'Tìm việc...', allRegions: 'Tất cả khu vực', allTypes: 'Tất cả loại',
+            agriculture: 'Nông nghiệp', manufacturing: 'Sản xuất', fishery: 'Thủy sản'
         },
         th: {
             tabHome: 'หน้าแรก', tabVisa: 'วีซ่า', tabDocs: 'เอกสาร', tabJobs: 'งาน',
             tabConsulting: 'ปรึกษา', tabGuide: 'คู่มือ', tabProfile: 'โปรไฟล์',
             welcomePrefix: 'สวัสดี, ', welcomeSuffix: '!',
-            logoutBtn: 'ออกจากระบบ', myProfile: 'โปรไฟล์ของฉัน'
+            welcomeDesc: 'ตรวจสอบสถานะวีซ่าและจัดการใบสมัครของคุณ',
+            logoutBtn: 'ออกจากระบบ', myProfile: 'โปรไฟล์ของฉัน', loggedInAs: 'เข้าสู่ระบบเป็น',
+            applicationOverview: 'ภาพรวมใบสมัคร', statusProcessing: 'กำลังดำเนินการ',
+            stepSubmitted: 'ส่งแล้ว', stepReceived: 'รับแล้ว', stepReview: 'กำลังตรวจสอบ', stepDecision: 'ผลการพิจารณา',
+            reviewMsg: 'ใบสมัครของคุณกำลังอยู่ระหว่างการตรวจสอบ ระยะเวลาดำเนินการ: 2-3 สัปดาห์',
+            qVisa: 'สถานะวีซ่า', qDocs: 'อัปโหลดเอกสาร', qJobs: 'หางาน', qConsult: 'จองปรึกษา',
+            recentNotifs: 'การแจ้งเตือนล่าสุด',
+            notif1Title: 'เอกสารได้รับการยืนยัน', notif1Desc: 'สำเนาหนังสือเดินทางได้รับการยืนยันแล้ว',
+            notif2Title: 'รับใบสมัครแล้ว', notif2Desc: 'ใบสมัครวีซ่า E-8 ได้รับแล้วและกำลังดำเนินการ',
+            visaTitle: 'สมัครวีซ่า', currentApp: 'ใบสมัครปัจจุบัน',
+            visaType: 'ประเภทวีซ่า', appDate: 'วันที่สมัคร', nationality: 'สัญชาติ', passportNo: 'เลขหนังสือเดินทาง',
+            timeline: 'ไทม์ไลน์', tl1: 'ส่งใบสมัครแล้ว', tl2: 'เอกสารได้รับการยืนยัน',
+            tl3: 'อยู่ระหว่างการพิจารณา', tl3Desc: 'คาดว่าจะเสร็จ: 20/02/2026',
+            tl4: 'ผลการพิจารณา', tl4Desc: 'รอดำเนินการ',
+            visaTypes: 'ประเภทวีซ่า',
+            e8Desc: 'วีซ่าแรงงานตามฤดูกาลสำหรับเกษตรกรรม ประมง มีอายุ 3-8 เดือน',
+            e9Desc: 'วีซ่าจ้างงานทั่วไปสำหรับการผลิต ก่อสร้าง มีอายุสูงสุด 3 ปี',
+            h2Desc: 'วีซ่าเยี่ยมเยือนทำงานสำหรับชาวเกาหลีจากประเทศที่กำหนด มีอายุสูงสุด 3 ปี',
+            docsTitle: 'เอกสาร', uploadBtn: 'อัปโหลด',
+            docPassport: 'สำเนาหนังสือเดินทาง', docResume: 'ประวัติย่อ', docHealth: 'ใบรับรองแพทย์',
+            docCriminal: 'ใบตรวจสอบประวัติอาชญากรรม', docPhoto: 'รูปถ่าย (3.5x4.5ซม.)',
+            verified: 'ยืนยันแล้ว', reviewing: 'กำลังตรวจสอบ', notUploaded: 'ยังไม่ได้อัปโหลด', upload: 'อัปโหลด',
+            docWarning: 'กรุณาอัปโหลดเอกสารที่จำเป็นทั้งหมด เอกสารที่ขาดหายอาจทำให้การดำเนินการล่าช้า',
+            jobsTitle: 'หางาน',
+            consultTitle: 'ปรึกษา', newBooking: 'จองใหม่', upcoming: 'กำลังจะมาถึง',
+            consultType1: 'ปรึกษาต่ออายุวีซ่า',
+            consultTypes: 'ประเภทการปรึกษา',
+            ctVisa: 'ปรึกษาวีซ่า', ctVisaDesc: 'สมัคร ต่ออายุ เปลี่ยนสถานะ',
+            ctJob: 'ปรึกษาการจ้างงาน', ctJobDesc: 'หางาน ปัญหาที่ทำงาน สัญญา',
+            ctLegal: 'ปรึกษากฎหมาย', ctLegalDesc: 'สิทธิแรงงาน ข้อพิพาท คำแนะนำทางกฎหมาย',
+            free: 'ฟรี',
+            emergency: 'ติดต่อฉุกเฉิน', hotline: 'สายด่วนตรวจคนเข้าเมือง', laborHelp: 'ศูนย์สิทธิแรงงาน',
+            guideTitle: 'คู่มือวีซ่า',
+            faq: 'คำถามที่พบบ่อย',
+            fq1: 'ต้องใช้เอกสารอะไรบ้างสำหรับวีซ่า E-8?',
+            fa1: 'คุณต้องมี: หนังสือเดินทาง แบบฟอร์มสมัคร รูปถ่าย สัญญาจ้างงาน ใบรับรองแพทย์ ใบตรวจประวัติอาชญากรรม และหลักฐานคุณสมบัติ',
+            fq2: 'การดำเนินการวีซ่าใช้เวลานานเท่าไร?',
+            fa2: 'วีซ่า E-8 ใช้เวลา 2-4 สัปดาห์ วีซ่า E-9 อาจใช้เวลา 1-3 เดือนขึ้นอยู่กับข้อตกลงระหว่างประเทศ',
+            fq3: 'สามารถเปลี่ยนนายจ้างได้หรือไม่?',
+            fa3: 'วีซ่า E-9 อนุญาตให้เปลี่ยนสถานที่ทำงานได้ในกรณีถูกปฏิบัติอย่างไม่เป็นธรรม บริษัทปิดกิจการ หรือได้รับอนุมัติ',
+            fq4: 'ต่ออายุวีซ่าอย่างไร?',
+            fa4: 'ยื่นคำร้องที่สำนักงานตรวจคนเข้าเมืองอย่างน้อย 1 เดือนก่อนหมดอายุ ต้องมีหนังสือยืนยันจากนายจ้างและใบรับรองแพทย์',
+            checklist: 'รายการเอกสารที่ต้องใช้',
+            cl1: 'หนังสือเดินทางที่ยังไม่หมดอายุ (เหลืออายุ 6 เดือนขึ้นไป)', cl2: 'รูปถ่าย (3.5x4.5ซม.)',
+            cl3: 'ประวัติย่อ', cl4: 'ใบรับรองแพทย์', cl5: 'ใบตรวจประวัติอาชญากรรม', cl6: 'สัญญาจ้างงาน',
+            notifsTitle: 'การแจ้งเตือน', markAllRead: 'อ่านทั้งหมด',
+            n1: 'เอกสารยืนยัน: สำเนาหนังสือเดินทาง', n1d: 'สำเนาหนังสือเดินทางได้รับการยืนยันและอนุมัติแล้ว',
+            n2: 'อัปเดตสถานะใบสมัคร', n2d: 'ใบสมัครของคุณได้ย้ายไปยังขั้นตอน "กำลังตรวจสอบ"',
+            n3: 'ยืนยันการปรึกษา', n3d: 'การปรึกษาต่ออายุวีซ่าได้รับการยืนยันวันที่ 15 ก.พ. เวลา 10:00 น.',
+            n4: 'ต้องการเอกสาร', n4d: 'กรุณาอัปโหลดใบตรวจประวัติอาชญากรรมเพื่อดำเนินการต่อ',
+            profileTitle: 'โปรไฟล์ของฉัน', applicantBadge: 'ผู้สมัครวีซ่า',
+            pfName: 'ชื่อ-นามสกุล', pfEmail: 'อีเมล', pfPhone: 'โทรศัพท์', pfLang: 'ภาษาที่ต้องการ',
+            editBtn: 'แก้ไข', changePw: 'เปลี่ยนรหัสผ่าน', updatePw: 'อัปเดตรหัสผ่าน',
+            accountSettings: 'ตั้งค่าบัญชี', deleteAccount: 'ลบบัญชี',
+            mobileMenu: 'เมนู', closeBtn: 'ปิด',
+            mobileHome: 'หน้าแรก', mobileHomeDesc: 'ภาพรวม',
+            mobileVisaDesc: 'สถานะและสมัคร', mobileDocsDesc: 'จัดการเอกสาร',
+            mobileJobsDesc: 'หางาน', mobileConsultDesc: 'จองปรึกษา',
+            mobileGuideDesc: 'ข้อมูลและ FAQ', mobileProfileDesc: 'การตั้งค่า',
+            mobileNotifsDesc: 'การแจ้งเตือน',
+            mStatusOverview: 'สถานะใบสมัคร', mQuickActions: 'ทางลัด',
+            searchJobs: 'ค้นหางาน...', allRegions: 'ทุกภูมิภาค', allTypes: 'ทุกประเภท',
+            agriculture: 'เกษตรกรรม', manufacturing: 'การผลิต', fishery: 'ประมง'
         },
         tl: {
             tabHome: 'Home', tabVisa: 'Visa', tabDocs: 'Dokumento', tabJobs: 'Trabaho',
             tabConsulting: 'Konsulta', tabGuide: 'Gabay', tabProfile: 'Profile',
             welcomePrefix: 'Kumusta, ', welcomeSuffix: '!',
-            logoutBtn: 'Mag-logout', myProfile: 'Aking Profile'
+            welcomeDesc: 'Suriin ang status ng visa at pamahalaan ang iyong aplikasyon.',
+            logoutBtn: 'Mag-logout', myProfile: 'Aking Profile', loggedInAs: 'Naka-login bilang',
+            applicationOverview: 'Buod ng Aplikasyon', statusProcessing: 'Pinoproseso',
+            stepSubmitted: 'Naisumite', stepReceived: 'Natanggap', stepReview: 'Sinusuri', stepDecision: 'Desisyon',
+            reviewMsg: 'Ang iyong aplikasyon ay kasalukuyang sinusuri. Inaasahang oras ng pagproseso: 2-3 linggo.',
+            qVisa: 'Status ng Visa', qDocs: 'I-upload ang Docs', qJobs: 'Maghanap ng Trabaho', qConsult: 'Mag-book ng Konsulta',
+            recentNotifs: 'Mga Kamakailang Notipikasyon',
+            notif1Title: 'Na-verify ang Dokumento', notif1Desc: 'Ang kopya ng pasaporte ay matagumpay na na-verify.',
+            notif2Title: 'Natanggap ang Aplikasyon', notif2Desc: 'Ang iyong E-8 visa application ay natanggap at pinoproseso na.',
+            visaTitle: 'Aplikasyon sa Visa', currentApp: 'Kasalukuyang Aplikasyon',
+            visaType: 'Uri ng Visa', appDate: 'Petsa ng Pag-apply', nationality: 'Nasyonalidad', passportNo: 'Passport No.',
+            timeline: 'Timeline', tl1: 'Naisumite ang Aplikasyon', tl2: 'Na-verify ang mga Dokumento',
+            tl3: 'Sinusuri ng Gobyerno', tl3Desc: 'Inaasahang matapos: 2026-02-20',
+            tl4: 'Panghuling Desisyon', tl4Desc: 'Naghihintay',
+            visaTypes: 'Mga Uri ng Visa',
+            e8Desc: 'Seasonal Worker visa para sa agrikultura, pangingisda, atbp. May bisa ng 3-8 buwan.',
+            e9Desc: 'Non-professional employment visa para sa manufacturing, construction. May bisa hanggang 3 taon.',
+            h2Desc: 'Working Visit visa para sa mga etnikong Koreano mula sa mga tiyak na bansa. May bisa hanggang 3 taon.',
+            docsTitle: 'Mga Dokumento', uploadBtn: 'I-upload',
+            docPassport: 'Kopya ng Pasaporte', docResume: 'Resume / CV', docHealth: 'Health Certificate',
+            docCriminal: 'Criminal Record Check', docPhoto: 'ID Photo (3.5x4.5cm)',
+            verified: 'Na-verify', reviewing: 'Sinusuri', notUploaded: 'Hindi pa nai-upload', upload: 'I-upload',
+            docWarning: 'Mangyaring i-upload ang lahat ng kinakailangang dokumento. Ang mga nawawalang dokumento ay maaaring makapagpaliban ng pagproseso.',
+            jobsTitle: 'Mga Trabaho',
+            consultTitle: 'Konsultasyon', newBooking: 'Bagong Booking', upcoming: 'Paparating',
+            consultType1: 'Konsultasyon sa Visa Extension',
+            consultTypes: 'Mga Uri ng Konsultasyon',
+            ctVisa: 'Konsulta sa Visa', ctVisaDesc: 'Aplikasyon, extension, pagbabago ng status',
+            ctJob: 'Konsulta sa Trabaho', ctJobDesc: 'Paghahanap ng trabaho, isyu sa trabaho',
+            ctLegal: 'Legal na Konsulta', ctLegalDesc: 'Mga karapatan sa paggawa, dispute',
+            free: 'Libre',
+            emergency: 'Emergency Contacts', hotline: 'Immigration Hotline', laborHelp: 'Labor Rights Center',
+            guideTitle: 'Gabay sa Visa',
+            faq: 'Mga Madalas Itanong',
+            fq1: 'Anong mga dokumento ang kailangan para sa E-8 visa?',
+            fa1: 'Kailangan mo: pasaporte, application form, ID photo, employment contract, health certificate, criminal record check, at proof of qualification.',
+            fq2: 'Gaano katagal ang pagproseso ng visa?',
+            fa2: 'Ang E-8 visa ay karaniwang tumatagal ng 2-4 na linggo. Ang E-9 visa ay maaaring tumagal ng 1-3 buwan.',
+            fq3: 'Maaari ko bang palitan ang employer?',
+            fa3: 'Sa E-9 visa, pinapayagan ang pagpapalit ng trabaho sa ilalim ng mga kondisyon tulad ng hindi patas na pagtrato o pagsasara ng kumpanya.',
+            fq4: 'Paano i-extend ang visa?',
+            fa4: 'Mag-apply sa local immigration office hindi bababa sa 1 buwan bago mag-expire. Kailangan ang employer confirmation at health certificate.',
+            checklist: 'Listahan ng Kinakailangang Dokumento',
+            cl1: 'Valid na Pasaporte (6+ buwan na natitira)', cl2: 'Passport-size Photo (3.5x4.5cm)',
+            cl3: 'Resume / CV', cl4: 'Health Certificate', cl5: 'Criminal Record Check', cl6: 'Employment Contract',
+            notifsTitle: 'Mga Notipikasyon', markAllRead: 'Markahan lahat bilang nabasa',
+            n1: 'Na-verify ang Dokumento: Pasaporte', n1d: 'Ang kopya ng pasaporte ay na-verify at na-approve.',
+            n2: 'Update sa Status ng Aplikasyon', n2d: 'Ang aplikasyon ay lumipat sa "Sinusuri" na yugto.',
+            n3: 'Na-confirm ang Konsultasyon', n3d: 'Ang konsultasyon sa visa extension ay nakumpirma para sa Feb 15, 10:00 AM.',
+            n4: 'Kailangan ng Dokumento', n4d: 'Mangyaring i-upload ang criminal record check para makumpleto ang aplikasyon.',
+            profileTitle: 'Aking Profile', applicantBadge: 'Visa Applicant',
+            pfName: 'Buong Pangalan', pfEmail: 'Email', pfPhone: 'Telepono', pfLang: 'Gustong Wika',
+            editBtn: 'I-edit', changePw: 'Palitan ang Password', updatePw: 'I-update ang Password',
+            accountSettings: 'Mga Setting ng Account', deleteAccount: 'Burahin ang Account',
+            mobileMenu: 'Menu', closeBtn: 'Isara',
+            mobileHome: 'Home', mobileHomeDesc: 'Buod ng dashboard',
+            mobileVisaDesc: 'Status at mag-apply', mobileDocsDesc: 'Pamahalaan ang mga file',
+            mobileJobsDesc: 'Maghanap ng trabaho', mobileConsultDesc: 'Mag-book ng session',
+            mobileGuideDesc: 'Impormasyon at FAQ', mobileProfileDesc: 'Mga setting',
+            mobileNotifsDesc: 'Mga alerto',
+            mStatusOverview: 'Status ng Aplikasyon', mQuickActions: 'Mabilis na Aksyon',
+            searchJobs: 'Maghanap ng trabaho...', allRegions: 'Lahat ng Rehiyon', allTypes: 'Lahat ng Uri',
+            agriculture: 'Agrikultura', manufacturing: 'Manufacturing', fishery: 'Pangingisda'
         }
     };
 
@@ -841,7 +1290,10 @@
             const key = el.getAttribute('data-i18n');
             if (tr[key]) el.textContent = tr[key];
         });
-        document.getElementById('langSelector').value = currentLang;
+        const ls = document.getElementById('langSelector');
+        if (ls) ls.value = currentLang;
+        const mls = document.getElementById('mobileLangSelector');
+        if (mls) mls.value = currentLang;
     }
 
     // ==================== UI ====================
@@ -889,23 +1341,369 @@
         window.location.replace('/kwv-login.html');
     }
 
+    // ==================== 모바일 전용 함수 ====================
+    let mobileCurrentPage = 0;
+    let mobileTouchStartX = 0;
+    let mobileTouchStartY = 0;
+
+    function isMobileView() { return window.innerWidth <= 768; }
+
+    function initMobileSwipe() {
+        const container = document.getElementById('mobileSwipeContainer');
+        if (!container) return;
+        container.addEventListener('touchstart', (e) => {
+            mobileTouchStartX = e.touches[0].clientX;
+            mobileTouchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        container.addEventListener('touchend', (e) => {
+            const dx = e.changedTouches[0].clientX - mobileTouchStartX;
+            const dy = e.changedTouches[0].clientY - mobileTouchStartY;
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                if (dx < 0 && mobileCurrentPage === 0) switchMobilePage(1);
+                else if (dx > 0 && mobileCurrentPage === 1) switchMobilePage(0);
+            }
+        }, { passive: true });
+    }
+
+    function switchMobilePage(page) {
+        mobileCurrentPage = page;
+        const container = document.getElementById('mobileSwipeContainer');
+        if (container) container.style.transform = `translateX(-${page * 50}%)`;
+        document.querySelectorAll('.mobile-page-dot').forEach((dot, i) => {
+            dot.classList.toggle('active', i === page);
+        });
+        const page1 = document.getElementById('mobilePage1');
+        const page2 = document.getElementById('mobilePage2');
+        if (page1) page1.style.pointerEvents = page === 0 ? 'auto' : 'none';
+        if (page2) page2.style.pointerEvents = page === 1 ? 'auto' : 'none';
+        const targetPage = page === 0 ? page1 : page2;
+        if (targetPage) targetPage.scrollTop = 0;
+        window.scrollTo(0, 0);
+        // 메뉴 닫기
+        const lm = document.getElementById('mobileLayoutUserMenu');
+        if (lm) lm.classList.add('hidden');
+        const mp = document.getElementById('mobileNotifPanel');
+        if (mp) mp.classList.add('hidden');
+        // 스와이프 힌트 숨기기
+        const hint = document.getElementById('mobileSwipeHint');
+        if (hint && page === 1) hint.style.display = 'none';
+        // 메뉴 페이지로 갈 때 탭 콘텐츠 숨기기
+        if (page === 1) {
+            const tc = document.getElementById('mobileTabContent');
+            if (tc) tc.style.display = 'none';
+            const mg = document.getElementById('mobileMenuGrid');
+            if (mg) mg.style.display = 'grid';
+        }
+    }
+
+    function toggleMobileNotification() {
+        const panel = document.getElementById('mobileNotifPanel');
+        if (panel) panel.classList.toggle('hidden');
+        const lm = document.getElementById('mobileLayoutUserMenu');
+        if (lm) lm.classList.add('hidden');
+    }
+
+    function toggleMobileUserMenu() {
+        const lm = document.getElementById('mobileLayoutUserMenu');
+        if (lm) lm.classList.toggle('hidden');
+        const panel = document.getElementById('mobileNotifPanel');
+        if (panel) panel.classList.add('hidden');
+    }
+
+    function renderMobileDashboard() {
+        const content = document.getElementById('mobileDashboardContent');
+        if (!content) return;
+
+        const userStr = sessionStorage.getItem('kwv_user');
+        let userName = t('welcomePrefix') || 'Hello, ';
+        let userSuffix = t('welcomeSuffix') || '!';
+        if (userStr) {
+            try {
+                const u = JSON.parse(userStr);
+                userName = (t('welcomePrefix') || 'Hello, ') + (u.name || u.email || 'User') + userSuffix;
+            } catch(e) {}
+        }
+
+        const today = new Date();
+        let dateStr;
+        if (currentLang === 'ko') {
+            dateStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+        } else {
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            dateStr = `${months[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
+        }
+
+        let delay = 0;
+        const fd = () => { delay += 0.05; return `animation-delay:${delay}s`; };
+
+        content.innerHTML = `
+            <!-- 환영 카드 -->
+            <div class="mobile-fade-in rounded-2xl p-5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white mb-4" style="${fd()}">
+                <p class="text-white/70 text-xs">${dateStr}</p>
+                <h2 class="text-lg font-bold mt-1">${userName}</h2>
+                <p class="text-white/80 text-xs mt-1">${t('welcomeDesc') || 'Check your visa status and manage your application.'}</p>
+            </div>
+
+            <!-- 신청 상태 요약 -->
+            <div class="mobile-fade-in bg-white rounded-2xl p-4 mb-4 shadow-sm" style="${fd()}">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-gray-800"><i class="fas fa-chart-line mr-1 text-blue-500"></i> ${t('mStatusOverview') || t('applicationOverview') || 'Application Status'}</h3>
+                    <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium"><i class="fas fa-spinner fa-spin mr-1"></i>${t('statusProcessing') || 'Processing'}</span>
+                </div>
+                <!-- 미니 타임라인 -->
+                <div class="flex items-center justify-between px-1">
+                    <div class="flex flex-col items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span class="text-[9px] text-gray-500 mt-1">${t('stepSubmitted') || 'Submitted'}</span>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-green-400 mx-1"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span class="text-[9px] text-gray-500 mt-1">${t('stepReceived') || 'Received'}</span>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-green-400 mx-1"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                        <span class="text-[9px] text-blue-600 font-medium mt-1">${t('stepReview') || 'Review'}</span>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-gray-200 mx-1"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-3 h-3 rounded-full bg-gray-200"></div>
+                        <span class="text-[9px] text-gray-400 mt-1">${t('stepDecision') || 'Decision'}</span>
+                    </div>
+                </div>
+                <div class="mt-3 p-2.5 bg-blue-50 rounded-xl text-xs text-blue-700">
+                    <i class="fas fa-info-circle mr-1"></i> ${t('reviewMsg') || 'Your application is currently under review.'}
+                </div>
+            </div>
+
+            <!-- 빠른 액션 -->
+            <div class="mobile-fade-in mb-4" style="${fd()}">
+                <h3 class="text-sm font-semibold text-gray-800 mb-2 px-1">${t('mQuickActions') || t('qVisa') || 'Quick Actions'}</h3>
+                <div class="grid grid-cols-4 gap-2">
+                    <div onclick="handleMobileMenuClick('visa')" class="bg-white rounded-2xl p-3 text-center shadow-sm cursor-pointer active:scale-95 transition-transform">
+                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-1.5">
+                            <i class="fas fa-passport text-blue-500"></i>
+                        </div>
+                        <p class="text-[10px] font-medium text-gray-700">${t('qVisa') || 'Visa'}</p>
+                    </div>
+                    <div onclick="handleMobileMenuClick('documents')" class="bg-white rounded-2xl p-3 text-center shadow-sm cursor-pointer active:scale-95 transition-transform">
+                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-1.5">
+                            <i class="fas fa-file-upload text-green-500"></i>
+                        </div>
+                        <p class="text-[10px] font-medium text-gray-700">${t('qDocs') || 'Docs'}</p>
+                    </div>
+                    <div onclick="handleMobileMenuClick('jobs')" class="bg-white rounded-2xl p-3 text-center shadow-sm cursor-pointer active:scale-95 transition-transform">
+                        <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mx-auto mb-1.5">
+                            <i class="fas fa-search text-orange-500"></i>
+                        </div>
+                        <p class="text-[10px] font-medium text-gray-700">${t('qJobs') || 'Jobs'}</p>
+                    </div>
+                    <div onclick="handleMobileMenuClick('consulting')" class="bg-white rounded-2xl p-3 text-center shadow-sm cursor-pointer active:scale-95 transition-transform">
+                        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-1.5">
+                            <i class="fas fa-calendar-check text-purple-500"></i>
+                        </div>
+                        <p class="text-[10px] font-medium text-gray-700">${t('qConsult') || 'Consult'}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 최근 알림 -->
+            <div class="mobile-fade-in bg-white rounded-2xl p-4 mb-4 shadow-sm" style="${fd()}">
+                <h3 class="text-sm font-semibold text-gray-800 mb-3"><i class="fas fa-bell mr-1 text-orange-500"></i> ${t('recentNotifs') || 'Recent Notifications'}</h3>
+                <div class="space-y-2">
+                    <div class="flex items-start space-x-2 p-2.5 bg-blue-50 rounded-xl">
+                        <div class="w-7 h-7 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i class="fas fa-file-alt text-blue-600 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-gray-800">${t('notif1Title') || 'Document Verified'}</p>
+                            <p class="text-[10px] text-gray-500 mt-0.5">${t('notif1Desc') || 'Your passport copy has been verified successfully.'}</p>
+                            <p class="text-[9px] text-gray-400 mt-0.5">2h ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-2 p-2.5 bg-green-50 rounded-xl">
+                        <div class="w-7 h-7 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i class="fas fa-check text-green-600 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-gray-800">${t('notif2Title') || 'Application Received'}</p>
+                            <p class="text-[10px] text-gray-500 mt-0.5">${t('notif2Desc') || 'Your E-8 visa application has been received.'}</p>
+                            <p class="text-[9px] text-gray-400 mt-0.5">1d ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 비자 유형 요약 -->
+            <div class="mobile-fade-in grid grid-cols-3 gap-2 mb-4" style="${fd()}">
+                <div class="mobile-stat-blue rounded-2xl p-3 text-center text-white">
+                    <p class="text-lg font-bold">E-8</p>
+                    <p class="text-[9px] text-white/70">${t('agriculture') || 'Seasonal'}</p>
+                </div>
+                <div class="mobile-stat-green rounded-2xl p-3 text-center text-white">
+                    <p class="text-lg font-bold">E-9</p>
+                    <p class="text-[9px] text-white/70">${t('manufacturing') || 'Employment'}</p>
+                </div>
+                <div class="mobile-stat-purple rounded-2xl p-3 text-center text-white">
+                    <p class="text-lg font-bold">H-2</p>
+                    <p class="text-[9px] text-white/70">Working Visit</p>
+                </div>
+            </div>
+
+            <!-- 긴급 연락처 -->
+            <div class="mobile-fade-in bg-white rounded-2xl p-4 mb-4 shadow-sm" style="${fd()}">
+                <h3 class="text-sm font-semibold text-gray-800 mb-3"><i class="fas fa-phone-alt mr-1 text-red-500"></i> ${t('emergency') || 'Emergency Contacts'}</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="p-2.5 bg-red-50 rounded-xl flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-red-200 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-phone text-red-600 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-medium text-gray-800">${t('hotline') || 'Immigration'}</p>
+                            <p class="text-xs text-blue-600 font-bold">1345</p>
+                        </div>
+                    </div>
+                    <div class="p-2.5 bg-blue-50 rounded-xl flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-hands-helping text-blue-600 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-medium text-gray-800">${t('laborHelp') || 'Labor'}</p>
+                            <p class="text-xs text-blue-600 font-bold">1350</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderMobileMenuGrid() {
+        const grid = document.getElementById('mobileMenuGrid');
+        if (!grid) return;
+        const menus = [
+            { id: 'home', icon: 'fa-home', label: t('mobileHome') || t('tabHome') || 'Home', desc: t('mobileHomeDesc') || 'Dashboard', color: 'mobile-menu-blue' },
+            { id: 'visa', icon: 'fa-passport', label: t('tabVisa') || 'Visa', desc: t('mobileVisaDesc') || 'Status & apply', color: 'mobile-menu-green' },
+            { id: 'documents', icon: 'fa-folder-open', label: t('tabDocs') || 'Documents', desc: t('mobileDocsDesc') || 'Manage files', color: 'mobile-menu-purple' },
+            { id: 'jobs', icon: 'fa-briefcase', label: t('tabJobs') || 'Jobs', desc: t('mobileJobsDesc') || 'Find work', color: 'mobile-menu-orange' },
+            { id: 'consulting', icon: 'fa-headset', label: t('tabConsulting') || 'Consulting', desc: t('mobileConsultDesc') || 'Book session', color: 'mobile-menu-indigo' },
+            { id: 'guide', icon: 'fa-book', label: t('tabGuide') || 'Guide', desc: t('mobileGuideDesc') || 'Info & FAQ', color: 'mobile-menu-teal' },
+            { id: 'profile', icon: 'fa-user-cog', label: t('tabProfile') || 'Profile', desc: t('mobileProfileDesc') || 'My settings', color: 'mobile-menu-pink' },
+            { id: 'notifications', icon: 'fa-bell', label: t('notifsTitle') || 'Notifications', desc: t('mobileNotifsDesc') || 'Alerts', color: 'mobile-menu-orange' }
+        ];
+
+        grid.innerHTML = menus.map(m => `
+            <div class="mobile-menu-card mobile-fade-in bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer" onclick="handleMobileMenuClick('${m.id}')">
+                <div class="${m.color} p-4 flex flex-col items-center justify-center" style="min-height:90px;">
+                    <i class="fas ${m.icon} text-white text-2xl mb-2"></i>
+                    <span class="text-white font-bold text-xs">${m.label}</span>
+                </div>
+                <div class="p-2.5">
+                    <p class="text-gray-500 text-[10px] text-center">${m.desc}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function handleMobileMenuClick(tabId) {
+        if (tabId === 'home') {
+            switchMobilePage(0);
+            return;
+        }
+        const tabContent = document.getElementById('tab-' + tabId);
+        const mobileTabContent = document.getElementById('mobileTabContent');
+        const menuGrid = document.getElementById('mobileMenuGrid');
+        if (tabContent && mobileTabContent) {
+            menuGrid.style.display = 'none';
+            mobileTabContent.style.display = 'block';
+            mobileTabContent.innerHTML = `
+                <button onclick="closeMobileTab()" class="mb-3 text-sm text-blue-600 font-medium"><i class="fas fa-arrow-left mr-1"></i> ${t('mobileMenu') || 'Menu'}</button>
+                <div>${tabContent.innerHTML}</div>
+            `;
+            // 탭 전환 시 페이지 2로 이동
+            if (mobileCurrentPage !== 1) switchMobilePage(1);
+            showTab(tabId);
+        }
+    }
+
+    function closeMobileTab() {
+        const mobileTabContent = document.getElementById('mobileTabContent');
+        const menuGrid = document.getElementById('mobileMenuGrid');
+        if (mobileTabContent) mobileTabContent.style.display = 'none';
+        if (menuGrid) menuGrid.style.display = 'grid';
+    }
+
+    function renderMobileNotifications() {
+        const list = document.getElementById('mobileNotifList');
+        if (!list) return;
+        list.innerHTML = `
+            <div class="flex items-start space-x-2 p-2 bg-blue-50 rounded-xl">
+                <i class="fas fa-file-alt text-blue-500 text-xs mt-1"></i>
+                <div>
+                    <p class="text-xs font-medium text-gray-800">${t('notif1Title') || 'Document Verified'}</p>
+                    <p class="text-[10px] text-gray-500">${t('notif1Desc') || 'Passport copy verified.'}</p>
+                </div>
+            </div>
+            <div class="flex items-start space-x-2 p-2 bg-green-50 rounded-xl">
+                <i class="fas fa-check text-green-500 text-xs mt-1"></i>
+                <div>
+                    <p class="text-xs font-medium text-gray-800">${t('notif2Title') || 'Application Received'}</p>
+                    <p class="text-[10px] text-gray-500">${t('notif2Desc') || 'E-8 visa application received.'}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    function initMobileLayout() {
+        renderMobileDashboard();
+        renderMobileMenuGrid();
+        renderMobileNotifications();
+        initMobileSwipe();
+        // 초기 상태: page2 비활성
+        const page2 = document.getElementById('mobilePage2');
+        if (page2) page2.style.pointerEvents = 'none';
+        // 스와이프 힌트 숨기기 (7초 후)
+        setTimeout(() => {
+            const hint = document.getElementById('mobileSwipeHint');
+            if (hint) hint.style.opacity = '0';
+            setTimeout(() => { if (hint) hint.style.display = 'none'; }, 500);
+        }, 7000);
+    }
+
     // ==================== 초기화 ====================
     document.addEventListener('DOMContentLoaded', () => {
+        // 모바일 초기화 최우선
+        if (isMobileView()) {
+            try { initMobileLayout(); } catch(e) { console.warn('initMobileLayout error:', e); }
+        }
+
         const userStr = sessionStorage.getItem('kwv_user');
         if (userStr) {
             try {
                 currentUser = JSON.parse(userStr);
                 const name = currentUser.name || currentUser.email || 'User';
-                document.getElementById('headerUserName').textContent = name;
-                document.getElementById('menuUserName').textContent = name;
-                document.getElementById('profileName').textContent = name;
-                document.getElementById('profileEmail').textContent = currentUser.email || '';
-                document.getElementById('pfNameInput').value = name;
-                document.getElementById('pfEmailInput').value = currentUser.email || '';
-                document.getElementById('pfLangInput').value = currentLang;
+                const headerName = document.getElementById('headerUserName');
+                if (headerName) headerName.textContent = name;
+                const menuName = document.getElementById('menuUserName');
+                if (menuName) menuName.textContent = name;
+                const profileName = document.getElementById('profileName');
+                if (profileName) profileName.textContent = name;
+                const profileEmail = document.getElementById('profileEmail');
+                if (profileEmail) profileEmail.textContent = currentUser.email || '';
+                const pfNameInput = document.getElementById('pfNameInput');
+                if (pfNameInput) pfNameInput.value = name;
+                const pfEmailInput = document.getElementById('pfEmailInput');
+                if (pfEmailInput) pfEmailInput.value = currentUser.email || '';
+                const pfLangInput = document.getElementById('pfLangInput');
+                if (pfLangInput) pfLangInput.value = currentLang;
+
+                // 모바일 사용자 메뉴 이름
+                const mobileMenuName = document.getElementById('mobileLayoutUserMenuName');
+                if (mobileMenuName) mobileMenuName.textContent = name;
 
                 const tr = translations[currentLang] || translations.en;
-                document.getElementById('welcomeMsg').textContent = (tr.welcomePrefix || 'Hello, ') + name + (tr.welcomeSuffix || '!');
+                const welcomeMsg = document.getElementById('welcomeMsg');
+                if (welcomeMsg) welcomeMsg.textContent = (tr.welcomePrefix || 'Hello, ') + name + (tr.welcomeSuffix || '!');
             } catch(e) {}
         }
 
@@ -922,6 +1720,15 @@
         }
 
         applyTranslations();
+
+        // 리사이즈 핸들러
+        let mobileInitDone = isMobileView();
+        window.addEventListener('resize', () => {
+            if (isMobileView() && !mobileInitDone) {
+                mobileInitDone = true;
+                try { initMobileLayout(); } catch(e) { console.warn(e); }
+            }
+        });
     });
 
     // 외부 클릭 시 메뉴 닫기
@@ -929,6 +1736,20 @@
         const menu = document.getElementById('userMenu');
         if (menu && !menu.classList.contains('hidden') && !e.target.closest('.relative')) {
             menu.classList.add('hidden');
+        }
+        const mobileMenu = document.getElementById('mobileLayoutUserMenu');
+        if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+            const trigger = e.target.closest('[onclick*="toggleMobileUserMenu"]');
+            if (!trigger && !mobileMenu.contains(e.target)) {
+                mobileMenu.classList.add('hidden');
+            }
+        }
+        const notifPanel = document.getElementById('mobileNotifPanel');
+        if (notifPanel && !notifPanel.classList.contains('hidden')) {
+            const trigger = e.target.closest('[onclick*="toggleMobileNotification"]');
+            if (!trigger && !notifPanel.contains(e.target)) {
+                notifPanel.classList.add('hidden');
+            }
         }
     });
 </script>
