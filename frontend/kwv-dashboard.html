@@ -5212,6 +5212,23 @@
             loadJobs();
             loadRegions();
             initCharts();
+
+            // 모바일 동적 콘텐츠 다시 렌더링
+            if (isMobileView()) {
+                renderMobileDashboard();
+                renderMobileMenuGrid();
+                // 열려있는 탭 콘텐츠도 다시 렌더링
+                const tc = document.getElementById('mobileTabContent');
+                if (tc && tc.style.display !== 'none') {
+                    const activeTab = document.querySelector('.tab-content.active');
+                    if (activeTab) {
+                        tc.innerHTML = `
+                            <button onclick="closeMobileTab()" class="mb-3 text-sm text-blue-600 font-medium"><i class="fas fa-arrow-left mr-1"></i> ${t('mobileMenu') || '메뉴'}</button>
+                            <div>${activeTab.innerHTML}</div>
+                        `;
+                    }
+                }
+            }
         }
 
         // 언어 적용 함수

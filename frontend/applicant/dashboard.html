@@ -1282,6 +1282,46 @@
         currentLang = lang;
         localStorage.setItem('kwv_language', lang);
         applyTranslations();
+
+        // 모바일 동적 콘텐츠 다시 렌더링
+        if (isMobileView()) {
+            renderMobileDashboard();
+            renderMobileMenuGrid();
+            renderMobileNotifications();
+            // 열려있는 탭 콘텐츠도 다시 렌더링
+            const tc = document.getElementById('mobileTabContent');
+            if (tc && tc.style.display !== 'none') {
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab) {
+                    tc.innerHTML = `
+                        <button onclick="closeMobileTab()" class="mb-3 text-sm text-blue-600 font-medium"><i class="fas fa-arrow-left mr-1"></i> ${t('mobileMenu') || 'Menu'}</button>
+                        <div>${activeTab.innerHTML}</div>
+                    `;
+                }
+            }
+        }
+
+        // 데스크톱 동적 콘텐츠 업데이트
+        const userStr = sessionStorage.getItem('kwv_user');
+        if (userStr) {
+            try {
+                const u = JSON.parse(userStr);
+                const name = u.name || u.email || 'User';
+                const tr = translations[currentLang] || translations.en;
+                const welcomeMsg = document.getElementById('welcomeMsg');
+                if (welcomeMsg) welcomeMsg.textContent = (tr.welcomePrefix || 'Hello, ') + name + (tr.welcomeSuffix || '!');
+            } catch(e) {}
+        }
+        const today = new Date();
+        const dateEl = document.getElementById('todayDate');
+        if (dateEl) {
+            if (currentLang === 'ko') {
+                dateEl.textContent = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+            } else {
+                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                dateEl.textContent = `${months[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
+            }
+        }
     }
 
     function applyTranslations() {
