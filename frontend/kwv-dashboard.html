@@ -1058,6 +1058,31 @@
         </div>
     </main>
 
+    <!-- 권한 관리 확인 모달 -->
+    <div id="permissionModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-[60]">
+        <div class="bg-white rounded-3xl max-w-md w-full mx-4 overflow-hidden shadow-2xl">
+            <div id="permModalHeader" class="px-8 py-5 border-b flex items-center space-x-3">
+                <div id="permModalIcon" class="w-10 h-10 rounded-xl flex items-center justify-center"></div>
+                <h3 id="permModalTitle" class="text-lg font-bold text-gray-800"></h3>
+            </div>
+            <div class="px-8 py-6">
+                <p id="permModalMessage" class="text-gray-600 text-sm mb-6"></p>
+                <div class="flex space-x-3 justify-end">
+                    <button onclick="closePermModal()" class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition">취소</button>
+                    <button id="permModalConfirm" class="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 권한 관리 결과 토스트 -->
+    <div id="permToast" class="fixed top-6 right-6 z-[70] hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border px-6 py-4 flex items-center space-x-3 min-w-[280px]">
+            <div id="toastIcon" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"></div>
+            <p id="toastMessage" class="text-sm font-medium text-gray-800"></p>
+        </div>
+    </div>
+
     <!-- 공지사항 모달 -->
     <div id="noticeModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-50">
         <div class="bg-white rounded-3xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
@@ -4816,25 +4841,102 @@
         }
 
         // ==================== 권한 관리 함수들 (프로토타입) ====================
+        let permModalCallback = null;
+
+        function showPermModal(opts) {
+            const modal = document.getElementById('permissionModal');
+            const icon = document.getElementById('permModalIcon');
+            const title = document.getElementById('permModalTitle');
+            const msg = document.getElementById('permModalMessage');
+            const btn = document.getElementById('permModalConfirm');
+
+            icon.className = 'w-10 h-10 rounded-xl flex items-center justify-center ' + (opts.iconBg || 'bg-blue-100');
+            icon.innerHTML = `<i class="fas ${opts.icon || 'fa-question'} ${opts.iconColor || 'text-blue-500'} text-lg"></i>`;
+            title.textContent = opts.title || '확인';
+            msg.textContent = opts.message || '';
+            btn.textContent = opts.confirmText || '확인';
+            btn.className = 'px-5 py-2.5 rounded-xl text-sm font-medium text-white transition ' + (opts.confirmClass || 'bg-blue-500 hover:bg-blue-600');
+            btn.onclick = () => { closePermModal(); if (opts.onConfirm) opts.onConfirm(); };
+            modal.classList.add('active');
+        }
+
+        function closePermModal() {
+            document.getElementById('permissionModal').classList.remove('active');
+        }
+
+        function showPermToast(message, type) {
+            const toast = document.getElementById('permToast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            if (type === 'success') {
+                icon.className = 'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-green-100';
+                icon.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+            } else if (type === 'error') {
+                icon.className = 'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-red-100';
+                icon.innerHTML = '<i class="fas fa-times text-red-500"></i>';
+            } else {
+                icon.className = 'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-blue-100';
+                icon.innerHTML = '<i class="fas fa-info text-blue-500"></i>';
+            }
+            msg.textContent = message;
+            toast.classList.remove('hidden');
+            toast.style.animation = 'none'; toast.offsetHeight; toast.style.animation = '';
+            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+        }
+
         function approveAdmin(id) {
-            if (confirm('이 관리자를 승인하시겠습니까?')) {
-                alert('승인되었습니다. (프로토타입)');
-                const btn = event.target.closest('.flex.space-x-2');
-                if (btn) btn.parentElement.style.opacity = '0.5';
-            }
+            showPermModal({
+                title: '관리자 승인',
+                message: '이 관리자를 승인하시겠습니까? 승인 후 S(Silver) 등급이 부여됩니다.',
+                icon: 'fa-user-check',
+                iconBg: 'bg-green-100',
+                iconColor: 'text-green-500',
+                confirmText: '승인',
+                confirmClass: 'bg-green-500 hover:bg-green-600',
+                onConfirm: () => {
+                    showPermToast('관리자가 승인되었습니다.', 'success');
+                    const row = document.querySelector(`[onclick*="approveAdmin('${id}')"]`);
+                    if (row) row.closest('.flex.items-center.justify-between').style.opacity = '0.4';
+                }
+            });
         }
+
         function rejectAdmin(id) {
-            if (confirm('이 관리자 가입을 거절하시겠습니까?')) {
-                alert('거절되었습니다. (프로토타입)');
-                const btn = event.target.closest('.flex.space-x-2');
-                if (btn) btn.parentElement.style.opacity = '0.5';
-            }
+            showPermModal({
+                title: '관리자 거절',
+                message: '이 관리자 가입을 거절하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+                icon: 'fa-user-times',
+                iconBg: 'bg-red-100',
+                iconColor: 'text-red-500',
+                confirmText: '거절',
+                confirmClass: 'bg-red-500 hover:bg-red-600',
+                onConfirm: () => {
+                    showPermToast('관리자 가입이 거절되었습니다.', 'error');
+                    const row = document.querySelector(`[onclick*="rejectAdmin('${id}')"]`);
+                    if (row) row.closest('.flex.items-center.justify-between').style.opacity = '0.4';
+                }
+            });
         }
+
         function changeGrade(userId, newGrade) {
             const gradeNames = { 'M': 'Master', 'G': 'Gold', 'S': 'Silver', '-': '미승인' };
-            if (confirm(`${userId}의 등급을 ${gradeNames[newGrade]}(으)로 변경하시겠습니까?`)) {
-                alert(`등급이 ${gradeNames[newGrade]}(으)로 변경되었습니다. (프로토타입)`);
-            }
+            const gradeIcons = { 'M': 'fa-crown', 'G': 'fa-star', 'S': 'fa-shield-alt', '-': 'fa-minus-circle' };
+            const gradeColors = { 'M': 'text-purple-500', 'G': 'text-yellow-500', 'S': 'text-gray-500', '-': 'text-red-400' };
+            const gradeBgs = { 'M': 'bg-purple-100', 'G': 'bg-yellow-100', 'S': 'bg-gray-100', '-': 'bg-red-100' };
+
+            showPermModal({
+                title: '등급 변경',
+                message: `${userId}의 등급을 ${gradeNames[newGrade]} (${newGrade})(으)로 변경하시겠습니까?`,
+                icon: gradeIcons[newGrade] || 'fa-exchange-alt',
+                iconBg: gradeBgs[newGrade] || 'bg-blue-100',
+                iconColor: gradeColors[newGrade] || 'text-blue-500',
+                confirmText: `${gradeNames[newGrade]}(으)로 변경`,
+                confirmClass: 'bg-purple-500 hover:bg-purple-600',
+                onConfirm: () => {
+                    showPermToast(`등급이 ${gradeNames[newGrade]}(으)로 변경되었습니다.`, 'success');
+                }
+            });
         }
         function filterAdminsByGrade() {
             const filter = document.getElementById('gradeFilter').value;
