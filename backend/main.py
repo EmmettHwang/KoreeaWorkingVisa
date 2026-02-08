@@ -5637,6 +5637,21 @@ async def serve_manifest():
         return FileResponse(manifest_path, media_type="application/json")
     raise HTTPException(status_code=404, detail="manifest.json not found")
 
+@app.get("/{subdir}/{filename}.html", response_class=HTMLResponse)
+async def serve_subdir_html(subdir: str, filename: str):
+    """프론트엔드 서브디렉토리 HTML 파일 서빙"""
+    allowed_subdirs = ['admin', 'applicant', 'mobile']
+    if subdir not in allowed_subdirs:
+        raise HTTPException(status_code=404, detail=f"{subdir}/{filename}.html not found")
+    try:
+        html_path = os.path.join(frontend_dir, subdir, f"{filename}.html")
+        if not os.path.exists(html_path):
+            raise HTTPException(status_code=404, detail=f"{subdir}/{filename}.html not found")
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"{subdir}/{filename}.html not found")
+
 @app.get("/{filename}.html", response_class=HTMLResponse)
 async def serve_html(filename: str):
     """프론트엔드 HTML 파일 서빙"""

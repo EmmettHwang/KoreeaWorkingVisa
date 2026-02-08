@@ -181,10 +181,16 @@
 
         function redirectUser(user) {
             const t = translations[currentLang] || translations.en;
-            showSuccess(t.redirectingAdmin || 'Redirecting to Dashboard...');
             sessionStorage.setItem('kwv_logged_in', 'true');
             sessionStorage.setItem('kwv_user', JSON.stringify(user));
-            setTimeout(() => { window.location.href = '/kwv-dashboard.html'; }, 1000);
+
+            if (user.user_type === 'applicant') {
+                showSuccess(t.redirectingApplicant || 'Redirecting to My Dashboard...');
+                setTimeout(() => { window.location.href = '/applicant/dashboard.html'; }, 1000);
+            } else {
+                showSuccess(t.redirectingAdmin || 'Redirecting to Admin Dashboard...');
+                setTimeout(() => { window.location.href = '/kwv-dashboard.html'; }, 1000);
+            }
         }
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {

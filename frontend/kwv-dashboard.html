@@ -299,6 +299,9 @@
                 <button onclick="showTab('settings')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="settings">
                     <i class="fas fa-cog mr-2"></i><span data-i18n="tabSettings">설정</span>
                 </button>
+                <button onclick="showTab('permissions')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="permissions" id="permissionsTabBtn">
+                    <i class="fas fa-shield-alt mr-2"></i><span data-i18n="tabPermissions">권한 관리</span>
+                </button>
             </div>
         </div>
     </div>
@@ -773,6 +776,282 @@
                             </div>
                             <i class="fas fa-chevron-right text-red-300"></i>
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 권한 관리 탭 (M등급 전용) ==================== -->
+        <div id="tab-permissions" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-shield-alt mr-2 text-purple-500"></i> <span data-i18n="permissionsTitle">권한 관리</span></h2>
+                <span class="text-sm text-gray-400">M등급 전용</span>
+            </div>
+
+            <!-- 요약 카드 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="card p-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">전체 관리자</p>
+                            <p class="text-2xl font-bold text-gray-800">8</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-users text-blue-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card p-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">승인 대기</p>
+                            <p class="text-2xl font-bold text-orange-500">2</p>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-clock text-orange-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card p-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">일반 신청자</p>
+                            <p class="text-2xl font-bold text-green-600">24</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-user text-green-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card p-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">비활성 계정</p>
+                            <p class="text-2xl font-bold text-gray-400">3</p>
+                        </div>
+                        <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-user-slash text-gray-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 승인 대기열 -->
+            <div class="card p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-user-clock text-orange-500 mr-2"></i> 승인 대기 중인 관리자
+                    <span class="ml-2 bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">2명</span>
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-100">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-orange-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Nguyen Van A</p>
+                                <p class="text-xs text-gray-500">nguyen.a@example.com · 2026-02-06 가입</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="approveAdmin('nguyen')" class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition">
+                                <i class="fas fa-check mr-1"></i> 승인
+                            </button>
+                            <button onclick="rejectAdmin('nguyen')" class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition">
+                                <i class="fas fa-times mr-1"></i> 거절
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-100">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-orange-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Somchai T.</p>
+                                <p class="text-xs text-gray-500">somchai@example.com · 2026-02-07 가입</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="approveAdmin('somchai')" class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition">
+                                <i class="fas fa-check mr-1"></i> 승인
+                            </button>
+                            <button onclick="rejectAdmin('somchai')" class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition">
+                                <i class="fas fa-times mr-1"></i> 거절
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 관리자 목록 -->
+            <div class="card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-user-shield text-purple-500 mr-2"></i> 관리자 목록
+                    </h3>
+                    <div class="flex space-x-2">
+                        <select id="gradeFilter" class="input-apple text-sm py-2 px-3" onchange="filterAdminsByGrade()">
+                            <option value="all">전체 등급</option>
+                            <option value="M">M (Master)</option>
+                            <option value="G">G (Gold)</option>
+                            <option value="S">S (Silver)</option>
+                            <option value="-">- (없음)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-gray-500 font-medium">이름</th>
+                                <th class="text-left py-3 px-4 text-gray-500 font-medium">이메일</th>
+                                <th class="text-center py-3 px-4 text-gray-500 font-medium">등급</th>
+                                <th class="text-center py-3 px-4 text-gray-500 font-medium">가입일</th>
+                                <th class="text-center py-3 px-4 text-gray-500 font-medium">상태</th>
+                                <th class="text-center py-3 px-4 text-gray-500 font-medium">등급 변경</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminListBody">
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 font-medium text-gray-800">관리자 (나)</td>
+                                <td class="py-3 px-4 text-gray-600">admin@kwv.com</td>
+                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-master">M</span></td>
+                                <td class="py-3 px-4 text-center text-gray-500">2026-01-01</td>
+                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
+                                <td class="py-3 px-4 text-center text-gray-300">-</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 font-medium text-gray-800">김영희</td>
+                                <td class="py-3 px-4 text-gray-600">yhkim@kwv.com</td>
+                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-gold">G</span></td>
+                                <td class="py-3 px-4 text-center text-gray-500">2026-01-15</td>
+                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
+                                <td class="py-3 px-4 text-center">
+                                    <select onchange="changeGrade('yhkim', this.value)" class="text-xs border rounded-lg px-2 py-1">
+                                        <option value="G" selected>G</option>
+                                        <option value="M">M</option>
+                                        <option value="S">S</option>
+                                        <option value="-">-</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 font-medium text-gray-800">박철수</td>
+                                <td class="py-3 px-4 text-gray-600">cspark@kwv.com</td>
+                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-gold">G</span></td>
+                                <td class="py-3 px-4 text-center text-gray-500">2026-01-20</td>
+                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
+                                <td class="py-3 px-4 text-center">
+                                    <select onchange="changeGrade('cspark', this.value)" class="text-xs border rounded-lg px-2 py-1">
+                                        <option value="G" selected>G</option>
+                                        <option value="M">M</option>
+                                        <option value="S">S</option>
+                                        <option value="-">-</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 font-medium text-gray-800">이지은</td>
+                                <td class="py-3 px-4 text-gray-600">jilee@kwv.com</td>
+                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-silver">S</span></td>
+                                <td class="py-3 px-4 text-center text-gray-500">2026-02-01</td>
+                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
+                                <td class="py-3 px-4 text-center">
+                                    <select onchange="changeGrade('jilee', this.value)" class="text-xs border rounded-lg px-2 py-1">
+                                        <option value="S" selected>S</option>
+                                        <option value="M">M</option>
+                                        <option value="G">G</option>
+                                        <option value="-">-</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 font-medium text-gray-800">Tran Minh</td>
+                                <td class="py-3 px-4 text-gray-600">tminh@kwv.com</td>
+                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-silver">S</span></td>
+                                <td class="py-3 px-4 text-center text-gray-500">2026-02-03</td>
+                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
+                                <td class="py-3 px-4 text-center">
+                                    <select onchange="changeGrade('tminh', this.value)" class="text-xs border rounded-lg px-2 py-1">
+                                        <option value="S" selected>S</option>
+                                        <option value="M">M</option>
+                                        <option value="G">G</option>
+                                        <option value="-">-</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 font-medium text-gray-800">정민호</td>
+                                <td class="py-3 px-4 text-gray-600">mhjung@kwv.com</td>
+                                <td class="py-3 px-4 text-center"><span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-200 text-gray-500 text-xs font-bold">-</span></td>
+                                <td class="py-3 px-4 text-center text-gray-500">2026-02-05</td>
+                                <td class="py-3 px-4 text-center"><span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">미승인</span></td>
+                                <td class="py-3 px-4 text-center">
+                                    <select onchange="changeGrade('mhjung', this.value)" class="text-xs border rounded-lg px-2 py-1">
+                                        <option value="-" selected>-</option>
+                                        <option value="M">M</option>
+                                        <option value="G">G</option>
+                                        <option value="S">S</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 등급 설명 -->
+            <div class="card p-6 mt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-info-circle text-blue-500 mr-2"></i> 등급별 권한 안내</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="p-4 rounded-xl border-2 border-purple-200 bg-purple-50">
+                        <div class="flex items-center mb-2">
+                            <span class="admin-badge badge-master mr-2">M</span>
+                            <span class="font-bold text-purple-700">Master</span>
+                        </div>
+                        <ul class="text-xs text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 모든 기능 접근</li>
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 관리자 등급 변경</li>
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 관리자 승인/거절</li>
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 시스템 설정</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 rounded-xl border-2 border-yellow-200 bg-yellow-50">
+                        <div class="flex items-center mb-2">
+                            <span class="admin-badge badge-gold mr-2">G</span>
+                            <span class="font-bold text-yellow-700">Gold</span>
+                        </div>
+                        <ul class="text-xs text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 지원자 관리</li>
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 상담/구인구직 관리</li>
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 서류 검토/승인</li>
+                            <li><i class="fas fa-times text-red-400 mr-1"></i> 권한 관리 불가</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
+                        <div class="flex items-center mb-2">
+                            <span class="admin-badge badge-silver mr-2">S</span>
+                            <span class="font-bold text-gray-600">Silver</span>
+                        </div>
+                        <ul class="text-xs text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 데이터 조회</li>
+                            <li><i class="fas fa-check text-green-500 mr-1"></i> 기본 관리 기능</li>
+                            <li><i class="fas fa-times text-red-400 mr-1"></i> 일부 편집 제한</li>
+                            <li><i class="fas fa-times text-red-400 mr-1"></i> 권한 관리 불가</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 rounded-xl border-2 border-red-200 bg-red-50">
+                        <div class="flex items-center mb-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-300 text-gray-600 text-xs font-bold mr-2">-</span>
+                            <span class="font-bold text-red-600">미승인</span>
+                        </div>
+                        <ul class="text-xs text-gray-600 space-y-1">
+                            <li><i class="fas fa-times text-red-400 mr-1"></i> 접근 불가</li>
+                            <li><i class="fas fa-times text-red-400 mr-1"></i> 관리자 승인 필요</li>
+                            <li><i class="fas fa-times text-red-400 mr-1"></i> 모든 기능 차단</li>
+                            <li><i class="fas fa-info-circle text-blue-400 mr-1"></i> M등급에게 요청</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -4500,6 +4779,69 @@
             }
         });
 
+        // ==================== 등급별 UI 제어 ====================
+        function applyGradePermissions(level) {
+            const permBtn = document.getElementById('permissionsTabBtn');
+
+            if (level === 0) {
+                // 미승인: "권한이 필요합니다" 오버레이 표시
+                const overlay = document.createElement('div');
+                overlay.id = 'noAccessOverlay';
+                overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
+                overlay.innerHTML = `
+                    <div style="background:white;border-radius:24px;padding:48px;text-align:center;max-width:400px;margin:16px;">
+                        <div style="width:80px;height:80px;background:#FEE2E2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+                            <i class="fas fa-lock" style="font-size:32px;color:#EF4444;"></i>
+                        </div>
+                        <h2 style="font-size:24px;font-weight:700;color:#1F2937;margin-bottom:12px;">권한이 필요합니다</h2>
+                        <p style="color:#6B7280;margin-bottom:24px;">관리자 승인 후 이용 가능합니다.<br>Master 등급 관리자에게 문의하세요.</p>
+                        <button onclick="logout()" style="background:#3B82F6;color:white;padding:12px 32px;border-radius:12px;font-weight:600;border:none;cursor:pointer;">
+                            <i class="fas fa-sign-out-alt mr-2"></i> 로그아웃
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                return;
+            }
+
+            if (level < 3 && permBtn) {
+                // G/S: 권한 관리 탭 숨김
+                permBtn.style.display = 'none';
+            }
+        }
+
+        // ==================== 권한 관리 함수들 (프로토타입) ====================
+        function approveAdmin(id) {
+            if (confirm('이 관리자를 승인하시겠습니까?')) {
+                alert('승인되었습니다. (프로토타입)');
+                const btn = event.target.closest('.flex.space-x-2');
+                if (btn) btn.parentElement.style.opacity = '0.5';
+            }
+        }
+        function rejectAdmin(id) {
+            if (confirm('이 관리자 가입을 거절하시겠습니까?')) {
+                alert('거절되었습니다. (프로토타입)');
+                const btn = event.target.closest('.flex.space-x-2');
+                if (btn) btn.parentElement.style.opacity = '0.5';
+            }
+        }
+        function changeGrade(userId, newGrade) {
+            const gradeNames = { 'M': 'Master', 'G': 'Gold', 'S': 'Silver', '-': '미승인' };
+            if (confirm(`${userId}의 등급을 ${gradeNames[newGrade]}(으)로 변경하시겠습니까?`)) {
+                alert(`등급이 ${gradeNames[newGrade]}(으)로 변경되었습니다. (프로토타입)`);
+            }
+        }
+        function filterAdminsByGrade() {
+            const filter = document.getElementById('gradeFilter').value;
+            const rows = document.querySelectorAll('#adminListBody tr');
+            rows.forEach(row => {
+                if (filter === 'all') { row.style.display = ''; return; }
+                const badge = row.querySelector('.admin-badge, span[class*="bg-gray"]');
+                const text = badge ? badge.textContent.trim() : '';
+                row.style.display = (text === filter) ? '' : 'none';
+            });
+        }
+
         // 로그아웃
         function logout() {
             sessionStorage.removeItem('kwv_logged_in');
@@ -4539,18 +4881,36 @@
                     // name 필드 우선, 없으면 firstName/lastName 조합
                     name = user.name || ((user.firstName || user.first_name || '') + ' ' + (user.lastName || user.last_name || '')).trim() || name;
 
-                    // 관리자 등급 배지 (일단 모두 Master)
+                    // 관리자 등급 배지 (admin_level 기반)
                     if (user.user_type === 'admin' || user.userType === 'admin') {
-                        const badgeInfo = { text: 'M', cls: 'badge-master', title: 'Master' };
+                        const level = user.admin_level || user.adminLevel || 0;
+                        let badgeInfo;
+                        if (level >= 3) {
+                            badgeInfo = { text: 'M', cls: 'badge-master', title: 'Master' };
+                        } else if (level === 2) {
+                            badgeInfo = { text: 'G', cls: 'badge-gold', title: 'Gold' };
+                        } else if (level === 1) {
+                            badgeInfo = { text: 'S', cls: 'badge-silver', title: 'Silver' };
+                        } else {
+                            badgeInfo = { text: '-', cls: '', title: '미승인' };
+                        }
+
                         ['adminBadge', 'adminBadgeMobile'].forEach(id => {
                             const el = document.getElementById(id);
                             if (el) {
                                 el.textContent = badgeInfo.text;
-                                el.className = 'admin-badge ' + badgeInfo.cls;
-                                el.title = badgeInfo.title;
-                                el.style.display = 'inline-flex';
+                                el.className = 'admin-badge ' + (badgeInfo.cls || '');
+                                if (!badgeInfo.cls) {
+                                    el.style.cssText = 'display:inline-flex;background:#D1D5DB;color:#6B7280;width:24px;height:24px;border-radius:6px;font-size:11px;font-weight:700;align-items:center;justify-content:center;';
+                                } else {
+                                    el.title = badgeInfo.title;
+                                    el.style.display = 'inline-flex';
+                                }
                             }
                         });
+
+                        // 등급별 UI 제어
+                        applyGradePermissions(level);
                     }
                 } catch(e) {
                     console.error('사용자 정보 파싱 오류:', e);
@@ -5267,9 +5627,16 @@
                 { id: 'regions', icon: 'fa-map-marker-alt', label: t('tabRegions') || '지자체', desc: '지역 정보', color: 'mobile-menu-purple' },
                 { id: 'jobs', icon: 'fa-briefcase', label: t('tabJobs') || '구인/구직', desc: '구인 목록', color: 'mobile-menu-orange' },
                 { id: 'applicants', icon: 'fa-users', label: t('tabApplicants') || '지원자', desc: '지원자 관리', color: 'mobile-menu-indigo' },
+                { id: 'permissions', icon: 'fa-shield-alt', label: t('tabPermissions') || '권한 관리', desc: 'M등급 전용', color: 'mobile-menu-pink', masterOnly: true },
                 { id: 'settings', icon: 'fa-cog', label: t('tabSettings') || '설정', desc: '앱 설정', color: 'mobile-menu-pink' }
             ];
-            grid.innerHTML = menus.map(m => `
+            // 등급 확인 - M등급이 아니면 masterOnly 메뉴 숨김
+            const userStr = sessionStorage.getItem('kwv_user');
+            let userLevel = 0;
+            if (userStr) { try { const u = JSON.parse(userStr); userLevel = u.admin_level || u.adminLevel || 0; } catch(e){} }
+            const filteredMenus = menus.filter(m => !m.masterOnly || userLevel >= 3);
+
+            grid.innerHTML = filteredMenus.map(m => `
                 <div class="mobile-menu-card mobile-fade-in bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer" onclick="handleMobileMenuClick('${m.id}')">
                     <div class="${m.color} p-4 flex flex-col items-center justify-center" style="min-height:100px;">
                         <i class="fas ${m.icon} text-white text-3xl mb-2"></i>
