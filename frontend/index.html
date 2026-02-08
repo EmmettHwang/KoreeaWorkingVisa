@@ -61,30 +61,8 @@
         <p class="text-center text-gray-400 text-xs mt-8">© 2026 KoreaWorkingVisa</p>
     </div>
     <script>
-        if (localStorage.getItem('kwv_logged_in') === 'true' || sessionStorage.getItem('kwv_logged_in') === 'true') {
-            window.location.href = '/kwv-dashboard.html';
-        }
-        function togglePassword() {
-            const pw = document.getElementById('password');
-            const icon = document.getElementById('eyeIcon');
-            if (pw.type === 'password') { pw.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); }
-            else { pw.type = 'password'; icon.classList.replace('fa-eye-slash', 'fa-eye'); }
-        }
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const remember = document.getElementById('remember').checked;
-            if (username === 'gwc2025' && password === 'dodan1004~!@#') {
-                if (remember) { localStorage.setItem('kwv_logged_in', 'true'); localStorage.setItem('kwv_username', username); }
-                else { sessionStorage.setItem('kwv_logged_in', 'true'); sessionStorage.setItem('kwv_username', username); }
-                window.location.href = '/kwv-dashboard.html';
-            } else {
-                document.getElementById('errorMsg').classList.remove('hidden');
-                this.classList.add('shake');
-                setTimeout(() => this.classList.remove('shake'), 500);
-            }
-        });
+        // kwv-login.html로 통합 - 하드코딩 자격증명 제거
+        window.location.replace('/kwv-login.html');
     </script>
 </body>
 </html>

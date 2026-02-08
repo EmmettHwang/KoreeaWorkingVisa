@@ -4507,7 +4507,10 @@
             sessionStorage.removeItem('kwv_user_type');
             sessionStorage.removeItem('kwv_token');
             localStorage.removeItem('kwv_logged_in');
-            window.location.href = '/kwv-login.html';
+            localStorage.removeItem('kwv_user');
+            localStorage.removeItem('kwv_token');
+            localStorage.removeItem('kwv_username');
+            window.location.replace('/kwv-login.html');
         }
 
         // 사용자 정보 로드
