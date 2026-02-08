@@ -262,9 +262,11 @@ async def register(user_data: UserRegister):
         first_name = name_parts[0] if name_parts else ''
         last_name = name_parts[1] if len(name_parts) > 1 else ''
 
+        user_type = user_data.user_type or 'applicant'
+
         cursor.execute("""
-            INSERT INTO kwv_users (email, password_hash, password_salt, first_name, last_name, birth_date, nationality, phone, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO kwv_users (email, password_hash, password_salt, first_name, last_name, birth_date, nationality, phone, status, user_type, admin_level, language, organization)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             user_data.email,
             password_hash,
@@ -274,13 +276,16 @@ async def register(user_data: UserRegister):
             '2000-01-01',
             'XX',
             user_data.phone or '',
-            'active'
+            'active',
+            user_type,
+            0,
+            user_data.language or 'en',
+            user_data.organization
         ))
 
         user_id = cursor.lastrowid
         conn.commit()
 
-        user_type = user_data.user_type or 'applicant'
         token_data = {
             "sub": str(user_id),
             "email": user_data.email,
@@ -364,7 +369,7 @@ async def login(credentials: UserLogin):
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT id, email, password_hash, password_salt, first_name, last_name, status
+            SELECT id, email, password_hash, password_salt, first_name, last_name, status, user_type, admin_level, language
             FROM kwv_users WHERE email = %s
         """, (credentials.email,))
 
@@ -373,11 +378,11 @@ async def login(credentials: UserLogin):
         if not user:
             raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다")
 
-        user_id, email, password_hash, password_salt, first_name, last_name, status = user
+        user_id, email, password_hash, password_salt, first_name, last_name, status, user_type, admin_level, language = user
         name = (first_name + ' ' + last_name).strip() if first_name else email
-        user_type = 'admin'
-        admin_level = 3
-        language = 'ko'
+        user_type = user_type or 'applicant'
+        admin_level = admin_level or 0
+        language = language or 'ko'
 
         if status != 'active':
             raise HTTPException(status_code=403, detail="비활성화된 계정입니다")
