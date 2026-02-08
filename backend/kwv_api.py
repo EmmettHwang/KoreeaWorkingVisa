@@ -253,33 +253,40 @@ async def register(user_data: UserRegister):
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다")
 
-        password_hash = hash_password(user_data.password)
-        is_admin = user_data.user_type == "admin"
+        import secrets
+        password_salt = secrets.token_hex(16)
+        password_hash = hashlib.sha256((user_data.password + password_salt).encode()).hexdigest()
+
+        # name을 first_name/last_name으로 분리
+        name_parts = (user_data.name or '').strip().split(' ', 1)
+        first_name = name_parts[0] if name_parts else ''
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
 
         cursor.execute("""
-            INSERT INTO kwv_users (email, password_hash, name, phone, user_type, admin_level, language, is_approved, organization)
+            INSERT INTO kwv_users (email, password_hash, password_salt, first_name, last_name, birth_date, nationality, phone, status)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             user_data.email,
             password_hash,
-            user_data.name,
-            user_data.phone,
-            user_data.user_type,
-            2 if is_admin else None,
-            user_data.language,
-            True,
-            user_data.organization
+            password_salt,
+            first_name,
+            last_name,
+            '2000-01-01',
+            'XX',
+            user_data.phone or '',
+            'active'
         ))
 
         user_id = cursor.lastrowid
         conn.commit()
 
+        user_type = user_data.user_type or 'applicant'
         token_data = {
             "sub": str(user_id),
             "email": user_data.email,
             "name": user_data.name,
-            "user_type": user_data.user_type,
-            "admin_level": 2 if is_admin else None
+            "user_type": user_type,
+            "admin_level": 3 if user_type == 'admin' else 0
         }
         access_token = create_access_token(token_data)
 
@@ -291,8 +298,8 @@ async def register(user_data: UserRegister):
                 "id": user_id,
                 "email": user_data.email,
                 "name": user_data.name,
-                "user_type": user_data.user_type,
-                "admin_level": 2 if is_admin else None,
+                "user_type": user_type,
+                "admin_level": 3 if user_type == 'admin' else 0,
                 "language": user_data.language
             }
         }
