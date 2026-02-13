@@ -10,6 +10,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
+        :root {
+            --header-bg-start: #007AFF;
+            --header-bg-end: #5856D6;
+            --menu-active: #2563eb;
+        }
         * { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif; }
         body { background: #f5f5f7; transition: background-color 0.3s, color 0.3s; }
         .glass { background: rgba(255,255,255,0.72); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); }
@@ -19,13 +24,13 @@
         .tab-content.active { display: block; }
         .modal { display: none; }
         .modal.active { display: flex; }
-        .stat-card { background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%); }
+        .stat-card { background: linear-gradient(135deg, var(--header-bg-start) 0%, var(--header-bg-end) 100%); }
         .stat-card.green { background: linear-gradient(135deg, #34C759 0%, #30D158 100%); }
         .stat-card.orange { background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%); }
-        .stat-card.blue { background: linear-gradient(135deg, #32ADE6 0%, #007AFF 100%); }
+        .stat-card.blue { background: linear-gradient(135deg, #32ADE6 0%, var(--header-bg-start) 100%); }
         .stat-card.pink { background: linear-gradient(135deg, #FF2D55 0%, #FF375F 100%); }
-        .btn-primary { background: #007AFF; color: white; border-radius: 12px; padding: 12px 24px; font-weight: 600; transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); }
-        .btn-primary:hover { background: #0066CC; transform: scale(1.02); }
+        .btn-primary { background: var(--header-bg-start); color: white; border-radius: 12px; padding: 12px 24px; font-weight: 600; transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        .btn-primary:hover { background: var(--menu-active); transform: scale(1.02); }
         .input-apple { border: 1px solid #d1d1d6; border-radius: 10px; padding: 12px 16px; transition: all 0.2s; background: #fff; }
         .input-apple:focus { border-color: #007AFF; box-shadow: 0 0 0 4px rgba(0,122,255,0.15); outline: none; }
         ::-webkit-scrollbar { width: 8px; }
@@ -69,6 +74,14 @@
         body.dark-mode #notificationPanel .border-gray-100 { border-color: #404060 !important; }
         body.dark-mode #notificationPanel .border-gray-50 { border-color: #353550 !important; }
         body.dark-mode #userMenu { background: #2d2d44; border-color: #404060; }
+        body.dark-mode .text-gray-900 { color: #f0f0f0 !important; }
+        body.dark-mode .menu-dropdown { background: #2d2d44; border-color: #404060; }
+        body.dark-mode .menu-dropdown a { color: #d0d0d0; }
+        body.dark-mode .menu-dropdown a:hover { background: rgba(0,122,255,0.15); color: var(--menu-active); }
+        body.dark-mode .menu-dropdown a.sub-active { background: rgba(0,122,255,0.2); color: var(--menu-active); }
+        body.dark-mode #mobileUserMenu { background: #2d2d44; border-color: #404060; }
+        .theme-preset-btn { width: 48px; height: 48px; border-radius: 12px; border: 3px solid transparent; cursor: pointer; transition: all 0.2s; }
+        .theme-preset-btn.active { border-color: var(--menu-active); transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
         /* ==================== 모바일 전용 스타일 ==================== */
         @media (max-width: 768px) {
@@ -216,7 +229,7 @@
         <div class="max-w-7xl mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-[#007AFF] to-[#5856D6] rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--header-bg-start), var(--header-bg-end));">
                         <i class="fas fa-globe-asia text-white text-lg"></i>
                     </div>
                     <div>
@@ -243,18 +256,25 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-3 bg-gray-100 rounded-full px-4 py-2 cursor-pointer" onclick="toggleUserMenu()">
-                        <div class="w-8 h-8 bg-gradient-to-br from-[#007AFF] to-[#5856D6] rounded-full flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, var(--header-bg-start), var(--header-bg-end));">
                             <i class="fas fa-user text-white text-sm"></i>
                         </div>
                         <span id="userName" class="text-sm font-medium text-gray-700">관리자</span>
                         <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                     </div>
                     <!-- 사용자 드롭다운 메뉴 -->
-                    <div id="userMenu" class="hidden absolute right-6 top-16 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[160px] z-50">
+                    <div id="userMenu" class="hidden absolute right-6 top-16 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[200px] z-50">
                         <div class="px-4 py-2 border-b border-gray-100">
                             <p class="text-xs text-gray-400" data-i18n="loginAccount">로그인 계정</p>
                             <p id="userMenuName" class="font-medium text-gray-800">관리자</p>
                         </div>
+                        <button onclick="showTab('mysettings');toggleUserMenu();" class="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition flex items-center">
+                            <i class="fas fa-user-circle mr-3 text-gray-400"></i>내 프로필
+                        </button>
+                        <button onclick="showTab('mysettings');toggleUserMenu();" class="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition flex items-center">
+                            <i class="fas fa-sliders-h mr-3 text-gray-400"></i>개인 설정
+                        </button>
+                        <div class="border-t border-gray-100 my-1"></div>
                         <button onclick="logout()" class="w-full px-4 py-3 text-left text-red-500 hover:bg-red-50 transition flex items-center">
                             <i class="fas fa-sign-out-alt mr-3"></i><span data-i18n="logout">로그아웃</span>
                         </button>
@@ -301,7 +321,21 @@
                     <i class="fas fa-chart-pie mr-2"></i><span>대시보드</span>
                 </button>
 
-                <!-- 지자체 등록 그룹 -->
+                <!-- ⚙ 시스템 설정 그룹 (Super Admin) -->
+                <div class="menu-group" id="menuGroupSysSetWrap">
+                    <div class="menu-group-btn tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" id="menuGroupSysSet">
+                        <i class="fas fa-cog mr-2"></i><span>⚙ 시스템 설정</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
+                    </div>
+                    <div class="menu-dropdown">
+                        <a href="#" onclick="showTab('basicsettings');return false;" data-tab="basicsettings"><i class="fas fa-sliders-h"></i> 기본 설정</a>
+                        <a href="#" onclick="showTab('admins');return false;" data-tab="admins"><i class="fas fa-user-shield"></i> 관리자 관리</a>
+                        <a href="#" onclick="showTab('permissions');return false;" data-tab="permissions"><i class="fas fa-shield-alt"></i> 권한 관리</a>
+                        <a href="#" onclick="showTab('notices');return false;" data-tab="notices"><i class="fas fa-bullhorn"></i> 공지사항</a>
+                        <a href="#" onclick="showTab('themesettings');return false;" data-tab="themesettings"><i class="fas fa-palette"></i> 테마 설정</a>
+                    </div>
+                </div>
+
+                <!-- 지자체 관리 그룹 -->
                 <div class="menu-group">
                     <div class="menu-group-btn tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" id="menuGroupLg">
                         <i class="fas fa-map-marker-alt mr-2"></i><span>지자체 관리</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
@@ -309,21 +343,32 @@
                     <div class="menu-dropdown">
                         <a href="#" onclick="showTab('regions');return false;" data-tab="regions"><i class="fas fa-building"></i> 국내 지자체</a>
                         <a href="#" onclick="showTab('mou');return false;" data-tab="mou"><i class="fas fa-handshake"></i> MOU 해외 기관</a>
+                        <a href="#" onclick="showTab('hiring');return false;" data-tab="hiring"><i class="fas fa-briefcase"></i> 구인 관리</a>
                     </div>
                 </div>
 
-                <!-- 근로자 관리 그룹 -->
+                <!-- 근로자 관리 그룹 (관리) -->
                 <div class="menu-group">
                     <div class="menu-group-btn tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" id="menuGroupWorker">
-                        <i class="fas fa-users mr-2"></i><span>근로자 관리</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
+                        <i class="fas fa-users-cog mr-2"></i><span>근로자 관리</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
                     </div>
                     <div class="menu-dropdown">
                         <a href="#" onclick="showTab('applicants');return false;" data-tab="applicants"><i class="fas fa-user-plus"></i> 지원자 현황</a>
+                        <a href="#" onclick="showTab('counseling');return false;" data-tab="counseling"><i class="fas fa-comments"></i> 상담일지</a>
+                        <a href="#" onclick="showTab('insurance');return false;" data-tab="insurance"><i class="fas fa-shield-alt"></i> 보험 관리</a>
+                    </div>
+                </div>
+
+                <!-- 근로자 (일상) 그룹 -->
+                <div class="menu-group">
+                    <div class="menu-group-btn tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" id="menuGroupDaily">
+                        <i class="fas fa-user mr-2"></i><span>근로자</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
+                    </div>
+                    <div class="menu-dropdown">
                         <a href="#" onclick="showTab('attendance');return false;" data-tab="attendance"><i class="fas fa-clock"></i> 출퇴근</a>
                         <a href="#" onclick="showTab('activities');return false;" data-tab="activities"><i class="fas fa-book"></i> 활동일지</a>
-                        <a href="#" onclick="showTab('counseling');return false;" data-tab="counseling"><i class="fas fa-comments"></i> 상담일지</a>
                         <a href="#" onclick="showTab('points');return false;" data-tab="points"><i class="fas fa-star"></i> 포인트</a>
-                        <a href="#" onclick="showTab('insurance');return false;" data-tab="insurance"><i class="fas fa-shield-alt"></i> 보험 관리</a>
+                        <a href="#" onclick="showTab('jobseeking');return false;" data-tab="jobseeking"><i class="fas fa-search"></i> 구직</a>
                     </div>
                 </div>
 
@@ -338,11 +383,6 @@
                     </div>
                 </div>
 
-                <!-- 구인/구직 (단독) -->
-                <button onclick="showTab('jobs')" class="tab-btn menu-group-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="jobs">
-                    <i class="fas fa-briefcase mr-2"></i><span>구인/구직</span>
-                </button>
-
                 <!-- AI Helper 그룹 -->
                 <div class="menu-group">
                     <div class="menu-group-btn tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" id="menuGroupFaq">
@@ -352,18 +392,6 @@
                         <a href="#" onclick="showTab('visa');return false;" data-tab="visa"><i class="fas fa-passport"></i> 비자안내</a>
                         <a href="#" onclick="showTab('faq');return false;" data-tab="faq"><i class="fas fa-question-circle"></i> FAQ</a>
                         <a href="#" onclick="showTab('chatbot');return false;" data-tab="chatbot"><i class="fas fa-comments"></i> AI 챗봇</a>
-                    </div>
-                </div>
-
-                <!-- 시스템 설정 그룹 -->
-                <div class="menu-group">
-                    <div class="menu-group-btn tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" id="menuGroupSystem">
-                        <i class="fas fa-cog mr-2"></i><span>시스템</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
-                    </div>
-                    <div class="menu-dropdown">
-                        <a href="#" onclick="showTab('notices');return false;" data-tab="notices"><i class="fas fa-bullhorn"></i> 공지사항</a>
-                        <a href="#" onclick="showTab('settings');return false;" data-tab="settings"><i class="fas fa-cog"></i> 시스템 설정</a>
-                        <a href="#" onclick="showTab('permissions');return false;" data-tab="permissions"><i class="fas fa-shield-alt"></i> 권한 관리</a>
                     </div>
                 </div>
             </div>
@@ -376,7 +404,7 @@
         <!-- ==================== 대시보드 탭 ==================== -->
         <div id="tab-dashboard" class="tab-content active">
             <!-- 환영 카드 -->
-            <div class="card p-8 mb-8 bg-gradient-to-r from-[#007AFF] via-[#5856D6] to-[#AF52DE] text-white">
+            <div class="card p-8 mb-8 text-white" style="background: linear-gradient(to right, var(--header-bg-start), var(--header-bg-end), #AF52DE);">
                 <div class="flex justify-between items-center">
                     <div>
                         <p class="text-blue-100 text-sm mb-1" id="todayDate">2026년 2월 4일</p>
@@ -391,7 +419,7 @@
 
             <!-- 통계 카드 -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                <div class="stat-card rounded-2xl p-5 text-white cursor-pointer" onclick="showTab('jobs')">
+                <div class="stat-card rounded-2xl p-5 text-white cursor-pointer" onclick="showTab('hiring')">
                     <div class="flex justify-between items-start">
                         <p class="text-white/70 text-sm" data-i18n="totalJobs">총 구인</p>
                         <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -455,7 +483,7 @@
 
             <!-- 빠른 액션 -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <button onclick="showTab('jobs')" class="card p-5 flex items-center space-x-4 hover:bg-gray-50">
+                <button onclick="showTab('hiring')" class="card p-5 flex items-center space-x-4 hover:bg-gray-50">
                     <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
                         <i class="fas fa-plus text-blue-600 text-lg"></i>
                     </div>
@@ -556,7 +584,7 @@
                 <div class="card p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800" data-i18n="recentJobs">💼 최근 구인</h3>
-                        <button onclick="showTab('jobs')" class="text-blue-500 text-sm font-medium hover:text-blue-700" data-i18n="viewAll">전체보기</button>
+                        <button onclick="showTab('hiring')" class="text-blue-500 text-sm font-medium hover:text-blue-700" data-i18n="viewAll">전체보기</button>
                     </div>
                     <div id="jobList" class="space-y-3"></div>
                 </div>
@@ -629,18 +657,60 @@
             </div>
         </div>
 
-        <!-- ==================== 구인/구직 탭 ==================== -->
-        <div id="tab-jobs" class="tab-content">
+        <!-- ==================== 구인 관리 탭 (관리자용) ==================== -->
+        <div id="tab-hiring" class="tab-content">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800" data-i18n="jobList">💼 구인 목록</h2>
-                <select id="filterVisa" class="input-apple" onchange="filterJobs()">
-                    <option value="" data-i18n="allVisa">모든 비자</option>
-                    <option value="E8">E8 계절근로</option>
-                    <option value="D2">D2 유학</option>
-                    <option value="D4">D4 어학연수</option>
-                </select>
+                <h2 class="text-2xl font-bold text-gray-800">💼 구인 관리</h2>
+                <div class="flex items-center gap-3">
+                    <select id="hiringFilterStatus" class="input-apple text-sm" onchange="loadHiringList()">
+                        <option value="">전체 상태</option>
+                        <option value="active">활성</option>
+                        <option value="draft">임시저장</option>
+                        <option value="closed">마감</option>
+                    </select>
+                    <button onclick="openHiringModal()" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>구인 등록</button>
+                </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="jobCards"></div>
+            <div class="card overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-gray-600">제목</th>
+                            <th class="px-4 py-3 text-left text-gray-600">지자체</th>
+                            <th class="px-4 py-3 text-center text-gray-600">비자</th>
+                            <th class="px-4 py-3 text-center text-gray-600">인원</th>
+                            <th class="px-4 py-3 text-center text-gray-600">상태</th>
+                            <th class="px-4 py-3 text-center text-gray-600">등록일</th>
+                            <th class="px-4 py-3 text-center text-gray-600">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hiringTableBody">
+                        <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>로딩 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== 구직 탭 (근로자용, 읽기 전용) ==================== -->
+        <div id="tab-jobseeking" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">🔍 구직 정보</h2>
+                <div class="flex items-center gap-3">
+                    <select id="jobSeekFilterVisa" class="input-apple text-sm" onchange="loadJobSeeking()">
+                        <option value="">모든 비자</option>
+                        <option value="E-8">E-8 계절근로</option>
+                        <option value="E-9">E-9 비전문취업</option>
+                        <option value="D-2">D-2 유학</option>
+                        <option value="D-4">D-4 어학연수</option>
+                    </select>
+                    <select id="jobSeekFilterLg" class="input-apple text-sm" onchange="loadJobSeeking()">
+                        <option value="">모든 지자체</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="jobSeekCards">
+                <div class="text-center text-gray-400 py-8 col-span-3"><i class="fas fa-spinner fa-spin mr-2"></i>로딩 중...</div>
+            </div>
         </div>
 
         <!-- ==================== 지원자 탭 ==================== -->
@@ -1365,72 +1435,40 @@
         </div>
 
         <!-- ==================== 설정 탭 ==================== -->
-        <div id="tab-settings" class="tab-content">
+        <!-- ==================== 기본 설정 탭 (시스템 설정 분리) ==================== -->
+        <div id="tab-basicsettings" class="tab-content">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800" data-i18n="settingsTitle">⚙️ 설정</h2>
+                <h2 class="text-2xl font-bold text-gray-800">⚙️ 기본 설정</h2>
+                <span class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full">Super Admin</span>
             </div>
-
-            <!-- ===== 시스템 설정 (Super Admin 전용) ===== -->
-            <div id="systemSettingsSection" style="display:none;" class="mb-8">
-                <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center">
-                    <i class="fas fa-server text-blue-500 mr-2"></i>시스템 설정
-                    <span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">Super Admin</span>
-                </h3>
+            <div id="systemSettingsSection" class="mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                    <!-- 플랫폼 기본정보 -->
                     <div class="card p-6">
                         <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
                             <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-heading text-blue-500"></i></div>
                             플랫폼 정보
                         </h4>
                         <div class="space-y-3">
-                            <div>
-                                <label class="text-xs text-gray-500">시스템 제목</label>
-                                <input type="text" id="set_system_title" class="w-full input-apple text-sm mt-1" placeholder="Korea Working Visa">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">부제목</label>
-                                <input type="text" id="set_system_subtitle" class="w-full input-apple text-sm mt-1" placeholder="외국인 계절근로자 관리 포털">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">로고 URL</label>
-                                <input type="text" id="set_logo_url" class="w-full input-apple text-sm mt-1" placeholder="/logo.png">
-                            </div>
+                            <div><label class="text-xs text-gray-500">시스템 제목</label><input type="text" id="set_system_title" class="w-full input-apple text-sm mt-1" placeholder="Korea Working Visa"></div>
+                            <div><label class="text-xs text-gray-500">부제목</label><input type="text" id="set_system_subtitle" class="w-full input-apple text-sm mt-1" placeholder="외국인 계절근로자 관리 포털"></div>
+                            <div><label class="text-xs text-gray-500">로고 URL</label><input type="text" id="set_logo_url" class="w-full input-apple text-sm mt-1" placeholder="/logo.png"></div>
                         </div>
                     </div>
-
-                    <!-- 가입/승인 설정 -->
                     <div class="card p-6">
                         <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
                             <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-user-check text-green-500"></i></div>
                             가입/승인
                         </h4>
                         <div class="space-y-3">
-                            <div>
-                                <label class="text-xs text-gray-500">가입 승인 모드</label>
-                                <select id="set_approval_mode" class="w-full input-apple text-sm mt-1">
-                                    <option value="auto">자동 승인</option>
-                                    <option value="manual">관리자 승인</option>
-                                </select>
+                            <div><label class="text-xs text-gray-500">가입 승인 모드</label>
+                                <select id="set_approval_mode" class="w-full input-apple text-sm mt-1"><option value="auto">자동 승인</option><option value="manual">관리자 승인</option></select>
                             </div>
-                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                                <span class="text-sm text-gray-700">시스템 점검 모드</span>
-                                <input type="checkbox" id="set_maintenance_mode" class="w-5 h-5 accent-[#007AFF]">
-                            </label>
-                            <div>
-                                <label class="text-xs text-gray-500">기본 언어</label>
-                                <select id="set_default_language" class="w-full input-apple text-sm mt-1">
-                                    <option value="ko">한국어</option>
-                                    <option value="en">English</option>
-                                    <option value="vi">Tiếng Việt</option>
-                                    <option value="th">ภาษาไทย</option>
-                                    <option value="tl">Filipino</option>
-                                </select>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer"><span class="text-sm text-gray-700">시스템 점검 모드</span><input type="checkbox" id="set_maintenance_mode" class="w-5 h-5 accent-[#007AFF]"></label>
+                            <div><label class="text-xs text-gray-500">기본 언어</label>
+                                <select id="set_default_language" class="w-full input-apple text-sm mt-1"><option value="ko">한국어</option><option value="en">English</option><option value="vi">Tiếng Việt</option><option value="th">ภาษาไทย</option><option value="tl">Filipino</option></select>
                             </div>
                         </div>
                     </div>
-
-                    <!-- 포인트/출퇴근 설정 -->
                     <div class="card p-6">
                         <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
                             <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-star text-orange-500"></i></div>
@@ -1438,245 +1476,217 @@
                         </h4>
                         <div class="space-y-3">
                             <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-xs text-gray-500">출근 포인트</label>
-                                    <input type="number" id="set_point_check_in" class="w-full input-apple text-sm mt-1" value="10">
-                                </div>
-                                <div>
-                                    <label class="text-xs text-gray-500">퇴근 포인트</label>
-                                    <input type="number" id="set_point_check_out" class="w-full input-apple text-sm mt-1" value="5">
-                                </div>
+                                <div><label class="text-xs text-gray-500">출근 포인트</label><input type="number" id="set_point_check_in" class="w-full input-apple text-sm mt-1" value="10"></div>
+                                <div><label class="text-xs text-gray-500">퇴근 포인트</label><input type="number" id="set_point_check_out" class="w-full input-apple text-sm mt-1" value="5"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-xs text-gray-500">활동일지 포인트</label>
-                                    <input type="number" id="set_point_activity_log" class="w-full input-apple text-sm mt-1" value="3">
-                                </div>
-                                <div>
-                                    <label class="text-xs text-gray-500">GPS 반경(m)</label>
-                                    <input type="number" id="set_gps_radius_meters" class="w-full input-apple text-sm mt-1" value="500">
-                                </div>
+                                <div><label class="text-xs text-gray-500">활동일지 포인트</label><input type="number" id="set_point_activity_log" class="w-full input-apple text-sm mt-1" value="3"></div>
+                                <div><label class="text-xs text-gray-500">GPS 반경(m)</label><input type="number" id="set_gps_radius_meters" class="w-full input-apple text-sm mt-1" value="500"></div>
                             </div>
-                            <div>
-                                <label class="text-xs text-gray-500">출근 마감시간(시)</label>
-                                <input type="number" id="set_attendance_deadline_hours" class="w-full input-apple text-sm mt-1" value="10" min="6" max="12">
-                            </div>
+                            <div><label class="text-xs text-gray-500">출근 마감시간(시)</label><input type="number" id="set_attendance_deadline_hours" class="w-full input-apple text-sm mt-1" value="10" min="6" max="12"></div>
                         </div>
                     </div>
-
-                    <!-- API 키 설정 -->
                     <div class="card p-6">
                         <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
                             <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-key text-purple-500"></i></div>
                             API 키
                         </h4>
                         <div class="space-y-3">
-                            <div>
-                                <label class="text-xs text-gray-500">Google Maps API</label>
-                                <input type="password" id="set_google_maps_api_key" class="w-full input-apple text-sm mt-1" placeholder="API Key">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">AI API Key (Groq/Gemini)</label>
-                                <input type="password" id="set_ai_api_key" class="w-full input-apple text-sm mt-1" placeholder="API Key">
-                            </div>
-                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                                <span class="text-sm text-gray-700">AI 이상감지 활성화</span>
-                                <input type="checkbox" id="set_ai_anomaly_enabled" class="w-5 h-5 accent-[#007AFF]">
-                            </label>
+                            <div><label class="text-xs text-gray-500">Google Maps API</label><input type="password" id="set_google_maps_api_key" class="w-full input-apple text-sm mt-1" placeholder="API Key"></div>
+                            <div><label class="text-xs text-gray-500">AI API Key (Groq/Gemini)</label><input type="password" id="set_ai_api_key" class="w-full input-apple text-sm mt-1" placeholder="API Key"></div>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer"><span class="text-sm text-gray-700">AI 이상감지 활성화</span><input type="checkbox" id="set_ai_anomaly_enabled" class="w-5 h-5 accent-[#007AFF]"></label>
                         </div>
                     </div>
-
-                    <!-- 로그인 페이지 설정 -->
                     <div class="card p-6">
                         <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
                             <div class="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-sign-in-alt text-cyan-500"></i></div>
                             로그인 페이지
                         </h4>
                         <div class="space-y-3">
-                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                                <span class="text-sm text-gray-700">회원가입 버튼</span>
-                                <input type="checkbox" id="set_login_show_register" checked class="w-5 h-5 accent-[#007AFF]">
-                            </label>
-                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                                <span class="text-sm text-gray-700">Google 로그인</span>
-                                <input type="checkbox" id="set_login_show_google" checked class="w-5 h-5 accent-[#007AFF]">
-                            </label>
-                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                                <span class="text-sm text-gray-700">MOU 쇼케이스 링크</span>
-                                <input type="checkbox" id="set_login_show_mou" checked class="w-5 h-5 accent-[#007AFF]">
-                            </label>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer"><span class="text-sm text-gray-700">회원가입 버튼</span><input type="checkbox" id="set_login_show_register" checked class="w-5 h-5 accent-[#007AFF]"></label>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer"><span class="text-sm text-gray-700">Google 로그인</span><input type="checkbox" id="set_login_show_google" checked class="w-5 h-5 accent-[#007AFF]"></label>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer"><span class="text-sm text-gray-700">MOU 쇼케이스 링크</span><input type="checkbox" id="set_login_show_mou" checked class="w-5 h-5 accent-[#007AFF]"></label>
                         </div>
                     </div>
-
-                    <!-- 저장 버튼 -->
                     <div class="card p-6 flex items-center justify-center">
-                        <button onclick="saveSystemSettings()" class="btn-primary w-full text-center">
-                            <i class="fas fa-save mr-2"></i>시스템 설정 저장
-                        </button>
+                        <button onclick="saveSystemSettings()" class="btn-primary w-full text-center"><i class="fas fa-save mr-2"></i>시스템 설정 저장</button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- ===== 개인 설정 ===== -->
-            <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center" id="personalSettingsTitle">
-                <i class="fas fa-user text-gray-400 mr-2"></i>개인 설정
-            </h3>
+        <!-- ==================== 개인 설정 탭 (유저 드롭다운에서 접근) ==================== -->
+        <div id="tab-mysettings" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">👤 개인 설정</h2>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- 내 프로필 -->
                 <div class="card p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
-                            <i class="fas fa-user-circle text-[#007AFF] text-lg"></i>
-                        </div>
+                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3"><i class="fas fa-user-circle text-[#007AFF] text-lg"></i></div>
                         <span data-i18n="myProfile">내 프로필</span>
                     </h3>
                     <p class="text-sm text-gray-500 mb-4" data-i18n="myProfileDesc">개인정보 및 계정 설정을 관리합니다.</p>
                     <div class="space-y-3">
-                        <button onclick="openProfileModal()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-edit text-gray-400 mr-3"></i>
-                                <span class="text-sm text-gray-700" data-i18n="editProfile">프로필 수정</span>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-300"></i>
-                        </button>
-                        <button onclick="openPasswordModal()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-key text-gray-400 mr-3"></i>
-                                <span class="text-sm text-gray-700" data-i18n="changePassword">비밀번호 변경</span>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-300"></i>
-                        </button>
+                        <button onclick="openProfileModal()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition"><div class="flex items-center"><i class="fas fa-edit text-gray-400 mr-3"></i><span class="text-sm text-gray-700" data-i18n="editProfile">프로필 수정</span></div><i class="fas fa-chevron-right text-gray-300"></i></button>
+                        <button onclick="openPasswordModal()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition"><div class="flex items-center"><i class="fas fa-key text-gray-400 mr-3"></i><span class="text-sm text-gray-700" data-i18n="changePassword">비밀번호 변경</span></div><i class="fas fa-chevron-right text-gray-300"></i></button>
                     </div>
                 </div>
-
-                <!-- 알림 설정 -->
                 <div class="card p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mr-3">
-                            <i class="fas fa-bell text-[#FF9500] text-lg"></i>
-                        </div>
+                        <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mr-3"><i class="fas fa-bell text-[#FF9500] text-lg"></i></div>
                         <span data-i18n="notificationSettings">알림 설정</span>
                     </h3>
                     <p class="text-sm text-gray-500 mb-4" data-i18n="notificationDesc">알림 수신 방법을 설정합니다.</p>
                     <div class="space-y-3">
-                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-envelope text-gray-400 mr-3"></i>
-                                <span class="text-sm text-gray-700" data-i18n="emailNotification">이메일 알림</span>
-                            </div>
-                            <input type="checkbox" id="emailNotif" checked class="w-5 h-5 accent-[#007AFF]">
-                        </label>
-                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-sms text-gray-400 mr-3"></i>
-                                <span class="text-sm text-gray-700" data-i18n="smsNotification">SMS 알림</span>
-                            </div>
-                            <input type="checkbox" id="smsNotif" class="w-5 h-5 accent-[#007AFF]">
-                        </label>
-                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-clipboard-check text-gray-400 mr-3"></i>
-                                <span class="text-sm text-gray-700" data-i18n="statusNotification">지원 현황 알림</span>
-                            </div>
-                            <input type="checkbox" id="statusNotif" checked class="w-5 h-5 accent-[#007AFF]">
-                        </label>
+                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition"><div class="flex items-center"><i class="fas fa-envelope text-gray-400 mr-3"></i><span class="text-sm text-gray-700" data-i18n="emailNotification">이메일 알림</span></div><input type="checkbox" id="emailNotif" checked class="w-5 h-5 accent-[#007AFF]"></label>
+                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition"><div class="flex items-center"><i class="fas fa-sms text-gray-400 mr-3"></i><span class="text-sm text-gray-700" data-i18n="smsNotification">SMS 알림</span></div><input type="checkbox" id="smsNotif" class="w-5 h-5 accent-[#007AFF]"></label>
+                        <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition"><div class="flex items-center"><i class="fas fa-clipboard-check text-gray-400 mr-3"></i><span class="text-sm text-gray-700" data-i18n="statusNotification">지원 현황 알림</span></div><input type="checkbox" id="statusNotif" checked class="w-5 h-5 accent-[#007AFF]"></label>
                     </div>
                 </div>
-
-                <!-- 언어 설정 -->
                 <div class="card p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
-                            <i class="fas fa-globe text-[#34C759] text-lg"></i>
-                        </div>
+                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3"><i class="fas fa-globe text-[#34C759] text-lg"></i></div>
                         <span data-i18n="languageSettings">언어 설정</span>
                     </h3>
                     <p class="text-sm text-gray-500 mb-4" data-i18n="languageDesc">서비스 표시 언어를 선택합니다.</p>
                     <select id="langSetting" class="w-full input-apple text-sm" onchange="changeLanguage()">
-                        <option value="ko">🇰🇷 한국어</option>
-                        <option value="en">🇺🇸 English</option>
-                        <option value="vi">🇻🇳 Tiếng Việt</option>
-                        <option value="th">🇹🇭 ภาษาไทย</option>
-                        <option value="ph">🇵🇭 Filipino</option>
+                        <option value="ko">🇰🇷 한국어</option><option value="en">🇺🇸 English</option><option value="vi">🇻🇳 Tiếng Việt</option><option value="th">🇹🇭 ภาษาไทย</option><option value="ph">🇵🇭 Filipino</option>
                     </select>
                 </div>
-
-                <!-- 테마 설정 -->
                 <div class="card p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
-                            <i class="fas fa-palette text-[#AF52DE] text-lg"></i>
-                        </div>
+                        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3"><i class="fas fa-palette text-[#AF52DE] text-lg"></i></div>
                         <span data-i18n="themeSettings">테마 설정</span>
                     </h3>
                     <p class="text-sm text-gray-500 mb-4" data-i18n="themeDesc">화면 테마를 선택합니다.</p>
                     <div class="grid grid-cols-3 gap-3">
-                        <button onclick="setTheme('light')" class="theme-btn p-4 bg-white border-2 border-[#007AFF] rounded-xl text-center transition hover:shadow-md" data-theme="light">
-                            <i class="fas fa-sun text-yellow-500 text-xl mb-2"></i>
-                            <p class="text-sm font-medium text-gray-700" data-i18n="themeLight">라이트</p>
-                        </button>
-                        <button onclick="setTheme('dark')" class="theme-btn p-4 bg-gray-100 border-2 border-transparent rounded-xl text-center transition hover:shadow-md hover:border-gray-300" data-theme="dark">
-                            <i class="fas fa-moon text-gray-600 text-xl mb-2"></i>
-                            <p class="text-sm font-medium text-gray-700" data-i18n="themeDark">다크</p>
-                        </button>
-                        <button onclick="setTheme('auto')" class="theme-btn p-4 bg-gray-100 border-2 border-transparent rounded-xl text-center transition hover:shadow-md hover:border-gray-300" data-theme="auto">
-                            <i class="fas fa-adjust text-gray-600 text-xl mb-2"></i>
-                            <p class="text-sm font-medium text-gray-700" data-i18n="themeAuto">자동</p>
-                        </button>
+                        <button onclick="setTheme('light')" class="theme-btn p-4 bg-white border-2 border-[#007AFF] rounded-xl text-center transition hover:shadow-md" data-theme="light"><i class="fas fa-sun text-yellow-500 text-xl mb-2"></i><p class="text-sm font-medium text-gray-700" data-i18n="themeLight">라이트</p></button>
+                        <button onclick="setTheme('dark')" class="theme-btn p-4 bg-gray-100 border-2 border-transparent rounded-xl text-center transition hover:shadow-md hover:border-gray-300" data-theme="dark"><i class="fas fa-moon text-gray-600 text-xl mb-2"></i><p class="text-sm font-medium text-gray-700" data-i18n="themeDark">다크</p></button>
+                        <button onclick="setTheme('auto')" class="theme-btn p-4 bg-gray-100 border-2 border-transparent rounded-xl text-center transition hover:shadow-md hover:border-gray-300" data-theme="auto"><i class="fas fa-adjust text-gray-600 text-xl mb-2"></i><p class="text-sm font-medium text-gray-700" data-i18n="themeAuto">자동</p></button>
                     </div>
                 </div>
-
-                <!-- 데이터 관리 -->
                 <div class="card p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center mr-3">
-                            <i class="fas fa-database text-cyan-500 text-lg"></i>
-                        </div>
+                        <div class="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center mr-3"><i class="fas fa-database text-cyan-500 text-lg"></i></div>
                         <span data-i18n="dataManagement">데이터 관리</span>
                     </h3>
                     <p class="text-sm text-gray-500 mb-4" data-i18n="dataDesc">개인 데이터를 관리합니다.</p>
                     <div class="space-y-3">
-                        <button onclick="exportData()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-download text-gray-400 mr-3"></i>
-                                <span class="text-sm text-gray-700" data-i18n="exportData">데이터 내보내기</span>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-300"></i>
-                        </button>
-                        <button onclick="exportData('csv')" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-file-csv text-gray-400 mr-3"></i>
-                                <span class="text-sm text-gray-700" data-i18n="exportCSV">CSV로 내보내기</span>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-300"></i>
-                        </button>
+                        <button onclick="exportData()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition"><div class="flex items-center"><i class="fas fa-download text-gray-400 mr-3"></i><span class="text-sm text-gray-700" data-i18n="exportData">데이터 내보내기</span></div><i class="fas fa-chevron-right text-gray-300"></i></button>
+                        <button onclick="exportData('csv')" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition"><div class="flex items-center"><i class="fas fa-file-csv text-gray-400 mr-3"></i><span class="text-sm text-gray-700" data-i18n="exportCSV">CSV로 내보내기</span></div><i class="fas fa-chevron-right text-gray-300"></i></button>
                     </div>
                 </div>
-
-                <!-- 계정 관리 -->
                 <div class="card p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mr-3">
-                            <i class="fas fa-user-cog text-[#FF3B30] text-lg"></i>
-                        </div>
+                        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mr-3"><i class="fas fa-user-cog text-[#FF3B30] text-lg"></i></div>
                         <span data-i18n="accountManagement">계정 관리</span>
                     </h3>
                     <p class="text-sm text-gray-500 mb-4" data-i18n="accountDesc">계정 상태를 관리합니다.</p>
                     <div class="space-y-3">
-                        <button onclick="logout()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-sign-out-alt text-gray-400 mr-3"></i>
-                                <span class="text-sm text-gray-700" data-i18n="logout">로그아웃</span>
+                        <button onclick="logout()" class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition"><div class="flex items-center"><i class="fas fa-sign-out-alt text-gray-400 mr-3"></i><span class="text-sm text-gray-700" data-i18n="logout">로그아웃</span></div><i class="fas fa-chevron-right text-gray-300"></i></button>
+                        <button onclick="confirmDeleteAccount()" class="w-full flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition"><div class="flex items-center"><i class="fas fa-trash text-red-400 mr-3"></i><span class="text-sm text-red-600" data-i18n="deleteAccount">계정 삭제</span></div><i class="fas fa-chevron-right text-red-300"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 관리자 관리 탭 ==================== -->
+        <div id="tab-admins" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">👨‍💼 관리자 관리</h2>
+                <button onclick="openAdminModal()" class="btn-primary text-sm" id="addAdminBtn" style="display:none;"><i class="fas fa-plus mr-2"></i>관리자 추가</button>
+            </div>
+            <div class="card overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-gray-600">이름</th>
+                            <th class="px-4 py-3 text-left text-gray-600">이메일</th>
+                            <th class="px-4 py-3 text-center text-gray-600">소속</th>
+                            <th class="px-4 py-3 text-center text-gray-600">등급</th>
+                            <th class="px-4 py-3 text-center text-gray-600">상태</th>
+                            <th class="px-4 py-3 text-center text-gray-600">마지막 로그인</th>
+                            <th class="px-4 py-3 text-center text-gray-600">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminsTableBody">
+                        <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>로딩 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== 테마 설정 탭 (관리자 전용) ==================== -->
+        <div id="tab-themesettings" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">🎨 테마 설정</h2>
+                <button onclick="saveThemeSettings()" class="btn-primary text-sm"><i class="fas fa-save mr-2"></i>테마 저장</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">테마 프리셋</h3>
+                    <p class="text-sm text-gray-500 mb-4">헤더, 카드, 버튼에 적용되는 색상 프리셋을 선택하세요.</p>
+                    <div class="grid grid-cols-4 gap-4" id="themePresetGrid">
+                        <div class="text-center cursor-pointer" onclick="applyThemePreset('blue')">
+                            <div class="theme-preset-btn active mx-auto mb-2" data-preset="blue" style="background: linear-gradient(135deg, #007AFF, #5856D6);"></div>
+                            <span class="text-xs text-gray-600">블루</span>
+                        </div>
+                        <div class="text-center cursor-pointer" onclick="applyThemePreset('green')">
+                            <div class="theme-preset-btn mx-auto mb-2" data-preset="green" style="background: linear-gradient(135deg, #059669, #10b981);"></div>
+                            <span class="text-xs text-gray-600">그린</span>
+                        </div>
+                        <div class="text-center cursor-pointer" onclick="applyThemePreset('purple')">
+                            <div class="theme-preset-btn mx-auto mb-2" data-preset="purple" style="background: linear-gradient(135deg, #7c3aed, #a855f7);"></div>
+                            <span class="text-xs text-gray-600">퍼플</span>
+                        </div>
+                        <div class="text-center cursor-pointer" onclick="applyThemePreset('orange')">
+                            <div class="theme-preset-btn mx-auto mb-2" data-preset="orange" style="background: linear-gradient(135deg, #f97316, #ef4444);"></div>
+                            <span class="text-xs text-gray-600">오렌지</span>
+                        </div>
+                        <div class="text-center cursor-pointer" onclick="applyThemePreset('teal')">
+                            <div class="theme-preset-btn mx-auto mb-2" data-preset="teal" style="background: linear-gradient(135deg, #14b8a6, #06b6d4);"></div>
+                            <span class="text-xs text-gray-600">틸</span>
+                        </div>
+                        <div class="text-center cursor-pointer" onclick="applyThemePreset('rose')">
+                            <div class="theme-preset-btn mx-auto mb-2" data-preset="rose" style="background: linear-gradient(135deg, #f43f5e, #ec4899);"></div>
+                            <span class="text-xs text-gray-600">로즈</span>
+                        </div>
+                        <div class="text-center cursor-pointer" onclick="applyThemePreset('slate')">
+                            <div class="theme-preset-btn mx-auto mb-2" data-preset="slate" style="background: linear-gradient(135deg, #475569, #334155);"></div>
+                            <span class="text-xs text-gray-600">슬레이트</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">커스텀 색상</h3>
+                    <p class="text-sm text-gray-500 mb-4">직접 색상을 지정할 수 있습니다.</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs text-gray-500 mb-1 block">헤더 시작 색상</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="themeColorStart" value="#007AFF" class="w-10 h-10 rounded cursor-pointer border-0">
+                                <input type="text" id="themeColorStartText" value="#007AFF" class="input-apple text-sm flex-1" onchange="document.getElementById('themeColorStart').value=this.value;applyCustomTheme();">
                             </div>
-                            <i class="fas fa-chevron-right text-gray-300"></i>
-                        </button>
-                        <button onclick="confirmDeleteAccount()" class="w-full flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition">
-                            <div class="flex items-center">
-                                <i class="fas fa-trash text-red-400 mr-3"></i>
-                                <span class="text-sm text-red-600" data-i18n="deleteAccount">계정 삭제</span>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 mb-1 block">헤더 끝 색상</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="themeColorEnd" value="#5856D6" class="w-10 h-10 rounded cursor-pointer border-0">
+                                <input type="text" id="themeColorEndText" value="#5856D6" class="input-apple text-sm flex-1" onchange="document.getElementById('themeColorEnd').value=this.value;applyCustomTheme();">
                             </div>
-                            <i class="fas fa-chevron-right text-red-300"></i>
-                        </button>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 mb-1 block">메뉴 활성 색상</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="themeColorActive" value="#2563eb" class="w-10 h-10 rounded cursor-pointer border-0">
+                                <input type="text" id="themeColorActiveText" value="#2563eb" class="input-apple text-sm flex-1" onchange="document.getElementById('themeColorActive').value=this.value;applyCustomTheme();">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 p-4 rounded-xl" id="themePreview" style="background: linear-gradient(135deg, #007AFF, #5856D6);">
+                        <p class="text-white text-sm font-semibold">미리보기</p>
+                        <p class="text-white/70 text-xs">선택한 색상이 적용된 모습입니다</p>
                     </div>
                 </div>
             </div>
@@ -2563,6 +2573,60 @@
                     <button type="submit" class="flex-1 btn-primary" data-i18n="applyBtn">지원하기</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 구인 등록/수정 모달 -->
+    <div id="hiringModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-[60]">
+        <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 id="hiringModalTitle" class="text-xl font-bold text-gray-800 mb-6">💼 구인 등록</h3>
+            <input type="hidden" id="hiringEditId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2"><label class="text-xs text-gray-500">제목 *</label><input type="text" id="hiringTitle" class="w-full input-apple text-sm mt-1" placeholder="구인 공고 제목"></div>
+                <div><label class="text-xs text-gray-500">지자체</label><select id="hiringLgId" class="w-full input-apple text-sm mt-1"><option value="">선택</option></select></div>
+                <div><label class="text-xs text-gray-500">비자 유형</label><input type="text" id="hiringVisaTypes" class="w-full input-apple text-sm mt-1" placeholder="E-8,E-9"></div>
+                <div><label class="text-xs text-gray-500">모집 인원</label><input type="number" id="hiringPositions" class="w-full input-apple text-sm mt-1" value="1" min="1"></div>
+                <div><label class="text-xs text-gray-500">급여</label><input type="text" id="hiringSalary" class="w-full input-apple text-sm mt-1" placeholder="월 200만원"></div>
+                <div><label class="text-xs text-gray-500">근무 기간</label><input type="text" id="hiringPeriod" class="w-full input-apple text-sm mt-1" placeholder="2026.03 ~ 2026.10"></div>
+                <div><label class="text-xs text-gray-500">근무 위치</label><input type="text" id="hiringLocation" class="w-full input-apple text-sm mt-1" placeholder="전남 해남군"></div>
+                <div class="md:col-span-2"><label class="text-xs text-gray-500">상세 설명</label><textarea id="hiringDescription" class="w-full input-apple text-sm mt-1" rows="3" placeholder="업무 내용을 설명하세요"></textarea></div>
+                <div class="md:col-span-2"><label class="text-xs text-gray-500">자격 요건</label><textarea id="hiringRequirements" class="w-full input-apple text-sm mt-1" rows="2" placeholder="필요한 자격 요건"></textarea></div>
+                <div class="md:col-span-2"><label class="text-xs text-gray-500">복리 후생</label><textarea id="hiringBenefits" class="w-full input-apple text-sm mt-1" rows="2" placeholder="숙소, 식사 제공 등"></textarea></div>
+                <div><label class="text-xs text-gray-500">담당자 이름</label><input type="text" id="hiringContactName" class="w-full input-apple text-sm mt-1"></div>
+                <div><label class="text-xs text-gray-500">담당자 연락처</label><input type="text" id="hiringContactPhone" class="w-full input-apple text-sm mt-1"></div>
+                <div><label class="text-xs text-gray-500">담당자 이메일</label><input type="text" id="hiringContactEmail" class="w-full input-apple text-sm mt-1"></div>
+                <div><label class="text-xs text-gray-500">상태</label>
+                    <select id="hiringStatus" class="w-full input-apple text-sm mt-1"><option value="draft">임시저장</option><option value="active">활성</option><option value="closed">마감</option></select>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="document.getElementById('hiringModal').classList.remove('active')" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">취소</button>
+                <button onclick="saveHiring()" class="flex-1 btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 추가/수정 모달 -->
+    <div id="adminModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-[60]">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4">
+            <h3 id="adminModalTitle" class="text-xl font-bold text-gray-800 mb-6">👨‍💼 관리자 추가</h3>
+            <input type="hidden" id="adminEditId">
+            <div class="space-y-4">
+                <div><label class="text-xs text-gray-500">이메일 *</label><input type="email" id="adminEmail" class="w-full input-apple text-sm mt-1" placeholder="admin@example.com"></div>
+                <div><label class="text-xs text-gray-500">이름 *</label><input type="text" id="adminName" class="w-full input-apple text-sm mt-1" placeholder="관리자 이름"></div>
+                <div><label class="text-xs text-gray-500">연락처</label><input type="text" id="adminPhone" class="w-full input-apple text-sm mt-1" placeholder="010-0000-0000"></div>
+                <div><label class="text-xs text-gray-500">소속</label><input type="text" id="adminOrg" class="w-full input-apple text-sm mt-1" placeholder="소속 기관"></div>
+                <div><label class="text-xs text-gray-500">관리자 등급</label>
+                    <select id="adminLevel" class="w-full input-apple text-sm mt-1">
+                        <option value="1">1 - 일반 관리자</option><option value="2">2 - 지자체 관리자</option><option value="3">3 - 수석 관리자</option><option value="9">9 - Super Admin</option>
+                    </select>
+                </div>
+                <div><label class="text-xs text-gray-500">비밀번호 (빈칸=기본값)</label><input type="password" id="adminPassword" class="w-full input-apple text-sm mt-1" placeholder="kwv2026"></div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="document.getElementById('adminModal').classList.remove('active')" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">취소</button>
+                <button onclick="saveAdmin()" class="flex-1 btn-primary">저장</button>
+            </div>
         </div>
     </div>
 
@@ -5029,34 +5093,33 @@
         // 탭 전환
         // 탭→그룹 매핑
         const tabGroupMap = {
-            regions: 'menuGroupLg', mou: 'menuGroupLg',
-            applicants: 'menuGroupWorker', attendance: 'menuGroupWorker', activities: 'menuGroupWorker',
-            counseling: 'menuGroupWorker', points: 'menuGroupWorker', insurance: 'menuGroupWorker',
+            basicsettings: 'menuGroupSysSet', admins: 'menuGroupSysSet',
+            permissions: 'menuGroupSysSet', notices: 'menuGroupSysSet',
+            themesettings: 'menuGroupSysSet',
+            regions: 'menuGroupLg', mou: 'menuGroupLg', hiring: 'menuGroupLg',
+            applicants: 'menuGroupWorker', counseling: 'menuGroupWorker', insurance: 'menuGroupWorker',
+            attendance: 'menuGroupDaily', activities: 'menuGroupDaily',
+            points: 'menuGroupDaily', jobseeking: 'menuGroupDaily',
             reports: 'menuGroupReport', anomalies: 'menuGroupReport',
-            visa: 'menuGroupFaq', faq: 'menuGroupFaq', chatbot: 'menuGroupFaq',
-            notices: 'menuGroupSystem', settings: 'menuGroupSystem', permissions: 'menuGroupSystem'
+            visa: 'menuGroupFaq', faq: 'menuGroupFaq', chatbot: 'menuGroupFaq'
         };
 
         function showTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            // 모든 탭 버튼 초기화
             document.querySelectorAll('.tab-btn, .menu-group-btn').forEach(el => {
                 el.classList.remove('text-blue-600', 'bg-white/50', 'group-active');
                 el.classList.add('text-gray-500');
             });
-            // 드롭다운 서브메뉴 활성 표시
             document.querySelectorAll('.menu-dropdown a').forEach(el => el.classList.remove('sub-active'));
 
             const tabEl = document.getElementById('tab-' + tabName);
             if (tabEl) tabEl.classList.add('active');
 
-            // 직접 탭 버튼 (대시보드, 구인구직)
             const directBtn = document.querySelector(`button[data-tab="${tabName}"]`);
             if (directBtn) {
                 directBtn.classList.add('text-blue-600', 'bg-white/50');
                 directBtn.classList.remove('text-gray-500');
             }
-            // 그룹 메뉴 하이라이트
             const groupId = tabGroupMap[tabName];
             if (groupId) {
                 const groupBtn = document.getElementById(groupId);
@@ -5065,7 +5128,6 @@
                     groupBtn.classList.remove('text-gray-500');
                 }
             }
-            // 서브메뉴 활성 표시
             const subLink = document.querySelector(`.menu-dropdown a[data-tab="${tabName}"]`);
             if (subLink) subLink.classList.add('sub-active');
 
@@ -5082,6 +5144,11 @@
             if (tabName === 'insurance') loadInsuranceTab();
             if (tabName === 'notices') loadNoticesTab();
             if (tabName === 'dashboard') loadDashboardCharts();
+            if (tabName === 'hiring') loadHiringList();
+            if (tabName === 'jobseeking') loadJobSeeking();
+            if (tabName === 'admins') loadAdminsList();
+            if (tabName === 'themesettings') loadThemeSettings();
+            if (tabName === 'basicsettings') loadSystemSettings();
         }
 
         // 대시보드 공지사항 위젯 로드 (API 연동)
@@ -6841,7 +6908,7 @@
                     renderJobs(allJobs);
                     const posUnit = t('unit_people');
                     document.getElementById('jobList').innerHTML = data.data.map(job => `
-                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-green-50 cursor-pointer transition" onclick="showTab('jobs')">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-green-50 cursor-pointer transition" onclick="showTab('hiring')">
                             <div>
                                 <p class="font-medium text-gray-800">${translateJob(job.title)}</p>
                                 <p class="text-xs text-gray-400">${t(job.region)} · ${job.visa_type}</p>
@@ -6858,7 +6925,9 @@
 
         function renderJobs(jobs) {
             const posUnit = t('unit_people');
-            document.getElementById('jobCards').innerHTML = jobs.map(job => `
+            const el = document.getElementById('jobCards');
+            if (!el) return;
+            el.innerHTML = jobs.map(job => `
                 <div class="card p-6 cursor-pointer hover:shadow-xl transition-shadow" onclick="openJobModal(${job.id})">
                     <div class="flex justify-between items-start mb-4">
                         <span class="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">${job.visa_type}</span>
@@ -6879,7 +6948,9 @@
         }
 
         function filterJobs() {
-            const visa = document.getElementById('filterVisa').value;
+            const el = document.getElementById('filterVisa');
+            if (!el) return;
+            const visa = el.value;
             renderJobs(visa ? allJobs.filter(j => j.visa_type === visa) : allJobs);
         }
 
@@ -7991,7 +8062,7 @@
 
         // ==================== 등급별 UI 제어 ====================
         function applyGradePermissions(level) {
-            const permBtn = document.getElementById('permissionsTabBtn') || document.getElementById('menuGroupSystem');
+            const permBtn = document.getElementById('permissionsTabBtn') || document.getElementById('menuGroupSysSet');
 
             if (level === 0) {
                 // 미승인: "권한이 필요합니다" 오버레이 표시
@@ -8717,14 +8788,14 @@
                 const res = await fetch(API_BASE + '/settings');
                 systemSettings = await res.json();
 
-                // Super Admin이면 시스템 설정 섹션 표시
+                // Admin이면 LG 추가 버튼 표시
                 const userStr = sessionStorage.getItem('kwv_user');
                 if (userStr) {
                     const user = JSON.parse(userStr);
                     const level = user.admin_level || user.adminLevel || 0;
                     if (level >= 1 && (user.user_type === 'admin' || user.userType === 'admin')) {
-                        document.getElementById('systemSettingsSection').style.display = 'block';
-                        document.getElementById('addLgBtn').style.display = 'inline-flex';
+                        const addLgBtn = document.getElementById('addLgBtn');
+                        if (addLgBtn) addLgBtn.style.display = 'inline-flex';
                     }
                 }
 
@@ -8777,6 +8848,364 @@
                 loadSystemSettings();
             } catch(e) { alert('오류: ' + e.message); }
         }
+
+        // ==================== 구인 관리 (Hiring) ====================
+        async function loadHiringList() {
+            const status = document.getElementById('hiringFilterStatus')?.value || '';
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                let url = API_BASE + '/jobs?';
+                if (status) url += 'status=' + status;
+                else url += 'status=';  // show all for admin
+                const res = await fetch(url.replace('status=&','').replace(/\?$/,''), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                const tbody = document.getElementById('hiringTableBody');
+                if (!data.items || data.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">등록된 구인 공고가 없습니다</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.items.map(j => {
+                    const statusBadge = j.status === 'active' ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">활성</span>' :
+                        j.status === 'draft' ? '<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">임시</span>' :
+                        '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs">마감</span>';
+                    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium">${j.title}</td>
+                        <td class="px-4 py-3 text-gray-500">${j.lg_name || '-'}</td>
+                        <td class="px-4 py-3 text-center">${j.visa_types || '-'}</td>
+                        <td class="px-4 py-3 text-center">${j.positions}명</td>
+                        <td class="px-4 py-3 text-center">${statusBadge}</td>
+                        <td class="px-4 py-3 text-center text-gray-400 text-xs">${j.created_at ? j.created_at.split('T')[0] : ''}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="openHiringModal(${j.id})" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteHiring(${j.id})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch(e) { console.error('loadHiringList error:', e); }
+        }
+
+        async function openHiringModal(editId) {
+            document.getElementById('hiringEditId').value = editId || '';
+            document.getElementById('hiringModalTitle').textContent = editId ? '💼 구인 수정' : '💼 구인 등록';
+            // 지자체 목록 로드
+            try {
+                const res = await fetch(API_BASE + '/local-governments');
+                const data = await res.json();
+                const sel = document.getElementById('hiringLgId');
+                sel.innerHTML = '<option value="">선택</option>' + (data.items || []).map(lg => `<option value="${lg.id}">${lg.name}</option>`).join('');
+            } catch(e) {}
+            if (editId) {
+                try {
+                    const res = await fetch(API_BASE + '/jobs/' + editId);
+                    const j = await res.json();
+                    document.getElementById('hiringTitle').value = j.title || '';
+                    document.getElementById('hiringLgId').value = j.local_government_id || '';
+                    document.getElementById('hiringVisaTypes').value = j.visa_types || '';
+                    document.getElementById('hiringPositions').value = j.positions || 1;
+                    document.getElementById('hiringSalary').value = j.salary || '';
+                    document.getElementById('hiringPeriod').value = j.period || '';
+                    document.getElementById('hiringLocation').value = j.location || '';
+                    document.getElementById('hiringDescription').value = j.description || '';
+                    document.getElementById('hiringRequirements').value = j.requirements || '';
+                    document.getElementById('hiringBenefits').value = j.benefits || '';
+                    document.getElementById('hiringContactName').value = j.contact_name || '';
+                    document.getElementById('hiringContactPhone').value = j.contact_phone || '';
+                    document.getElementById('hiringContactEmail').value = j.contact_email || '';
+                    document.getElementById('hiringStatus').value = j.status || 'draft';
+                } catch(e) {}
+            } else {
+                ['hiringTitle','hiringVisaTypes','hiringSalary','hiringPeriod','hiringLocation',
+                 'hiringDescription','hiringRequirements','hiringBenefits','hiringContactName',
+                 'hiringContactPhone','hiringContactEmail'].forEach(id => { document.getElementById(id).value = ''; });
+                document.getElementById('hiringPositions').value = 1;
+                document.getElementById('hiringStatus').value = 'draft';
+                document.getElementById('hiringLgId').value = '';
+            }
+            document.getElementById('hiringModal').classList.add('active');
+        }
+
+        async function saveHiring() {
+            const token = sessionStorage.getItem('kwv_token');
+            const editId = document.getElementById('hiringEditId').value;
+            const body = {
+                title: document.getElementById('hiringTitle').value,
+                description: document.getElementById('hiringDescription').value,
+                local_government_id: document.getElementById('hiringLgId').value || null,
+                visa_types: document.getElementById('hiringVisaTypes').value,
+                positions: parseInt(document.getElementById('hiringPositions').value) || 1,
+                salary: document.getElementById('hiringSalary').value,
+                period: document.getElementById('hiringPeriod').value,
+                location: document.getElementById('hiringLocation').value,
+                requirements: document.getElementById('hiringRequirements').value,
+                benefits: document.getElementById('hiringBenefits').value,
+                contact_name: document.getElementById('hiringContactName').value,
+                contact_phone: document.getElementById('hiringContactPhone').value,
+                contact_email: document.getElementById('hiringContactEmail').value,
+                status: document.getElementById('hiringStatus').value
+            };
+            if (!body.title) { alert('제목을 입력하세요'); return; }
+            try {
+                const url = editId ? API_BASE + '/admin/jobs/' + editId : API_BASE + '/admin/jobs';
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify(body) });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || '저장 실패');
+                document.getElementById('hiringModal').classList.remove('active');
+                alert(editId ? '수정되었습니다' : '등록되었습니다');
+                loadHiringList();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        async function deleteHiring(id) {
+            if (!confirm('이 구인 공고를 삭제하시겠습니까?')) return;
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(API_BASE + '/admin/jobs/' + id, { method: 'DELETE', headers: {'Authorization':'Bearer '+token} });
+                if (!res.ok) { const r = await res.json(); throw new Error(r.detail || '삭제 실패'); }
+                loadHiringList();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        // ==================== 구직 (Job Seeking) ====================
+        async function loadJobSeeking() {
+            const visa = document.getElementById('jobSeekFilterVisa')?.value || '';
+            const lgId = document.getElementById('jobSeekFilterLg')?.value || '';
+            try {
+                let url = API_BASE + '/jobs?status=active';
+                if (visa) url += '&visa_type=' + visa;
+                if (lgId) url += '&local_government_id=' + lgId;
+                const res = await fetch(url);
+                const data = await res.json();
+                const container = document.getElementById('jobSeekCards');
+                if (!data.items || data.items.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-400 py-8 col-span-3"><i class="fas fa-info-circle mr-2"></i>현재 활성 구인 공고가 없습니다</div>';
+                    return;
+                }
+                container.innerHTML = data.items.map(j => `
+                    <div class="card p-6 hover:shadow-lg transition">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-gray-800 text-lg">${j.title}</h3>
+                            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">${j.positions}명 모집</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-3">${j.lg_name || '지자체 미지정'}</p>
+                        ${j.salary ? `<div class="flex items-center text-sm text-gray-600 mb-2"><i class="fas fa-won-sign mr-2 text-green-500"></i>${j.salary}</div>` : ''}
+                        ${j.period ? `<div class="flex items-center text-sm text-gray-600 mb-2"><i class="fas fa-calendar mr-2 text-blue-500"></i>${j.period}</div>` : ''}
+                        ${j.location ? `<div class="flex items-center text-sm text-gray-600 mb-2"><i class="fas fa-map-marker-alt mr-2 text-red-500"></i>${j.location}</div>` : ''}
+                        ${j.visa_types ? `<div class="flex items-center text-sm text-gray-600 mb-3"><i class="fas fa-passport mr-2 text-purple-500"></i>${j.visa_types}</div>` : ''}
+                        ${j.description ? `<p class="text-sm text-gray-500 mb-3 line-clamp-2">${j.description}</p>` : ''}
+                        ${j.contact_phone ? `<div class="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500"><i class="fas fa-phone mr-1"></i>${j.contact_phone}</div>` : ''}
+                    </div>
+                `).join('');
+                // Load LG filter options
+                try {
+                    const lgRes = await fetch(API_BASE + '/local-governments');
+                    const lgData = await lgRes.json();
+                    const lgSel = document.getElementById('jobSeekFilterLg');
+                    if (lgSel && lgSel.options.length <= 1) {
+                        (lgData.items || []).forEach(lg => { const o = document.createElement('option'); o.value = lg.id; o.textContent = lg.name; lgSel.appendChild(o); });
+                    }
+                } catch(e) {}
+            } catch(e) { console.error('loadJobSeeking error:', e); }
+        }
+
+        // ==================== 관리자 관리 (Admins) ====================
+        async function loadAdminsList() {
+            const token = sessionStorage.getItem('kwv_token');
+            // Show add button for super admin
+            const userStr = sessionStorage.getItem('kwv_user');
+            if (userStr) {
+                const u = JSON.parse(userStr);
+                if ((u.admin_level || u.adminLevel || 0) >= 9) {
+                    document.getElementById('addAdminBtn').style.display = 'inline-flex';
+                }
+            }
+            try {
+                const res = await fetch(API_BASE + '/admin/admins', { headers: {'Authorization':'Bearer '+token} });
+                const data = await res.json();
+                const tbody = document.getElementById('adminsTableBody');
+                if (!data.items || data.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">관리자가 없습니다</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.items.map(a => {
+                    const levelBadge = a.admin_level >= 9 ? '<span class="admin-badge badge-master">M</span>' :
+                        a.admin_level >= 3 ? '<span class="admin-badge badge-gold">' + a.admin_level + '</span>' :
+                        '<span class="admin-badge badge-silver">' + a.admin_level + '</span>';
+                    const statusBadge = a.is_active ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">활성</span>' :
+                        '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs">비활성</span>';
+                    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium">${a.name}</td>
+                        <td class="px-4 py-3 text-gray-500">${a.email}</td>
+                        <td class="px-4 py-3 text-center">${a.organization || '-'}</td>
+                        <td class="px-4 py-3 text-center">${levelBadge}</td>
+                        <td class="px-4 py-3 text-center">${statusBadge}</td>
+                        <td class="px-4 py-3 text-center text-gray-400 text-xs">${a.last_login ? a.last_login.split('T')[0] : '-'}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="openAdminModal(${a.id})" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteAdmin(${a.id})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch(e) { console.error('loadAdminsList error:', e); }
+        }
+
+        async function openAdminModal(editId) {
+            document.getElementById('adminEditId').value = editId || '';
+            document.getElementById('adminModalTitle').textContent = editId ? '👨‍💼 관리자 수정' : '👨‍💼 관리자 추가';
+            if (editId) {
+                const token = sessionStorage.getItem('kwv_token');
+                try {
+                    const res = await fetch(API_BASE + '/admin/admins', { headers: {'Authorization':'Bearer '+token} });
+                    const data = await res.json();
+                    const admin = (data.items || []).find(a => a.id === editId);
+                    if (admin) {
+                        document.getElementById('adminEmail').value = admin.email || '';
+                        document.getElementById('adminName').value = admin.name || '';
+                        document.getElementById('adminPhone').value = admin.phone || '';
+                        document.getElementById('adminOrg').value = admin.organization || '';
+                        document.getElementById('adminLevel').value = admin.admin_level || 1;
+                    }
+                } catch(e) {}
+                document.getElementById('adminEmail').disabled = true;
+            } else {
+                ['adminEmail','adminName','adminPhone','adminOrg','adminPassword'].forEach(id => { document.getElementById(id).value = ''; });
+                document.getElementById('adminLevel').value = 1;
+                document.getElementById('adminEmail').disabled = false;
+            }
+            document.getElementById('adminModal').classList.add('active');
+        }
+
+        async function saveAdmin() {
+            const token = sessionStorage.getItem('kwv_token');
+            const editId = document.getElementById('adminEditId').value;
+            const body = {
+                email: document.getElementById('adminEmail').value,
+                name: document.getElementById('adminName').value,
+                phone: document.getElementById('adminPhone').value,
+                organization: document.getElementById('adminOrg').value,
+                admin_level: parseInt(document.getElementById('adminLevel').value) || 1
+            };
+            const pw = document.getElementById('adminPassword').value;
+            if (pw) body.password = pw;
+            if (!body.email || !body.name) { alert('이메일과 이름을 입력하세요'); return; }
+            try {
+                const url = editId ? API_BASE + '/admin/admins/' + editId : API_BASE + '/admin/admins';
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify(body) });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || '저장 실패');
+                document.getElementById('adminModal').classList.remove('active');
+                alert(editId ? '수정되었습니다' : '추가되었습니다');
+                loadAdminsList();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        async function deleteAdmin(id) {
+            if (!confirm('이 관리자를 비활성화하시겠습니까?')) return;
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(API_BASE + '/admin/admins/' + id, { method: 'DELETE', headers: {'Authorization':'Bearer '+token} });
+                if (!res.ok) { const r = await res.json(); throw new Error(r.detail || '삭제 실패'); }
+                loadAdminsList();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        // ==================== 테마 프리셋 (Theme Settings) ====================
+        const themePresets = {
+            blue:   { start: '#007AFF', end: '#5856D6', active: '#2563eb' },
+            green:  { start: '#059669', end: '#10b981', active: '#16a34a' },
+            purple: { start: '#7c3aed', end: '#a855f7', active: '#7c3aed' },
+            orange: { start: '#f97316', end: '#ef4444', active: '#ea580c' },
+            teal:   { start: '#14b8a6', end: '#06b6d4', active: '#0d9488' },
+            rose:   { start: '#f43f5e', end: '#ec4899', active: '#e11d48' },
+            slate:  { start: '#475569', end: '#334155', active: '#475569' }
+        };
+
+        function applyThemePreset(name) {
+            const preset = themePresets[name];
+            if (!preset) return;
+            document.documentElement.style.setProperty('--header-bg-start', preset.start);
+            document.documentElement.style.setProperty('--header-bg-end', preset.end);
+            document.documentElement.style.setProperty('--menu-active', preset.active);
+            // Update custom color pickers
+            document.getElementById('themeColorStart').value = preset.start;
+            document.getElementById('themeColorStartText').value = preset.start;
+            document.getElementById('themeColorEnd').value = preset.end;
+            document.getElementById('themeColorEndText').value = preset.end;
+            document.getElementById('themeColorActive').value = preset.active;
+            document.getElementById('themeColorActiveText').value = preset.active;
+            // Update preview
+            document.getElementById('themePreview').style.background = `linear-gradient(135deg, ${preset.start}, ${preset.end})`;
+            // Update active state
+            document.querySelectorAll('.theme-preset-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.theme-preset-btn[data-preset="${name}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            localStorage.setItem('kwv_theme_preset', name);
+        }
+
+        function applyCustomTheme() {
+            const start = document.getElementById('themeColorStart').value;
+            const end = document.getElementById('themeColorEnd').value;
+            const active = document.getElementById('themeColorActive').value;
+            document.documentElement.style.setProperty('--header-bg-start', start);
+            document.documentElement.style.setProperty('--header-bg-end', end);
+            document.documentElement.style.setProperty('--menu-active', active);
+            document.getElementById('themeColorStartText').value = start;
+            document.getElementById('themeColorEndText').value = end;
+            document.getElementById('themeColorActiveText').value = active;
+            document.getElementById('themePreview').style.background = `linear-gradient(135deg, ${start}, ${end})`;
+            document.querySelectorAll('.theme-preset-btn').forEach(btn => btn.classList.remove('active'));
+        }
+
+        // Bind color input events
+        document.addEventListener('DOMContentLoaded', function() {
+            ['themeColorStart','themeColorEnd','themeColorActive'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', applyCustomTheme);
+            });
+        });
+
+        async function loadThemeSettings() {
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(API_BASE + '/admin/theme', { headers: {'Authorization':'Bearer '+token} });
+                const data = await res.json();
+                if (data.theme_preset) applyThemePreset(data.theme_preset);
+                else if (data.theme_header_bg_start) {
+                    document.getElementById('themeColorStart').value = data.theme_header_bg_start;
+                    document.getElementById('themeColorEnd').value = data.theme_header_bg_end || '#5856D6';
+                    document.getElementById('themeColorActive').value = data.theme_menu_active_color || '#2563eb';
+                    applyCustomTheme();
+                }
+            } catch(e) { console.error('loadThemeSettings error:', e); }
+        }
+
+        async function saveThemeSettings() {
+            const token = sessionStorage.getItem('kwv_token');
+            const body = {
+                theme_preset: localStorage.getItem('kwv_theme_preset') || 'blue',
+                theme_header_bg_start: document.getElementById('themeColorStart').value,
+                theme_header_bg_end: document.getElementById('themeColorEnd').value,
+                theme_menu_active_color: document.getElementById('themeColorActive').value
+            };
+            try {
+                const res = await fetch(API_BASE + '/admin/theme', {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error('저장 실패');
+                alert('테마 설정이 저장되었습니다!');
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        // Load saved theme on page load
+        (function() {
+            const saved = localStorage.getItem('kwv_theme_preset');
+            if (saved && themePresets[saved]) applyThemePreset(saved);
+        })();
 
         // ==================== 모바일 전용 함수 ====================
         let mobileCurrentPage = 0;

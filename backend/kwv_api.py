@@ -3903,6 +3903,309 @@ async def delete_notice(notice_id: int, user: dict = Depends(get_current_user)):
     finally:
         conn.close()
 
+# ==================== 구인 관리 API (Jobs) ====================
+
+@router.get("/jobs")
+async def list_jobs(
+    visa_type: Optional[str] = None,
+    local_government_id: Optional[int] = None,
+    status: Optional[str] = None
+):
+    """구인 목록 (공개)"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": []}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        sql = """
+            SELECT j.*, u.name as created_by_name,
+                   lg.name as lg_name
+            FROM kwv_jobs j
+            LEFT JOIN kwv_users u ON j.created_by = u.id
+            LEFT JOIN kwv_local_governments lg ON j.local_government_id = lg.id
+            WHERE 1=1
+        """
+        params = []
+        if status:
+            sql += " AND j.status = %s"
+            params.append(status)
+        else:
+            sql += " AND j.status = 'active'"
+        if visa_type:
+            sql += " AND j.visa_types LIKE %s"
+            params.append(f"%{visa_type}%")
+        if local_government_id:
+            sql += " AND j.local_government_id = %s"
+            params.append(local_government_id)
+        sql += " ORDER BY j.created_at DESC"
+        cursor.execute(sql, params)
+        items = cursor.fetchall()
+        for item in items:
+            for k, v in item.items():
+                if isinstance(v, (datetime, date)):
+                    item[k] = v.isoformat()
+        return {"items": items, "total": len(items)}
+    finally:
+        conn.close()
+
+@router.get("/jobs/{job_id}")
+async def get_job(job_id: int):
+    """구인 상세"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT j.*, u.name as created_by_name, lg.name as lg_name
+            FROM kwv_jobs j
+            LEFT JOIN kwv_users u ON j.created_by = u.id
+            LEFT JOIN kwv_local_governments lg ON j.local_government_id = lg.id
+            WHERE j.id = %s
+        """, (job_id,))
+        item = cursor.fetchone()
+        if not item:
+            raise HTTPException(status_code=404, detail="구인 공고를 찾을 수 없습니다")
+        for k, v in item.items():
+            if isinstance(v, (datetime, date)):
+                item[k] = v.isoformat()
+        return item
+    finally:
+        conn.close()
+
+@router.post("/admin/jobs")
+async def create_job(request: Request, user: dict = Depends(get_current_user)):
+    """구인 등록 (admin≥2)"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            INSERT INTO kwv_jobs (title, description, local_government_id, visa_types,
+                positions, salary, period, location, requirements, benefits,
+                contact_name, contact_phone, contact_email, status, image_url, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            body['title'], body.get('description', ''),
+            body.get('local_government_id') or None,
+            body.get('visa_types', ''),
+            body.get('positions', 1),
+            body.get('salary', ''),
+            body.get('period', ''),
+            body.get('location', ''),
+            body.get('requirements', ''),
+            body.get('benefits', ''),
+            body.get('contact_name', ''),
+            body.get('contact_phone', ''),
+            body.get('contact_email', ''),
+            body.get('status', 'draft'),
+            body.get('image_url', ''),
+            int(user['sub'])
+        ))
+        conn.commit()
+        return {"message": "구인 공고가 등록되었습니다", "id": cursor.lastrowid}
+    finally:
+        conn.close()
+
+@router.put("/admin/jobs/{job_id}")
+async def update_job(job_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """구인 수정 (admin≥2)"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            UPDATE kwv_jobs SET title=%s, description=%s, local_government_id=%s,
+                visa_types=%s, positions=%s, salary=%s, period=%s, location=%s,
+                requirements=%s, benefits=%s, contact_name=%s, contact_phone=%s,
+                contact_email=%s, status=%s, image_url=%s
+            WHERE id=%s
+        """, (
+            body['title'], body.get('description', ''),
+            body.get('local_government_id') or None,
+            body.get('visa_types', ''),
+            body.get('positions', 1),
+            body.get('salary', ''),
+            body.get('period', ''),
+            body.get('location', ''),
+            body.get('requirements', ''),
+            body.get('benefits', ''),
+            body.get('contact_name', ''),
+            body.get('contact_phone', ''),
+            body.get('contact_email', ''),
+            body.get('status', 'draft'),
+            body.get('image_url', ''),
+            job_id
+        ))
+        conn.commit()
+        return {"message": "구인 공고가 수정되었습니다"}
+    finally:
+        conn.close()
+
+@router.delete("/admin/jobs/{job_id}")
+async def delete_job(job_id: int, user: dict = Depends(get_current_user)):
+    """구인 삭제 (admin≥3)"""
+    require_admin_level(user, 3)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("DELETE FROM kwv_jobs WHERE id = %s", (job_id,))
+        conn.commit()
+        return {"message": "구인 공고가 삭제되었습니다"}
+    finally:
+        conn.close()
+
+# ==================== 관리자 관리 API ====================
+
+@router.get("/admin/admins")
+async def list_admins(user: dict = Depends(get_current_user)):
+    """관리자 목록 (admin≥3)"""
+    require_admin_level(user, 3)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": []}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT id, email, name, phone, organization, admin_level, is_active,
+                   created_at, last_login_at as last_login
+            FROM kwv_users
+            WHERE user_type = 'admin'
+            ORDER BY admin_level DESC, created_at ASC
+        """)
+        items = cursor.fetchall()
+        for item in items:
+            for k, v in item.items():
+                if isinstance(v, (datetime, date)):
+                    item[k] = v.isoformat()
+        return {"items": items, "total": len(items)}
+    finally:
+        conn.close()
+
+@router.post("/admin/admins")
+async def create_admin(request: Request, user: dict = Depends(get_current_user)):
+    """관리자 추가 (admin≥9 = super admin only)"""
+    require_admin_level(user, 9)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # 이메일 중복 체크
+        cursor.execute("SELECT id FROM kwv_users WHERE email = %s", (body['email'],))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다")
+        hashed_pw = hash_password(body.get('password', DEFAULT_PASSWORD))
+        cursor.execute("""
+            INSERT INTO kwv_users (email, name, password, phone, organization,
+                user_type, admin_level, is_active, is_approved)
+            VALUES (%s, %s, %s, %s, %s, 'admin', %s, 1, 1)
+        """, (
+            body['email'], body['name'], hashed_pw,
+            body.get('phone', ''),
+            body.get('organization', ''),
+            body.get('admin_level', 1)
+        ))
+        conn.commit()
+        return {"message": "관리자가 추가되었습니다", "id": cursor.lastrowid}
+    finally:
+        conn.close()
+
+@router.put("/admin/admins/{admin_id}")
+async def update_admin(admin_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """관리자 정보/등급 수정 (admin≥9)"""
+    require_admin_level(user, 9)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        fields = []
+        params = []
+        for field in ['name', 'phone', 'organization', 'admin_level', 'is_active']:
+            if field in body:
+                fields.append(f"{field} = %s")
+                params.append(body[field])
+        if 'password' in body and body['password']:
+            fields.append("password = %s")
+            params.append(hash_password(body['password']))
+        if not fields:
+            return {"message": "변경할 내용이 없습니다"}
+        params.append(admin_id)
+        cursor.execute(f"UPDATE kwv_users SET {', '.join(fields)} WHERE id = %s AND user_type = 'admin'", params)
+        conn.commit()
+        return {"message": "관리자 정보가 수정되었습니다"}
+    finally:
+        conn.close()
+
+@router.delete("/admin/admins/{admin_id}")
+async def delete_admin(admin_id: int, user: dict = Depends(get_current_user)):
+    """관리자 삭제 (admin≥9, 자기 자신 삭제 불가)"""
+    require_admin_level(user, 9)
+    if int(user['sub']) == admin_id:
+        raise HTTPException(status_code=400, detail="자기 자신은 삭제할 수 없습니다")
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("UPDATE kwv_users SET is_active = 0 WHERE id = %s AND user_type = 'admin'", (admin_id,))
+        conn.commit()
+        return {"message": "관리자가 삭제되었습니다"}
+    finally:
+        conn.close()
+
+# ==================== 테마 설정 API ====================
+
+@router.get("/admin/theme")
+async def get_theme_settings(user: dict = Depends(get_current_user)):
+    """테마 설정 조회"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("SELECT setting_key, setting_value FROM kwv_system_settings WHERE setting_key LIKE 'theme_%'")
+        rows = cursor.fetchall()
+        result = {}
+        for row in rows:
+            result[row['setting_key']] = row['setting_value']
+        return result
+    finally:
+        conn.close()
+
+@router.put("/admin/theme")
+async def update_theme_settings(request: Request, user: dict = Depends(get_current_user)):
+    """테마 설정 저장 (admin≥3)"""
+    require_admin_level(user, 3)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        for key in ['theme_preset', 'theme_header_bg_start', 'theme_header_bg_end', 'theme_menu_active_color']:
+            if key in body:
+                cursor.execute("""
+                    INSERT INTO kwv_system_settings (setting_key, setting_value, setting_type, description, updated_by)
+                    VALUES (%s, %s, 'string', %s, %s)
+                    ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by)
+                """, (key, body[key], f'테마: {key}', int(user['sub'])))
+        conn.commit()
+        return {"message": "테마 설정이 저장되었습니다"}
+    finally:
+        conn.close()
+
 # ==================== Health Check ====================
 
 @router.get("/health")
@@ -3911,7 +4214,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": "KoreaWorkingVisa API",
-        "version": "1.10.20260214",
+        "version": "2.0.20260214",
         "mock_mode": MOCK_MODE,
         "jwt_available": JWT_AVAILABLE,
         "bcrypt_available": BCRYPT_AVAILABLE,
