@@ -1786,6 +1786,580 @@ async def stats_monthly(user: dict = Depends(get_current_user)):
     finally:
         conn.close()
 
+# ==================== Phase 4: 출퇴근 시스템 ====================
+
+class WorkplaceCreate(BaseModel):
+    local_government_id: int
+    name: str
+    name_en: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    geofence_radius: int = 200
+    manager_name: Optional[str] = None
+    manager_phone: Optional[str] = None
+    worker_capacity: int = 0
+
+class AttendanceCheck(BaseModel):
+    workplace_id: Optional[int] = None
+    qr_code: Optional[str] = None
+    check_type: str  # check_in / check_out
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    photo_url: Optional[str] = None
+    note: Optional[str] = None
+
+import math
+
+def haversine(lat1, lon1, lat2, lon2):
+    """두 좌표 간 거리(미터) 계산"""
+    R = 6371000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+# --- 사업장 CRUD ---
+
+@router.get("/workplaces")
+async def list_workplaces(
+    lg_id: Optional[int] = None,
+    user: dict = Depends(get_current_user)
+):
+    """사업장 목록"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        where = "WHERE 1=1"
+        params = []
+        if lg_id:
+            where += " AND w.local_government_id = %s"
+            params.append(lg_id)
+        cursor.execute(f"""
+            SELECT w.id, w.name, w.name_en, w.address, w.latitude, w.longitude,
+                   w.geofence_radius, w.qr_code, w.manager_name, w.manager_phone,
+                   w.worker_capacity, w.is_active, w.local_government_id,
+                   lg.name as lg_name,
+                   (SELECT COUNT(*) FROM kwv_worker_assignments wa WHERE wa.workplace_id = w.id AND wa.status = 'active') as worker_count
+            FROM kwv_workplaces w
+            LEFT JOIN kwv_local_governments lg ON w.local_government_id = lg.id
+            {where} ORDER BY w.name
+        """, params)
+        result = []
+        for r in cursor.fetchall():
+            result.append({
+                "id": r[0], "name": r[1], "name_en": r[2], "address": r[3],
+                "latitude": float(r[4]) if r[4] else None,
+                "longitude": float(r[5]) if r[5] else None,
+                "geofence_radius": r[6], "qr_code": r[7],
+                "manager_name": r[8], "manager_phone": r[9],
+                "worker_capacity": r[10], "is_active": bool(r[11]),
+                "local_government_id": r[12], "lg_name": r[13],
+                "worker_count": r[14]
+            })
+        return result
+    finally:
+        conn.close()
+
+@router.post("/workplaces")
+async def create_workplace(data: WorkplaceCreate, user: dict = Depends(get_current_user)):
+    """사업장 등록"""
+    require_admin_level(user, 2)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        qr_code = f"WP-{uuid.uuid4().hex[:8].upper()}"
+        cursor.execute("""
+            INSERT INTO kwv_workplaces (local_government_id, name, name_en, address,
+                latitude, longitude, geofence_radius, qr_code, manager_name, manager_phone, worker_capacity)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (data.local_government_id, data.name, data.name_en, data.address,
+              data.latitude, data.longitude, data.geofence_radius, qr_code,
+              data.manager_name, data.manager_phone, data.worker_capacity))
+        conn.commit()
+        return {"id": cursor.lastrowid, "qr_code": qr_code, "message": f"사업장 '{data.name}' 등록 완료"}
+    finally:
+        conn.close()
+
+@router.get("/workplaces/{wp_id}")
+async def get_workplace(wp_id: int, user: dict = Depends(get_current_user)):
+    """사업장 상세"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM kwv_workplaces WHERE id = %s", (wp_id,))
+        r = cursor.fetchone()
+        if not r:
+            raise HTTPException(status_code=404, detail="사업장을 찾을 수 없습니다")
+        cols = [d[0] for d in cursor.description]
+        wp = {}
+        for i, col in enumerate(cols):
+            val = r[i]
+            if hasattr(val, 'isoformat'):
+                val = val.isoformat()
+            if isinstance(val, bytes):
+                val = bool(val[0]) if len(val) == 1 else val.decode()
+            if col in ('latitude', 'longitude') and val is not None:
+                val = float(val)
+            wp[col] = val
+        return wp
+    finally:
+        conn.close()
+
+@router.put("/workplaces/{wp_id}")
+async def update_workplace(wp_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """사업장 수정"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        allowed = ['name','name_en','address','latitude','longitude','geofence_radius',
+                    'manager_name','manager_phone','worker_capacity','is_active','local_government_id']
+        sets, params = [], []
+        for k, v in body.items():
+            if k in allowed:
+                sets.append(f"{k} = %s")
+                params.append(v)
+        if not sets:
+            raise HTTPException(status_code=400, detail="수정할 항목이 없습니다")
+        params.append(wp_id)
+        cursor.execute(f"UPDATE kwv_workplaces SET {', '.join(sets)} WHERE id = %s", params)
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="사업장을 찾을 수 없습니다")
+        conn.commit()
+        return {"message": "사업장이 수정되었습니다"}
+    finally:
+        conn.close()
+
+@router.delete("/workplaces/{wp_id}")
+async def delete_workplace(wp_id: int, user: dict = Depends(get_current_user)):
+    """사업장 삭제"""
+    require_admin_level(user, 9)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM kwv_workplaces WHERE id = %s", (wp_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="사업장을 찾을 수 없습니다")
+        conn.commit()
+        return {"message": "사업장이 삭제되었습니다"}
+    finally:
+        conn.close()
+
+@router.post("/workplaces/{wp_id}/regenerate-qr")
+async def regenerate_qr(wp_id: int, user: dict = Depends(get_current_user)):
+    """QR 코드 재생성"""
+    require_admin_level(user, 2)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        new_qr = f"WP-{uuid.uuid4().hex[:8].upper()}"
+        cursor.execute("UPDATE kwv_workplaces SET qr_code = %s WHERE id = %s", (new_qr, wp_id))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="사업장을 찾을 수 없습니다")
+        conn.commit()
+        return {"qr_code": new_qr, "message": "QR 코드가 재생성되었습니다"}
+    finally:
+        conn.close()
+
+# --- 근로자-사업장 배정 ---
+
+@router.post("/workplaces/{wp_id}/assign")
+async def assign_worker(wp_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """근로자를 사업장에 배정"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    user_id = body.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id가 필요합니다")
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM kwv_workplaces WHERE id = %s", (wp_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="사업장을 찾을 수 없습니다")
+        cursor.execute("""
+            SELECT id FROM kwv_worker_assignments
+            WHERE user_id = %s AND workplace_id = %s AND status = 'active'
+        """, (user_id, wp_id))
+        if cursor.fetchone():
+            raise HTTPException(status_code=409, detail="이미 배정된 근로자입니다")
+        from datetime import date
+        cursor.execute("""
+            INSERT INTO kwv_worker_assignments (user_id, workplace_id, assigned_date)
+            VALUES (%s, %s, %s)
+        """, (user_id, wp_id, date.today()))
+        conn.commit()
+        return {"message": "근로자가 사업장에 배정되었습니다"}
+    finally:
+        conn.close()
+
+@router.get("/workplaces/{wp_id}/workers")
+async def workplace_workers(wp_id: int, user: dict = Depends(get_current_user)):
+    """사업장 소속 근로자 목록"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT wa.id, wa.user_id, u.name, u.email, u.phone, u.profile_photo,
+                   va.nationality, va.visa_type, wa.assigned_date, wa.status
+            FROM kwv_worker_assignments wa
+            JOIN kwv_users u ON wa.user_id = u.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            WHERE wa.workplace_id = %s AND wa.status = 'active'
+            ORDER BY u.name
+        """, (wp_id,))
+        return [{
+            "assignment_id": r[0], "user_id": r[1], "name": r[2], "email": r[3],
+            "phone": r[4], "profile_photo": r[5], "nationality": r[6],
+            "visa_type": r[7], "assigned_date": r[8].isoformat() if r[8] else None,
+            "status": r[9]
+        } for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+@router.delete("/worker-assignments/{assignment_id}")
+async def remove_assignment(assignment_id: int, user: dict = Depends(get_current_user)):
+    """근로자 사업장 배정 해제"""
+    require_admin_level(user, 2)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE kwv_worker_assignments SET status = 'completed' WHERE id = %s AND status = 'active'", (assignment_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="배정을 찾을 수 없습니다")
+        conn.commit()
+        return {"message": "배정이 해제되었습니다"}
+    finally:
+        conn.close()
+
+# --- 출퇴근 체크인/체크아웃 ---
+
+@router.post("/attendance/check")
+async def attendance_check(data: AttendanceCheck, request: Request, user: dict = Depends(get_current_user)):
+    """출퇴근 체크 (QR / GPS)"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        # QR 코드로 사업장 찾기
+        workplace_id = data.workplace_id
+        if data.qr_code and not workplace_id:
+            cursor.execute("SELECT id FROM kwv_workplaces WHERE qr_code = %s AND is_active = 1", (data.qr_code,))
+            wp = cursor.fetchone()
+            if not wp:
+                raise HTTPException(status_code=404, detail="유효하지 않은 QR 코드입니다")
+            workplace_id = wp[0]
+
+        if not workplace_id:
+            raise HTTPException(status_code=400, detail="사업장 ID 또는 QR 코드가 필요합니다")
+
+        # 사업장 정보
+        cursor.execute("SELECT latitude, longitude, geofence_radius, name FROM kwv_workplaces WHERE id = %s", (workplace_id,))
+        wp_info = cursor.fetchone()
+        if not wp_info:
+            raise HTTPException(status_code=404, detail="사업장을 찾을 수 없습니다")
+        wp_lat, wp_lon, wp_radius, wp_name = wp_info
+        wp_radius = wp_radius or 200
+
+        # GPS 거리 검증
+        distance = None
+        is_valid = True
+        invalid_reason = None
+        check_method = 'qr' if data.qr_code else 'gps'
+
+        if data.latitude and data.longitude and wp_lat and wp_lon:
+            distance = int(haversine(float(data.latitude), float(data.longitude), float(wp_lat), float(wp_lon)))
+            if distance > wp_radius:
+                is_valid = False
+                invalid_reason = f"사업장에서 {distance}m 떨어져 있습니다 (허용: {wp_radius}m)"
+
+        # 중복 체크 (같은 날 같은 타입 5분 이내 중복 방지)
+        user_id = user.get("user_id") or user.get("sub")
+        cursor.execute("""
+            SELECT id FROM kwv_attendance
+            WHERE user_id = %s AND workplace_id = %s AND check_type = %s
+            AND check_time > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+        """, (user_id, workplace_id, data.check_type))
+        if cursor.fetchone():
+            raise HTTPException(status_code=429, detail="5분 이내 중복 체크입니다")
+
+        # IP 주소
+        ip = request.client.host if request.client else None
+
+        cursor.execute("""
+            INSERT INTO kwv_attendance (user_id, workplace_id, check_type, check_method,
+                latitude, longitude, distance_from_workplace, is_valid, invalid_reason,
+                photo_url, ip_address, note)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (user_id, workplace_id, data.check_type, check_method,
+              data.latitude, data.longitude, distance, is_valid, invalid_reason,
+              data.photo_url, ip, data.note))
+        conn.commit()
+
+        status_text = "출근" if data.check_type == "check_in" else "퇴근"
+        return {
+            "id": cursor.lastrowid,
+            "message": f"{wp_name} {status_text} 완료",
+            "is_valid": is_valid,
+            "distance": distance,
+            "check_time": datetime.utcnow().isoformat(),
+            "invalid_reason": invalid_reason
+        }
+    finally:
+        conn.close()
+
+@router.get("/attendance/my")
+async def my_attendance(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """내 출퇴근 기록"""
+    user_id = user.get("user_id") or user.get("sub")
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        where = "WHERE a.user_id = %s"
+        params = [user_id]
+        if date_from:
+            where += " AND DATE(a.check_time) >= %s"
+            params.append(date_from)
+        if date_to:
+            where += " AND DATE(a.check_time) <= %s"
+            params.append(date_to)
+        cursor.execute(f"""
+            SELECT a.id, a.check_type, a.check_method, a.check_time, a.is_valid,
+                   a.distance_from_workplace, a.invalid_reason, w.name as workplace_name
+            FROM kwv_attendance a
+            JOIN kwv_workplaces w ON a.workplace_id = w.id
+            {where} ORDER BY a.check_time DESC LIMIT 100
+        """, params)
+        return [{
+            "id": r[0], "check_type": r[1], "check_method": r[2],
+            "check_time": r[3].isoformat() if r[3] else None,
+            "is_valid": bool(r[4]), "distance": r[5], "invalid_reason": r[6],
+            "workplace_name": r[7]
+        } for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+@router.get("/attendance/today")
+async def my_today(user: dict = Depends(get_current_user)):
+    """오늘의 출퇴근 상태"""
+    user_id = user.get("user_id") or user.get("sub")
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"checked_in": False, "records": []}
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT a.id, a.check_type, a.check_time, a.is_valid, w.name
+            FROM kwv_attendance a
+            JOIN kwv_workplaces w ON a.workplace_id = w.id
+            WHERE a.user_id = %s AND DATE(a.check_time) = CURDATE()
+            ORDER BY a.check_time ASC
+        """, (user_id,))
+        records = []
+        last_type = None
+        for r in cursor.fetchall():
+            records.append({
+                "id": r[0], "check_type": r[1],
+                "check_time": r[2].isoformat() if r[2] else None,
+                "is_valid": bool(r[3]), "workplace_name": r[4]
+            })
+            last_type = r[1]
+        return {
+            "checked_in": last_type == "check_in",
+            "records": records
+        }
+    finally:
+        conn.close()
+
+# --- 관리자 출퇴근 조회 ---
+
+@router.get("/attendance/admin")
+async def admin_attendance(
+    workplace_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    is_valid: Optional[str] = None,
+    page: int = 1,
+    per_page: int = 50,
+    user: dict = Depends(get_current_user)
+):
+    """관리자 출퇴근 조회"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": [], "total": 0}
+    try:
+        cursor = conn.cursor()
+        where = "WHERE 1=1"
+        params = []
+        if workplace_id:
+            where += " AND a.workplace_id = %s"
+            params.append(workplace_id)
+        if user_id:
+            where += " AND a.user_id = %s"
+            params.append(user_id)
+        if date_from:
+            where += " AND DATE(a.check_time) >= %s"
+            params.append(date_from)
+        if date_to:
+            where += " AND DATE(a.check_time) <= %s"
+            params.append(date_to)
+        if is_valid == 'true':
+            where += " AND a.is_valid = 1"
+        elif is_valid == 'false':
+            where += " AND a.is_valid = 0"
+
+        cursor.execute(f"SELECT COUNT(*) FROM kwv_attendance a {where}", params)
+        total = cursor.fetchone()[0]
+
+        offset = (page - 1) * per_page
+        cursor.execute(f"""
+            SELECT a.id, a.user_id, u.name as user_name, u.profile_photo,
+                   va.nationality, a.workplace_id, w.name as workplace_name,
+                   a.check_type, a.check_method, a.check_time, a.is_valid,
+                   a.distance_from_workplace, a.invalid_reason, a.latitude, a.longitude
+            FROM kwv_attendance a
+            JOIN kwv_users u ON a.user_id = u.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            JOIN kwv_workplaces w ON a.workplace_id = w.id
+            {where} ORDER BY a.check_time DESC LIMIT %s OFFSET %s
+        """, params + [per_page, offset])
+        items = [{
+            "id": r[0], "user_id": r[1], "user_name": r[2], "profile_photo": r[3],
+            "nationality": r[4], "workplace_id": r[5], "workplace_name": r[6],
+            "check_type": r[7], "check_method": r[8],
+            "check_time": r[9].isoformat() if r[9] else None,
+            "is_valid": bool(r[10]), "distance": r[11], "invalid_reason": r[12],
+            "latitude": float(r[13]) if r[13] else None,
+            "longitude": float(r[14]) if r[14] else None
+        } for r in cursor.fetchall()]
+        return {"items": items, "total": total, "page": page, "per_page": per_page}
+    finally:
+        conn.close()
+
+@router.get("/attendance/admin/summary")
+async def attendance_summary(
+    date: Optional[str] = None,
+    workplace_id: Optional[int] = None,
+    user: dict = Depends(get_current_user)
+):
+    """출퇴근 요약 (일별)"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {}
+    try:
+        cursor = conn.cursor()
+        target_date = date or datetime.utcnow().strftime('%Y-%m-%d')
+        wp_filter = "AND a.workplace_id = %s" if workplace_id else ""
+        params_base = [target_date] + ([workplace_id] if workplace_id else [])
+
+        # 총 출근자 수
+        cursor.execute(f"""
+            SELECT COUNT(DISTINCT a.user_id)
+            FROM kwv_attendance a
+            WHERE DATE(a.check_time) = %s AND a.check_type = 'check_in' {wp_filter}
+        """, params_base)
+        total_checkins = cursor.fetchone()[0]
+
+        # 유효/무효
+        cursor.execute(f"""
+            SELECT a.is_valid, COUNT(*)
+            FROM kwv_attendance a
+            WHERE DATE(a.check_time) = %s {wp_filter}
+            GROUP BY a.is_valid
+        """, params_base)
+        valid_count, invalid_count = 0, 0
+        for r in cursor.fetchall():
+            if r[0]:
+                valid_count = r[1]
+            else:
+                invalid_count = r[1]
+
+        # 퇴근자 수
+        cursor.execute(f"""
+            SELECT COUNT(DISTINCT a.user_id)
+            FROM kwv_attendance a
+            WHERE DATE(a.check_time) = %s AND a.check_type = 'check_out' {wp_filter}
+        """, params_base)
+        total_checkouts = cursor.fetchone()[0]
+
+        # 총 등록 근로자 (활성 배정)
+        if workplace_id:
+            cursor.execute("SELECT COUNT(*) FROM kwv_worker_assignments WHERE workplace_id = %s AND status = 'active'", (workplace_id,))
+        else:
+            cursor.execute("SELECT COUNT(*) FROM kwv_worker_assignments WHERE status = 'active'")
+        total_workers = cursor.fetchone()[0]
+
+        return {
+            "date": target_date,
+            "total_workers": total_workers,
+            "total_checkins": total_checkins,
+            "total_checkouts": total_checkouts,
+            "valid_records": valid_count,
+            "invalid_records": invalid_count,
+            "attendance_rate": round(total_checkins / total_workers * 100, 1) if total_workers > 0 else 0
+        }
+    finally:
+        conn.close()
+
+@router.post("/attendance/admin/manual")
+async def admin_manual_check(request: Request, user: dict = Depends(get_current_user)):
+    """관리자 수동 출퇴근 등록"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    target_user_id = body.get("user_id")
+    workplace_id = body.get("workplace_id")
+    check_type = body.get("check_type", "check_in")
+    note = body.get("note", "관리자 수동 등록")
+    if not target_user_id or not workplace_id:
+        raise HTTPException(status_code=400, detail="user_id, workplace_id 필요")
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO kwv_attendance (user_id, workplace_id, check_type, check_method, is_valid, note)
+            VALUES (%s, %s, %s, 'admin', 1, %s)
+        """, (target_user_id, workplace_id, check_type, note))
+        conn.commit()
+        return {"id": cursor.lastrowid, "message": "수동 출퇴근 등록 완료"}
+    finally:
+        conn.close()
+
 # ==================== Health Check ====================
 
 @router.get("/health")
@@ -1794,7 +2368,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": "KoreaWorkingVisa API",
-        "version": "1.3.20260214",
+        "version": "1.4.20260214",
         "mock_mode": MOCK_MODE,
         "jwt_available": JWT_AVAILABLE,
         "bcrypt_available": BCRYPT_AVAILABLE,
