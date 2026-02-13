@@ -48,6 +48,10 @@ if os.path.exists(frontend_dir):
     if os.path.exists(js_dir):
         app.mount("/js", StaticFiles(directory=js_dir), name="js")
 
+    videos_dir = os.path.join(frontend_dir, "videos")
+    if os.path.exists(videos_dir):
+        app.mount("/videos", StaticFiles(directory=videos_dir), name="videos")
+
 # 루트 페이지 -> 랜딩 페이지로 리다이렉트
 @app.get("/")
 async def root():
@@ -84,6 +88,14 @@ async def serve_google_callback():
     if os.path.exists(callback_path):
         return FileResponse(callback_path, media_type="text/html")
     return RedirectResponse(url="/kwv-login.html")
+
+# MOU 쇼케이스 페이지
+@app.get("/kwv-mou-showcase.html")
+async def serve_mou_showcase():
+    mou_path = os.path.join(frontend_dir, "kwv-mou-showcase.html")
+    if os.path.exists(mou_path):
+        return FileResponse(mou_path, media_type="text/html")
+    return RedirectResponse(url="/kwv-landing.html")
 
 # 개인정보처리방침 페이지
 @app.get("/kwv-privacy.html")

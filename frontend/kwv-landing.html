@@ -14,26 +14,29 @@
         /* ===== Hero Section ===== */
         .hero {
             min-height: 100vh;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #0c4a6e 60%, #0369a1 100%);
+            background: #0a0a1a;
             position: relative;
             overflow: hidden;
         }
-        .hero::before {
+        .hero-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            z-index: 0;
+            opacity: 0.45;
+        }
+        .hero::after {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(ellipse at 30% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
-                        radial-gradient(ellipse at 70% 20%, rgba(14, 165, 233, 0.1) 0%, transparent 40%),
-                        radial-gradient(ellipse at 50% 80%, rgba(2, 132, 199, 0.06) 0%, transparent 40%);
-            animation: aurora 20s ease-in-out infinite alternate;
-        }
-        @keyframes aurora {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            50% { transform: translate(-2%, 1%) rotate(1deg); }
-            100% { transform: translate(1%, -1%) rotate(-1deg); }
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(10,10,26,0.4) 0%, rgba(10,10,26,0.2) 40%, rgba(10,10,26,0.6) 80%, rgba(10,10,26,0.95) 100%);
+            z-index: 1;
         }
 
         /* Floating particles */
@@ -60,6 +63,7 @@
                 linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
             background-size: 60px 60px;
+            z-index: 2;
         }
 
         /* ===== Glassmorphism ===== */
@@ -241,6 +245,10 @@
 
     <!-- ===== Hero Section ===== -->
     <section class="hero flex items-center justify-center relative" id="hero">
+        <!-- Background Video -->
+        <video class="hero-video" autoplay muted loop playsinline>
+            <source src="/static/videos/kwv-hero.mp4" type="video/mp4">
+        </video>
         <div class="grid-bg"></div>
         <!-- Particles -->
         <div id="particles"></div>

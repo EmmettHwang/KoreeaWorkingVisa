@@ -1487,6 +1487,305 @@ async def update_quota(lg_id: int, request: Request, user: dict = Depends(get_cu
     finally:
         conn.close()
 
+# ==================== MOU 협정 API ====================
+
+class MouCreate(BaseModel):
+    title: str
+    title_en: Optional[str] = None
+    partner_country: str
+    partner_country_name: Optional[str] = None
+    partner_type: Optional[str] = "government"
+    partner_organization: str
+    partner_organization_en: Optional[str] = None
+    partner_representative: Optional[str] = None
+    partner_contact: Optional[str] = None
+    korean_organization: Optional[str] = None
+    korean_representative: Optional[str] = None
+    description: Optional[str] = None
+    description_en: Optional[str] = None
+    signed_date: Optional[str] = None
+    effective_date: Optional[str] = None
+    expiry_date: Optional[str] = None
+    worker_quota: Optional[int] = 0
+    document_url: Optional[str] = None
+    photo_url: Optional[str] = None
+    photo_url_2: Optional[str] = None
+    photo_url_3: Optional[str] = None
+    status: Optional[str] = "draft"
+    is_public: Optional[bool] = False
+    display_order: Optional[int] = 0
+
+@router.get("/mou")
+async def list_mou(
+    country: Optional[str] = None,
+    status: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """MOU 목록 (관리자)"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        where = "WHERE 1=1"
+        params = []
+        if country:
+            where += " AND partner_country = %s"
+            params.append(country)
+        if status:
+            where += " AND status = %s"
+            params.append(status)
+        cursor.execute(f"""
+            SELECT id, title, title_en, partner_country, partner_country_name, partner_type,
+                   partner_organization, signed_date, expiry_date, worker_quota,
+                   photo_url, status, is_public, display_order, created_at
+            FROM kwv_mou_agreements {where} ORDER BY display_order ASC, signed_date DESC
+        """, params)
+        mous = []
+        for r in cursor.fetchall():
+            mous.append({
+                "id": r[0], "title": r[1], "title_en": r[2],
+                "partner_country": r[3], "partner_country_name": r[4],
+                "partner_type": r[5], "partner_organization": r[6],
+                "signed_date": r[7].isoformat() if r[7] else None,
+                "expiry_date": r[8].isoformat() if r[8] else None,
+                "worker_quota": r[9], "photo_url": r[10],
+                "status": r[11], "is_public": bool(r[12]),
+                "display_order": r[13],
+                "created_at": r[14].isoformat() if r[14] else None
+            })
+        return mous
+    finally:
+        conn.close()
+
+@router.get("/mou/public")
+async def list_public_mou():
+    """공개 MOU 목록 (로그인 불요)"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, title, title_en, partner_country, partner_country_name, partner_type,
+                   partner_organization, partner_organization_en, partner_representative,
+                   korean_organization, korean_representative,
+                   description, description_en, signed_date, expiry_date, worker_quota,
+                   photo_url, photo_url_2, photo_url_3, status, display_order
+            FROM kwv_mou_agreements WHERE is_public = TRUE AND status IN ('active','draft')
+            ORDER BY display_order ASC, signed_date DESC
+        """)
+        mous = []
+        for r in cursor.fetchall():
+            mous.append({
+                "id": r[0], "title": r[1], "title_en": r[2],
+                "partner_country": r[3], "partner_country_name": r[4],
+                "partner_type": r[5], "partner_organization": r[6],
+                "partner_organization_en": r[7], "partner_representative": r[8],
+                "korean_organization": r[9], "korean_representative": r[10],
+                "description": r[11], "description_en": r[12],
+                "signed_date": r[13].isoformat() if r[13] else None,
+                "expiry_date": r[14].isoformat() if r[14] else None,
+                "worker_quota": r[15], "photo_url": r[16],
+                "photo_url_2": r[17], "photo_url_3": r[18],
+                "status": r[19], "display_order": r[20]
+            })
+        return mous
+    finally:
+        conn.close()
+
+@router.get("/mou/{mou_id}")
+async def get_mou(mou_id: int, user: dict = Depends(get_current_user)):
+    """MOU 상세"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM kwv_mou_agreements WHERE id = %s", (mou_id,))
+        r = cursor.fetchone()
+        if not r:
+            raise HTTPException(status_code=404, detail="MOU를 찾을 수 없습니다")
+        cols = [d[0] for d in cursor.description]
+        mou = {}
+        for i, col in enumerate(cols):
+            val = r[i]
+            if hasattr(val, 'isoformat'):
+                val = val.isoformat()
+            if col == 'is_public':
+                val = bool(val)
+            mou[col] = val
+        return mou
+    finally:
+        conn.close()
+
+@router.post("/mou")
+async def create_mou(mou_data: MouCreate, user: dict = Depends(get_current_user)):
+    """MOU 등록"""
+    require_admin_level(user, 2)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO kwv_mou_agreements (
+                title, title_en, partner_country, partner_country_name, partner_type,
+                partner_organization, partner_organization_en, partner_representative, partner_contact,
+                korean_organization, korean_representative,
+                description, description_en, signed_date, effective_date, expiry_date, worker_quota,
+                document_url, photo_url, photo_url_2, photo_url_3,
+                status, is_public, display_order, created_by
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            mou_data.title, mou_data.title_en, mou_data.partner_country, mou_data.partner_country_name,
+            mou_data.partner_type, mou_data.partner_organization, mou_data.partner_organization_en,
+            mou_data.partner_representative, mou_data.partner_contact,
+            mou_data.korean_organization, mou_data.korean_representative,
+            mou_data.description, mou_data.description_en,
+            mou_data.signed_date or None, mou_data.effective_date or None, mou_data.expiry_date or None,
+            mou_data.worker_quota, mou_data.document_url, mou_data.photo_url,
+            mou_data.photo_url_2, mou_data.photo_url_3,
+            mou_data.status, mou_data.is_public, mou_data.display_order, user.get('sub')
+        ))
+        conn.commit()
+        return {"id": cursor.lastrowid, "message": f"MOU '{mou_data.title}' 등록 완료"}
+    finally:
+        conn.close()
+
+@router.put("/mou/{mou_id}")
+async def update_mou(mou_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """MOU 수정"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        allowed = ['title','title_en','partner_country','partner_country_name','partner_type',
+                    'partner_organization','partner_organization_en','partner_representative','partner_contact',
+                    'korean_organization','korean_representative','description','description_en',
+                    'signed_date','effective_date','expiry_date','worker_quota',
+                    'document_url','photo_url','photo_url_2','photo_url_3',
+                    'status','is_public','display_order']
+        sets = []
+        params = []
+        for k, v in body.items():
+            if k in allowed:
+                sets.append(f"{k} = %s")
+                params.append(v)
+        if not sets:
+            raise HTTPException(status_code=400, detail="수정할 항목이 없습니다")
+        params.append(mou_id)
+        cursor.execute(f"UPDATE kwv_mou_agreements SET {', '.join(sets)} WHERE id = %s", params)
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="MOU를 찾을 수 없습니다")
+        conn.commit()
+        return {"message": "MOU가 수정되었습니다"}
+    finally:
+        conn.close()
+
+@router.delete("/mou/{mou_id}")
+async def delete_mou(mou_id: int, user: dict = Depends(get_current_user)):
+    """MOU 삭제"""
+    require_admin_level(user, 9)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM kwv_mou_agreements WHERE id = %s", (mou_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="MOU를 찾을 수 없습니다")
+        conn.commit()
+        return {"message": "MOU가 삭제되었습니다"}
+    finally:
+        conn.close()
+
+# ==================== 통계 API 강화 ====================
+
+@router.get("/admin/statistics/by-nationality")
+async def stats_by_nationality(user: dict = Depends(get_current_user)):
+    """국적별 근로자 통계"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT a.nationality, COUNT(*) as cnt
+            FROM kwv_visa_applicants a
+            JOIN kwv_users u ON a.user_id = u.id
+            WHERE u.user_type = 'applicant' AND a.nationality IS NOT NULL
+            GROUP BY a.nationality ORDER BY cnt DESC
+        """)
+        return [{"nationality": r[0], "count": r[1]} for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+@router.get("/admin/statistics/by-region")
+async def stats_by_region(user: dict = Depends(get_current_user)):
+    """지역별 근로자 분포"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT lg.region, lg.name, COUNT(u.id) as worker_count, lg.allocated_quota, lg.used_quota
+            FROM kwv_local_governments lg
+            LEFT JOIN kwv_users u ON u.local_government_id = lg.id AND u.user_type = 'applicant'
+            WHERE lg.is_active = TRUE
+            GROUP BY lg.id ORDER BY worker_count DESC
+        """)
+        return [{"region": r[0], "lg_name": r[1], "worker_count": r[2],
+                 "allocated_quota": r[3], "used_quota": r[4]} for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+@router.get("/admin/statistics/by-visa")
+async def stats_by_visa(user: dict = Depends(get_current_user)):
+    """비자유형별 통계"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT a.visa_type, COUNT(*) as cnt
+            FROM kwv_visa_applicants a
+            JOIN kwv_users u ON a.user_id = u.id
+            WHERE u.user_type = 'applicant' AND a.visa_type IS NOT NULL
+            GROUP BY a.visa_type ORDER BY cnt DESC
+        """)
+        return [{"visa_type": r[0], "count": r[1]} for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+@router.get("/admin/statistics/monthly")
+async def stats_monthly(user: dict = Depends(get_current_user)):
+    """월별 가입 추이"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT DATE_FORMAT(created_at, '%%Y-%%m') as month, COUNT(*) as cnt
+            FROM kwv_users WHERE user_type = 'applicant'
+            GROUP BY month ORDER BY month DESC LIMIT 12
+        """)
+        return [{"month": r[0], "count": r[1]} for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
 # ==================== Health Check ====================
 
 @router.get("/health")
@@ -1495,7 +1794,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": "KoreaWorkingVisa API",
-        "version": "1.1.20260213",
+        "version": "1.3.20260214",
         "mock_mode": MOCK_MODE,
         "jwt_available": JWT_AVAILABLE,
         "bcrypt_available": BCRYPT_AVAILABLE,

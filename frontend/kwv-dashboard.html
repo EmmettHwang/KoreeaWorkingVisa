@@ -293,6 +293,9 @@
                 <button onclick="showTab('applicants')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="applicants">
                     <i class="fas fa-users mr-2"></i><span data-i18n="tabApplicants">지원자</span>
                 </button>
+                <button onclick="showTab('mou')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="mou">
+                    <i class="fas fa-handshake mr-2"></i><span data-i18n="tabMou">MOU</span>
+                </button>
                 <button onclick="showTab('faq')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="faq">
                     <i class="fas fa-question-circle mr-2"></i><span data-i18n="tabFaq">FAQ</span>
                 </button>
@@ -648,6 +651,133 @@
             </div>
             <!-- 페이지네이션 -->
             <div id="applicantPagination" class="flex justify-center items-center gap-2 mt-4"></div>
+        </div>
+
+        <!-- ==================== MOU 탭 ==================== -->
+        <div id="tab-mou" class="tab-content">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-3">
+                <h2 class="text-2xl font-bold text-gray-800">🤝 MOU 협정 관리</h2>
+                <div class="flex gap-2">
+                    <a href="/kwv-mou-showcase.html" target="_blank" class="px-3 py-2 bg-purple-100 text-purple-700 rounded-xl text-sm hover:bg-purple-200 transition">
+                        <i class="fas fa-external-link-alt mr-1"></i>공개 쇼케이스
+                    </a>
+                    <button onclick="openMouModal()" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm hover:bg-blue-600 transition">
+                        <i class="fas fa-plus mr-1"></i>MOU 등록
+                    </button>
+                </div>
+            </div>
+            <!-- 필터 -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <select id="mouCountryFilter" class="input-apple text-sm" onchange="loadMouList()">
+                    <option value="">전체 국가</option>
+                </select>
+                <select id="mouStatusFilter" class="input-apple text-sm" onchange="loadMouList()">
+                    <option value="">전체 상태</option>
+                    <option value="draft">준비중</option>
+                    <option value="active">활성</option>
+                    <option value="expired">만료</option>
+                    <option value="terminated">종료</option>
+                </select>
+            </div>
+            <!-- MOU 카드 그리드 -->
+            <div id="mouCards" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="text-center text-gray-400 py-12 col-span-2">MOU 탭을 클릭하면 데이터를 불러옵니다.</div>
+            </div>
+        </div>
+
+        <!-- MOU 등록/수정 모달 -->
+        <div id="mouModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4" style="display:none;">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center p-6 border-b sticky top-0 bg-white rounded-t-2xl">
+                    <h3 class="font-bold text-lg text-gray-800" id="mouModalTitle">MOU 등록</h3>
+                    <button onclick="closeMouModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="text-sm text-gray-600 mb-1 block">협정 제목 <span class="text-red-500">*</span></label>
+                            <input type="text" id="mouTitle" class="input-apple w-full" placeholder="한-베트남 계절근로자 파견 MOU">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-sm text-gray-600 mb-1 block">영문 제목</label>
+                            <input type="text" id="mouTitleEn" class="input-apple w-full" placeholder="Korea-Vietnam Seasonal Worker MOU">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">상대국 <span class="text-red-500">*</span></label>
+                            <select id="mouCountry" class="input-apple w-full" onchange="updateCountryName()">
+                                <option value="">선택</option>
+                                <option value="VN">베트남</option><option value="TH">태국</option>
+                                <option value="PH">필리핀</option><option value="KH">캄보디아</option>
+                                <option value="ID">인도네시아</option><option value="MM">미얀마</option>
+                                <option value="NP">네팔</option><option value="LK">스리랑카</option>
+                                <option value="BD">방글라데시</option><option value="MN">몽골</option>
+                                <option value="UZ">우즈베키스탄</option><option value="TL">동티모르</option>
+                                <option value="CN">중국</option><option value="OTHER">기타</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">기관 유형</label>
+                            <select id="mouPartnerType" class="input-apple w-full">
+                                <option value="government">정부</option>
+                                <option value="local_government">지방정부</option>
+                                <option value="agency">기관</option>
+                                <option value="other">기타</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-sm text-gray-600 mb-1 block">상대 기관명 <span class="text-red-500">*</span></label>
+                            <input type="text" id="mouPartnerOrg" class="input-apple w-full" placeholder="Ministry of Labor">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">상대측 대표</label>
+                            <input type="text" id="mouPartnerRep" class="input-apple w-full">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">한국측 기관</label>
+                            <input type="text" id="mouKoreanOrg" class="input-apple w-full" placeholder="글로벌워크센터">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">체결일</label>
+                            <input type="date" id="mouSignedDate" class="input-apple w-full">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">만료일</label>
+                            <input type="date" id="mouExpiryDate" class="input-apple w-full">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">협정 인원</label>
+                            <input type="number" id="mouQuota" class="input-apple w-full" value="0">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">상태</label>
+                            <select id="mouStatus" class="input-apple w-full">
+                                <option value="draft">준비중</option>
+                                <option value="active">활성</option>
+                                <option value="expired">만료</option>
+                                <option value="terminated">종료</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-sm text-gray-600 mb-1 block">설명</label>
+                            <textarea id="mouDescription" class="input-apple w-full" rows="3" placeholder="협정 내용 요약..."></textarea>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">사진 URL</label>
+                            <input type="text" id="mouPhotoUrl" class="input-apple w-full" placeholder="체결식 사진 URL">
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 mt-5">
+                                <input type="checkbox" id="mouIsPublic" class="w-4 h-4">
+                                <span class="text-sm text-gray-600">공개 쇼케이스에 표시</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 p-6 border-t">
+                    <button onclick="closeMouModal()" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200">취소</button>
+                    <button onclick="saveMou()" id="mouSaveBtn" class="px-6 py-2 bg-blue-500 text-white rounded-xl text-sm hover:bg-blue-600">저장</button>
+                </div>
+            </div>
         </div>
 
         <!-- ==================== FAQ 탭 ==================== -->
@@ -3839,6 +3969,8 @@
             // 탭별 데이터 로드
             if (tabName === 'applicants') loadApplicants();
             if (tabName === 'regions') loadLocalGovernments();
+            if (tabName === 'mou') loadMouList();
+            if (tabName === 'dashboard') loadDashboardCharts();
         }
 
         // 공지사항 로드
@@ -3879,96 +4011,295 @@
             openNoticeModal();
         }
 
+        // ==================== MOU 관리 JS ====================
+        const countryFlags = {VN:'🇻🇳',TH:'🇹🇭',PH:'🇵🇭',KH:'🇰🇭',ID:'🇮🇩',MM:'🇲🇲',NP:'🇳🇵',LK:'🇱🇰',BD:'🇧🇩',MN:'🇲🇳',UZ:'🇺🇿',TL:'🇹🇱',CN:'🇨🇳',OTHER:'🌐'};
+        const countryNames = {VN:'베트남',TH:'태국',PH:'필리핀',KH:'캄보디아',ID:'인도네시아',MM:'미얀마',NP:'네팔',LK:'스리랑카',BD:'방글라데시',MN:'몽골',UZ:'우즈베키스탄',TL:'동티모르',CN:'중국',OTHER:'기타'};
+        const partnerTypeLabels = {government:'정부',local_government:'지방정부',agency:'기관',other:'기타'};
+        const mouStatusLabels = {draft:'준비중',active:'활성',expired:'만료',terminated:'종료'};
+        const mouStatusColors = {draft:'bg-yellow-100 text-yellow-700',active:'bg-green-100 text-green-700',expired:'bg-gray-100 text-gray-500',terminated:'bg-red-100 text-red-700'};
+        let mouEditingId = null;
+
+        async function loadMouList() {
+            const token = sessionStorage.getItem('kwv_token');
+            if (!token) return;
+            const country = document.getElementById('mouCountryFilter')?.value || '';
+            const status = document.getElementById('mouStatusFilter')?.value || '';
+            let url = API_BASE + '/mou?';
+            if (country) url += `country=${country}&`;
+            if (status) url += `status=${status}&`;
+            try {
+                const res = await fetch(url, {headers: {'Authorization': `Bearer ${token}`}});
+                const mous = await res.json();
+                renderMouCards(mous);
+                // 국가 필터 옵션 업데이트 (최초)
+                const countryFilter = document.getElementById('mouCountryFilter');
+                if (countryFilter && countryFilter.options.length <= 1) {
+                    const countries = [...new Set(mous.map(m => m.partner_country))];
+                    countries.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c;
+                        opt.textContent = `${countryFlags[c]||'🌐'} ${countryNames[c]||c}`;
+                        countryFilter.appendChild(opt);
+                    });
+                }
+            } catch(e) {
+                console.error('MOU 로드 실패:', e);
+                document.getElementById('mouCards').innerHTML = '<div class="text-center text-gray-400 py-12 col-span-2">MOU 데이터를 불러올 수 없습니다.</div>';
+            }
+        }
+
+        function renderMouCards(mous) {
+            const grid = document.getElementById('mouCards');
+            if (!mous || mous.length === 0) {
+                grid.innerHTML = '<div class="text-center text-gray-400 py-12 col-span-2"><i class="fas fa-handshake text-4xl mb-3"></i><p>등록된 MOU가 없습니다.</p></div>';
+                return;
+            }
+            grid.innerHTML = mous.map(m => `
+                <div class="card p-5 cursor-pointer hover:shadow-lg transition" onclick="openMouModal(${m.id})">
+                    ${m.photo_url ? `<div class="h-36 -m-5 mb-4 rounded-t-2xl overflow-hidden"><img src="${m.photo_url}" class="w-full h-full object-cover"></div>` : ''}
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-gray-800 truncate">${m.title}</h3>
+                            ${m.title_en ? `<p class="text-xs text-gray-400 truncate">${m.title_en}</p>` : ''}
+                        </div>
+                        <span class="ml-2 px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap ${mouStatusColors[m.status]||'bg-gray-100 text-gray-500'}">${mouStatusLabels[m.status]||m.status}</span>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg mb-3">
+                        <span class="text-xl">${countryFlags[m.partner_country]||'🌐'}</span>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-700 text-sm truncate">${m.partner_organization}</p>
+                            <p class="text-xs text-gray-400">${m.partner_country_name||countryNames[m.partner_country]||''} · ${partnerTypeLabels[m.partner_type]||''}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-3 text-xs text-gray-400">
+                        ${m.signed_date ? `<span><i class="fas fa-calendar-check text-blue-400 mr-1"></i>${m.signed_date}</span>` : ''}
+                        ${m.worker_quota ? `<span><i class="fas fa-users text-green-400 mr-1"></i>${m.worker_quota}명</span>` : ''}
+                        ${m.is_public ? `<span><i class="fas fa-eye text-purple-400 mr-1"></i>공개</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function openMouModal(id = null) {
+            mouEditingId = id;
+            document.getElementById('mouModalTitle').textContent = id ? 'MOU 수정' : 'MOU 등록';
+            // 필드 초기화
+            ['mouTitle','mouTitleEn','mouPartnerOrg','mouPartnerRep','mouKoreanOrg','mouSignedDate','mouExpiryDate','mouDescription','mouPhotoUrl'].forEach(f => {
+                const el = document.getElementById(f);
+                if (el) el.value = '';
+            });
+            document.getElementById('mouCountry').value = '';
+            document.getElementById('mouPartnerType').value = 'government';
+            document.getElementById('mouQuota').value = '0';
+            document.getElementById('mouStatus').value = 'draft';
+            document.getElementById('mouIsPublic').checked = false;
+
+            if (id) {
+                const token = sessionStorage.getItem('kwv_token');
+                try {
+                    const res = await fetch(API_BASE + `/mou/${id}`, {headers: {'Authorization': `Bearer ${token}`}});
+                    const m = await res.json();
+                    document.getElementById('mouTitle').value = m.title || '';
+                    document.getElementById('mouTitleEn').value = m.title_en || '';
+                    document.getElementById('mouCountry').value = m.partner_country || '';
+                    document.getElementById('mouPartnerType').value = m.partner_type || 'government';
+                    document.getElementById('mouPartnerOrg').value = m.partner_organization || '';
+                    document.getElementById('mouPartnerRep').value = m.partner_representative || '';
+                    document.getElementById('mouKoreanOrg').value = m.korean_organization || '';
+                    document.getElementById('mouSignedDate').value = m.signed_date ? m.signed_date.split('T')[0] : '';
+                    document.getElementById('mouExpiryDate').value = m.expiry_date ? m.expiry_date.split('T')[0] : '';
+                    document.getElementById('mouQuota').value = m.worker_quota || 0;
+                    document.getElementById('mouStatus').value = m.status || 'draft';
+                    document.getElementById('mouDescription').value = m.description || '';
+                    document.getElementById('mouPhotoUrl').value = m.photo_url || '';
+                    document.getElementById('mouIsPublic').checked = !!m.is_public;
+                } catch(e) {
+                    alert('MOU 정보를 불러올 수 없습니다.');
+                    return;
+                }
+            }
+            document.getElementById('mouModal').style.display = 'flex';
+        }
+
+        function closeMouModal() {
+            document.getElementById('mouModal').style.display = 'none';
+            mouEditingId = null;
+        }
+
+        function updateCountryName() {
+            // 국가 선택 시 자동으로 partner_country_name 설정 (저장 시 사용)
+        }
+
+        async function saveMou() {
+            const token = sessionStorage.getItem('kwv_token');
+            if (!token) return;
+            const title = document.getElementById('mouTitle').value.trim();
+            const country = document.getElementById('mouCountry').value;
+            const org = document.getElementById('mouPartnerOrg').value.trim();
+            if (!title || !country || !org) {
+                alert('필수 항목을 입력하세요 (제목, 상대국, 상대 기관명)');
+                return;
+            }
+            const data = {
+                title: title,
+                title_en: document.getElementById('mouTitleEn').value.trim() || null,
+                partner_country: country,
+                partner_country_name: countryNames[country] || country,
+                partner_type: document.getElementById('mouPartnerType').value,
+                partner_organization: org,
+                partner_representative: document.getElementById('mouPartnerRep').value.trim() || null,
+                korean_organization: document.getElementById('mouKoreanOrg').value.trim() || null,
+                signed_date: document.getElementById('mouSignedDate').value || null,
+                expiry_date: document.getElementById('mouExpiryDate').value || null,
+                worker_quota: parseInt(document.getElementById('mouQuota').value) || 0,
+                status: document.getElementById('mouStatus').value,
+                description: document.getElementById('mouDescription').value.trim() || null,
+                photo_url: document.getElementById('mouPhotoUrl').value.trim() || null,
+                is_public: document.getElementById('mouIsPublic').checked,
+                display_order: 0
+            };
+            const btn = document.getElementById('mouSaveBtn');
+            btn.disabled = true;
+            btn.textContent = '저장 중...';
+            try {
+                const url = mouEditingId ? API_BASE + `/mou/${mouEditingId}` : API_BASE + '/mou';
+                const method = mouEditingId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || '저장 실패');
+                }
+                closeMouModal();
+                loadMouList();
+            } catch(e) {
+                alert('MOU 저장 실패: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '저장';
+            }
+        }
+
+        async function deleteMou(id) {
+            if (!confirm('이 MOU를 삭제하시겠습니까?')) return;
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(API_BASE + `/mou/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || '삭제 실패');
+                }
+                closeMouModal();
+                loadMouList();
+            } catch(e) {
+                alert('삭제 실패: ' + e.message);
+            }
+        }
+
+        // ==================== 대시보드 차트 (API 연동) ====================
         // 차트 인스턴스 저장
         let visaChartInstance = null;
         let monthlyChartInstance = null;
         let countryChartInstance = null;
 
-        // 차트 초기화
-        function initCharts() {
-            // 기존 차트 제거
+        // 차트 초기화 (API 데이터)
+        async function loadDashboardCharts() {
+            const token = sessionStorage.getItem('kwv_token');
+            if (!token) { initCharts([], [], []); return; }
+            try {
+                const [natRes, visaRes, monthRes] = await Promise.all([
+                    fetch(API_BASE + '/admin/statistics/by-nationality', {headers: {'Authorization': `Bearer ${token}`}}),
+                    fetch(API_BASE + '/admin/statistics/by-visa', {headers: {'Authorization': `Bearer ${token}`}}),
+                    fetch(API_BASE + '/admin/statistics/monthly', {headers: {'Authorization': `Bearer ${token}`}})
+                ]);
+                const natData = await natRes.json().catch(() => []);
+                const visaData = await visaRes.json().catch(() => []);
+                const monthData = await monthRes.json().catch(() => []);
+                initCharts(Array.isArray(natData) ? natData : [], Array.isArray(visaData) ? visaData : [], Array.isArray(monthData) ? monthData : []);
+            } catch(e) {
+                console.error('통계 로드 실패:', e);
+                initCharts([], [], []);
+            }
+        }
+
+        function initCharts(natData, visaData, monthData) {
             if (visaChartInstance) visaChartInstance.destroy();
             if (monthlyChartInstance) monthlyChartInstance.destroy();
             if (countryChartInstance) countryChartInstance.destroy();
 
-            // 비자별 차트
-            const visaLabels = [t('visa_E8'), t('visa_D2'), t('visa_D4'), t('visa_D10'), t('visa_F4')];
-            const visaData = {labels: visaLabels, data: [110, 25, 17, 10, 8]};
-            const visaTotal = visaData.data.reduce((a, b) => a + b, 0);
-            const visaColors = ['#007aff', '#34c759', '#af52de', '#ff9500', '#ff2d55'];
+            const allColors = ['#007aff', '#34c759', '#af52de', '#ff9500', '#ff2d55', '#5856d6', '#ff3b30', '#32ade6', '#ffcc00', '#8e8e93'];
             const unitPeople = t('unit_people') || '';
 
-            visaChartInstance = new Chart(document.getElementById('visaChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: visaData.labels,
-                    datasets: [{ data: visaData.data, backgroundColor: visaColors, borderWidth: 0 }]
-                },
-                options: {
-                    responsive: true,
-                    cutout: '70%',
-                    plugins: { legend: { display: false } }
-                }
-            });
+            // 비자별 차트
+            const vLabels = visaData.length ? visaData.map(v => v.visa_type) : ['E-8','E-9','C-4','H-2','F-1'];
+            const vValues = visaData.length ? visaData.map(v => v.count) : [0,0,0,0,0];
+            const visaTotal = vValues.reduce((a, b) => a + b, 0);
+            const visaColors = allColors.slice(0, vLabels.length);
 
-            document.getElementById('visaChartCenter').innerHTML = `<div class="text-center"><p class="text-3xl font-bold text-gray-800">${visaTotal}</p><p class="text-sm text-gray-500">${t('totalApplications')}</p></div>`;
-
-            const visaLegend = document.getElementById('visaLegend');
-            visaLegend.innerHTML = visaData.labels.map((label, i) => {
-                const pct = ((visaData.data[i] / visaTotal) * 100).toFixed(1);
-                return `<div class="flex items-center justify-between"><div class="flex items-center"><span class="w-3 h-3 rounded-full mr-2" style="background:${visaColors[i]}"></span><span class="text-sm text-gray-600">${label}</span></div><span class="text-sm font-medium">${visaData.data[i]}${unitPeople} (${pct}%)</span></div>`;
-            }).join('');
+            const visaCanvas = document.getElementById('visaChart');
+            if (visaCanvas) {
+                visaChartInstance = new Chart(visaCanvas, {
+                    type: 'doughnut',
+                    data: { labels: vLabels, datasets: [{ data: vValues, backgroundColor: visaColors, borderWidth: 0 }] },
+                    options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+                });
+                const vc = document.getElementById('visaChartCenter');
+                if (vc) vc.innerHTML = `<div class="text-center"><p class="text-3xl font-bold text-gray-800">${visaTotal}</p><p class="text-sm text-gray-500">${t('totalApplications')}</p></div>`;
+                const vl = document.getElementById('visaLegend');
+                if (vl) vl.innerHTML = vLabels.map((label, i) => {
+                    const pct = visaTotal > 0 ? ((vValues[i] / visaTotal) * 100).toFixed(1) : '0.0';
+                    return `<div class="flex items-center justify-between"><div class="flex items-center"><span class="w-3 h-3 rounded-full mr-2" style="background:${visaColors[i]||'#ccc'}"></span><span class="text-sm text-gray-600">${label}</span></div><span class="text-sm font-medium">${vValues[i]}${unitPeople} (${pct}%)</span></div>`;
+                }).join('');
+            }
 
             // 월별 차트
-            const monthLabels = currentLang === 'ko' ? ['9월', '10월', '11월', '12월', '1월', '2월'] :
-                               currentLang === 'vi' ? ['Th.9', 'Th.10', 'Th.11', 'Th.12', 'Th.1', 'Th.2'] :
-                               currentLang === 'th' ? ['ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.', 'ม.ค.', 'ก.พ.'] :
-                               ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
-            monthlyChartInstance = new Chart(document.getElementById('monthlyChart'), {
-                type: 'line',
-                data: {
-                    labels: monthLabels,
-                    datasets: [{
-                        label: t('tabApplicants'),
-                        data: [30, 45, 60, 80, 95, 120],
-                        borderColor: '#007aff',
-                        backgroundColor: 'rgba(0,122,255,0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointBackgroundColor: '#007aff',
-                        pointRadius: 4
-                    }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } } }
-            });
+            const mLabels = monthData.length ? monthData.map(m => m.month).reverse() : [];
+            const mValues = monthData.length ? monthData.map(m => m.count).reverse() : [];
+            const monthlyCanvas = document.getElementById('monthlyChart');
+            if (monthlyCanvas) {
+                monthlyChartInstance = new Chart(monthlyCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: mLabels.length ? mLabels : ['데이터 없음'],
+                        datasets: [{
+                            label: t('tabApplicants'),
+                            data: mValues.length ? mValues : [0],
+                            borderColor: '#007aff', backgroundColor: 'rgba(0,122,255,0.1)',
+                            fill: true, tension: 0.4, borderWidth: 3,
+                            pointBackgroundColor: '#007aff', pointRadius: 4
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } } }
+                });
+            }
 
-            // 국가별 차트 (원그래프)
-            const countryLabels = [`🇻🇳 ${t('country_VN')}`, `🇹🇭 ${t('country_TH')}`, `🇵🇭 ${t('country_PH')}`];
-            const countryData = {labels: countryLabels, data: [85, 45, 40]};
-            const countryTotal = countryData.data.reduce((a, b) => a + b, 0);
-            const countryColors = ['#ff3b30', '#007aff', '#34c759'];
+            // 국적별 차트
+            const nLabels = natData.length ? natData.map(n => `${countryFlags[n.nationality]||'🌐'} ${countryNames[n.nationality]||n.nationality}`) : ['데이터 없음'];
+            const nValues = natData.length ? natData.map(n => n.count) : [0];
+            const countryTotal = nValues.reduce((a, b) => a + b, 0);
+            const cColors = allColors.slice(0, nLabels.length);
 
-            countryChartInstance = new Chart(document.getElementById('countryChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: countryData.labels,
-                    datasets: [{ data: countryData.data, backgroundColor: countryColors, borderWidth: 0 }]
-                },
-                options: {
-                    responsive: true,
-                    cutout: '70%',
-                    plugins: { legend: { display: false } }
-                }
-            });
-
-            document.getElementById('countryChartCenter').innerHTML = `<div class="text-center"><p class="text-3xl font-bold text-gray-800">${countryTotal}</p><p class="text-sm text-gray-500">${t('totalApplications')}</p></div>`;
-
-            const countryLegend = document.getElementById('countryLegend');
-            countryLegend.innerHTML = countryData.labels.map((label, i) => {
-                const pct = ((countryData.data[i] / countryTotal) * 100).toFixed(1);
-                return `<div class="flex items-center justify-between"><div class="flex items-center"><span class="w-3 h-3 rounded-full mr-2" style="background:${countryColors[i]}"></span><span class="text-sm text-gray-600">${label}</span></div><span class="text-sm font-medium">${countryData.data[i]}${unitPeople} (${pct}%)</span></div>`;
-            }).join('');
+            const countryCanvas = document.getElementById('countryChart');
+            if (countryCanvas) {
+                countryChartInstance = new Chart(countryCanvas, {
+                    type: 'doughnut',
+                    data: { labels: nLabels, datasets: [{ data: nValues, backgroundColor: cColors, borderWidth: 0 }] },
+                    options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+                });
+                const cc = document.getElementById('countryChartCenter');
+                if (cc) cc.innerHTML = `<div class="text-center"><p class="text-3xl font-bold text-gray-800">${countryTotal}</p><p class="text-sm text-gray-500">${t('totalApplications')}</p></div>`;
+                const cl = document.getElementById('countryLegend');
+                if (cl) cl.innerHTML = nLabels.map((label, i) => {
+                    const pct = countryTotal > 0 ? ((nValues[i] / countryTotal) * 100).toFixed(1) : '0.0';
+                    return `<div class="flex items-center justify-between"><div class="flex items-center"><span class="w-3 h-3 rounded-full mr-2" style="background:${cColors[i]||'#ccc'}"></span><span class="text-sm text-gray-600">${label}</span></div><span class="text-sm font-medium">${nValues[i]}${unitPeople} (${pct}%)</span></div>`;
+                }).join('');
+            }
         }
 
         // 최근 지원자
@@ -6477,7 +6808,7 @@
             renderFaq();
             loadRecentApplicants();
             loadRecentActivity();
-            initCharts();
+            loadDashboardCharts();
             loadSavedSettings();
             loadSystemSettings();
 
