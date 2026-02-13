@@ -5491,8 +5491,8 @@ async def change_password(data: dict):
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    """로그인 페이지로 리다이렉트"""
-    return RedirectResponse(url="/kwv-login.html", status_code=302)
+    """랜딩 페이지로 리다이렉트"""
+    return RedirectResponse(url="/kwv-landing.html", status_code=302)
 
 # ==================== 팀 활동일지 API ====================
 

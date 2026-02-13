@@ -246,7 +246,7 @@
     <!-- ===== Hero Section ===== -->
     <section class="hero flex items-center justify-center relative" id="hero">
         <!-- Background Video -->
-        <video class="hero-video" autoplay muted loop playsinline>
+        <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="" style="object-fit:cover;">
             <source src="/static/videos/kwv-hero.mp4" type="video/mp4">
         </video>
         <div class="grid-bg"></div>
@@ -676,10 +676,180 @@
         document.querySelectorAll('[data-count]').forEach(el => counterObserver.observe(el));
 
         // ===== Language =====
+        const landingI18n = {
+            ko: {
+                heroBadge: '정부 공인 외국인 계절근로자 관리 플랫폼',
+                heroTitle1: '대한민국', heroTitle2: '계절근로자', heroTitle3: '통합 관리',
+                heroSubtitle: '지자체와 외국 정부 간 MOU 기반의 투명한 근로자 관리 시스템.\n출퇴근 기록, AI 이상감지, 포인트제로 안전하고 효율적인 인력 관리를 실현합니다.',
+                heroCtaStart: '바로 시작하기', heroCtaLearn: '자세히 알아보기',
+                heroStat1: 'MOU 체결 국가', heroStat2: '참여 지자체', heroStat3: '등록 근로자', heroStat4: '출퇴근 이행률',
+                featuresTag: 'Platform Features', featuresTitle: '지자체를 위한<br>완벽한 관리 솔루션',
+                featuresSubtitle: '입국부터 귀국까지, 외국인 계절근로자의 모든 과정을 하나의 플랫폼에서 관리합니다.',
+                feat1Title: 'QR 출퇴근 관리', feat1Desc: '사업장 QR 코드 스캔으로 간편 출퇴근. GPS 위치 자동 기록으로 근무지 확인이 실시간으로 이루어집니다.',
+                feat2Title: 'AI 이상감지', feat2Desc: '출퇴근 패턴을 AI가 분석하여 이탈 징후를 조기에 감지. 3일 연속 결근, GPS 이탈 등 이상 시 즉시 알림.',
+                feat3Title: '포인트 인센티브', feat3Desc: '성실한 출퇴근과 활동 기록에 포인트 부여. 재입국 심사 시 가점 혜택으로 자발적 참여를 유도합니다.',
+                feat4Title: '실시간 위치 파악', feat4Desc: '근로자가 자발적으로 접속할 때 위치 정보 수집. 지도 기반 대시보드로 지자체별 분포를 한눈에 파악.',
+                feat5Title: '종합 리포트', feat5Desc: '출퇴근, 근로자 현황, 포인트, 상담일지 등 다양한 리포트를 Excel/PDF로 생성. 정부 보고에 즉시 활용.',
+                feat6Title: 'MOU 관리', feat6Desc: '외국 정부·지자체와의 협정 현황을 체계적으로 관리하고 공개. 신뢰도 높은 파트너십을 증명합니다.',
+                processTag: 'How It Works', processTitle: '간단한 4단계로<br>시작하세요',
+                step1Title: 'MOU 체결', step1Desc: '외국 정부/지자체와 계절근로자 파견 협정을 체결합니다.',
+                step2Title: '근로자 등록', step2Desc: '근로자가 여권, 비자 정보와 함께 플랫폼에 등록합니다.',
+                step3Title: '지자체 배정', step3Desc: '인천공항 도착 후 배정된 지자체에서 인계하여 사업장에 배치.',
+                step4Title: '스마트 관리', step4Desc: 'QR 출퇴근, AI 모니터링, 포인트 적립으로 체계적 관리 시작.',
+                statsTag: 'Why Choose Us', statsTitle: '데이터가 증명하는<br><span class="gradient-text">신뢰와 성과</span>',
+                statsDesc: 'KWV 플랫폼은 이미 전국 지자체에서 검증된 시스템입니다.', statsCtaBtn: '지금 도입하기',
+                statLabel1: '근로자 관리율', statLabel2: '실시간 모니터링', statUnit3: '개 언어', statLabel3: '다국어 지원', statUnit4: '초', statLabel4: '이상감지 알림 속도',
+                govTag: 'For Local Governments', govTitle: '지자체 담당자를 위한<br>맞춤 기능',
+                gov1Title: '이탈 방지 시스템', gov1Desc: '근로자가 매일 자발적으로 출퇴근 기록을 남기면 포인트를 획득합니다.',
+                gov2Title: '원클릭 보고서', gov2Desc: '출퇴근 현황, 근로자 통계, 상담 내역을 Excel/PDF로 즉시 생성.',
+                gov3Title: '보험 통합 관리', gov3Desc: '입국 시점부터 4대 보험 가입 현황을 체계적으로 관리합니다.',
+                gov4Title: '상담일지 & 소통', gov4Desc: '근로자와의 상담 기록을 체계적으로 관리. 5개 국어 번역 지원.',
+                ctaTitle: '지금 바로<br>KWV를 도입하세요', ctaDesc: '외국인 계절근로자 관리의 새로운 패러다임.',
+                ctaBtnStart: '바로가기', ctaBtnRegister: '회원가입', navLogin: '로그인'
+            },
+            en: {
+                heroBadge: 'Government-certified seasonal worker management platform',
+                heroTitle1: 'Korea', heroTitle2: 'Seasonal Workers', heroTitle3: 'Integrated Management',
+                heroSubtitle: 'Transparent worker management system based on MOUs between local governments and foreign governments.\nAttendance tracking, AI anomaly detection, and point system for safe and efficient workforce management.',
+                heroCtaStart: 'Get Started', heroCtaLearn: 'Learn More',
+                heroStat1: 'MOU Countries', heroStat2: 'Local Governments', heroStat3: 'Registered Workers', heroStat4: 'Attendance Rate',
+                featuresTag: 'Platform Features', featuresTitle: 'Complete Management<br>Solution for Local Gov.',
+                featuresSubtitle: 'Manage the entire process of foreign seasonal workers from entry to departure on a single platform.',
+                feat1Title: 'QR Attendance', feat1Desc: 'Simple check-in/out by scanning workplace QR codes. GPS location automatically recorded for real-time workplace verification.',
+                feat2Title: 'AI Anomaly Detection', feat2Desc: 'AI analyzes attendance patterns to detect early signs of desertion. Instant alerts for 3+ consecutive absences or GPS deviations.',
+                feat3Title: 'Point Incentives', feat3Desc: 'Points awarded for diligent attendance and activity records. Re-entry bonus incentives encourage voluntary participation.',
+                feat4Title: 'Real-time Tracking', feat4Desc: 'Location data collected when workers voluntarily connect. Map-based dashboard shows distribution by local government.',
+                feat5Title: 'Comprehensive Reports', feat5Desc: 'Generate various reports including attendance, worker status, points, and counseling in Excel/PDF format.',
+                feat6Title: 'MOU Management', feat6Desc: 'Systematically manage and disclose agreement status with foreign governments and local authorities.',
+                processTag: 'How It Works', processTitle: 'Get Started in<br>4 Simple Steps',
+                step1Title: 'Sign MOU', step1Desc: 'Sign seasonal worker dispatch agreement with foreign government/local authority.',
+                step2Title: 'Register Workers', step2Desc: 'Workers register on the platform with passport and visa information.',
+                step3Title: 'Assignment', step3Desc: 'After arriving at Incheon Airport, assigned local government takes over and assigns workplace.',
+                step4Title: 'Smart Management', step4Desc: 'Start systematic management with QR attendance, AI monitoring, and point accumulation.',
+                statsTag: 'Why Choose Us', statsTitle: 'Data-Proven<br><span class="gradient-text">Trust & Results</span>',
+                statsDesc: 'KWV platform is an already verified system used by local governments nationwide.', statsCtaBtn: 'Adopt Now',
+                statLabel1: 'Worker Management', statLabel2: 'Real-time Monitoring', statUnit3: 'Languages', statLabel3: 'Multilingual Support', statUnit4: 'sec', statLabel4: 'Anomaly Alert Speed',
+                govTag: 'For Local Governments', govTitle: 'Customized Features for<br>Local Gov. Officers',
+                gov1Title: 'Desertion Prevention', gov1Desc: 'Workers earn points by recording daily attendance. Points are used as re-entry bonus.',
+                gov2Title: 'One-Click Reports', gov2Desc: 'Instantly generate attendance, statistics, counseling reports in Excel/PDF.',
+                gov3Title: 'Insurance Management', gov3Desc: 'Systematically manage 4 major insurance enrollment status from entry.',
+                gov4Title: 'Counseling & Communication', gov4Desc: 'Systematically manage counseling records with workers. 5-language translation.',
+                ctaTitle: 'Adopt KWV<br>Right Now', ctaDesc: 'A new paradigm in foreign seasonal worker management.',
+                ctaBtnStart: 'Get Started', ctaBtnRegister: 'Sign Up', navLogin: 'Login'
+            },
+            vi: {
+                heroBadge: 'Nền tảng quản lý lao động thời vụ được chính phủ chứng nhận',
+                heroTitle1: 'Hàn Quốc', heroTitle2: 'Lao động thời vụ', heroTitle3: 'Quản lý tích hợp',
+                heroSubtitle: 'Hệ thống quản lý lao động minh bạch dựa trên MOU giữa chính quyền địa phương và chính phủ nước ngoài.',
+                heroCtaStart: 'Bắt đầu ngay', heroCtaLearn: 'Tìm hiểu thêm',
+                heroStat1: 'Quốc gia MOU', heroStat2: 'Chính quyền địa phương', heroStat3: 'Lao động đăng ký', heroStat4: 'Tỷ lệ chấm công',
+                featuresTag: 'Tính năng', featuresTitle: 'Giải pháp quản lý<br>hoàn hảo',
+                featuresSubtitle: 'Quản lý toàn bộ quy trình lao động thời vụ nước ngoài trên một nền tảng duy nhất.',
+                feat1Title: 'Chấm công QR', feat1Desc: 'Chấm công đơn giản bằng quét mã QR. Vị trí GPS tự động ghi nhận.',
+                feat2Title: 'AI phát hiện bất thường', feat2Desc: 'AI phân tích mẫu chấm công để phát hiện sớm dấu hiệu bỏ trốn.',
+                feat3Title: 'Tích điểm thưởng', feat3Desc: 'Tặng điểm cho chấm công đều đặn. Điểm thưởng khi tái nhập cảnh.',
+                feat4Title: 'Theo dõi thời gian thực', feat4Desc: 'Thu thập vị trí khi người lao động kết nối. Bảng điều khiển bản đồ.',
+                feat5Title: 'Báo cáo tổng hợp', feat5Desc: 'Tạo báo cáo Excel/PDF về chấm công, tình trạng, điểm, tư vấn.',
+                feat6Title: 'Quản lý MOU', feat6Desc: 'Quản lý có hệ thống tình trạng thỏa thuận với chính phủ nước ngoài.',
+                processTag: 'Quy trình', processTitle: 'Bắt đầu trong<br>4 bước đơn giản',
+                step1Title: 'Ký MOU', step1Desc: 'Ký thỏa thuận phái cử lao động thời vụ.',
+                step2Title: 'Đăng ký lao động', step2Desc: 'Lao động đăng ký với hộ chiếu và thông tin visa.',
+                step3Title: 'Phân công', step3Desc: 'Sau khi đến sân bay, được phân công đến chính quyền địa phương.',
+                step4Title: 'Quản lý thông minh', step4Desc: 'Quản lý có hệ thống với chấm công QR, AI giám sát, tích điểm.',
+                statsTag: 'Tại sao chọn chúng tôi', statsTitle: 'Dữ liệu chứng minh<br><span class="gradient-text">Uy tín & Kết quả</span>',
+                statsDesc: 'Nền tảng KWV đã được xác minh bởi các chính quyền địa phương.', statsCtaBtn: 'Áp dụng ngay',
+                statLabel1: 'Quản lý lao động', statLabel2: 'Giám sát thời gian thực', statUnit3: 'ngôn ngữ', statLabel3: 'Hỗ trợ đa ngữ', statUnit4: 'giây', statLabel4: 'Tốc độ cảnh báo',
+                govTag: 'Cho chính quyền', govTitle: 'Tính năng tùy chỉnh<br>cho cán bộ địa phương',
+                gov1Title: 'Phòng chống bỏ trốn', gov1Desc: 'Lao động tích điểm bằng chấm công hàng ngày.',
+                gov2Title: 'Báo cáo nhanh', gov2Desc: 'Tạo báo cáo Excel/PDF ngay lập tức.',
+                gov3Title: 'Quản lý bảo hiểm', gov3Desc: 'Quản lý tình trạng bảo hiểm từ khi nhập cảnh.',
+                gov4Title: 'Tư vấn & Giao tiếp', gov4Desc: 'Quản lý hồ sơ tư vấn. Hỗ trợ dịch 5 ngôn ngữ.',
+                ctaTitle: 'Áp dụng KWV<br>ngay bây giờ', ctaDesc: 'Mô hình mới trong quản lý lao động thời vụ nước ngoài.',
+                ctaBtnStart: 'Bắt đầu', ctaBtnRegister: 'Đăng ký', navLogin: 'Đăng nhập'
+            },
+            th: {
+                heroBadge: 'แพลตฟอร์มจัดการแรงงานตามฤดูกาลที่ได้รับการรับรองจากรัฐบาล',
+                heroTitle1: 'เกาหลี', heroTitle2: 'แรงงานตามฤดูกาล', heroTitle3: 'การจัดการแบบบูรณาการ',
+                heroSubtitle: 'ระบบจัดการแรงงานโปร่งใสบน MOU ระหว่างรัฐบาลท้องถิ่นและรัฐบาลต่างประเทศ',
+                heroCtaStart: 'เริ่มต้นใช้งาน', heroCtaLearn: 'เรียนรู้เพิ่มเติม',
+                heroStat1: 'ประเทศ MOU', heroStat2: 'รัฐบาลท้องถิ่น', heroStat3: 'แรงงานลงทะเบียน', heroStat4: 'อัตราการเข้างาน',
+                featuresTag: 'คุณสมบัติ', featuresTitle: 'โซลูชันการจัดการ<br>ที่สมบูรณ์แบบ',
+                featuresSubtitle: 'จัดการกระบวนการทั้งหมดของแรงงานตามฤดูกาลบนแพลตฟอร์มเดียว',
+                feat1Title: 'ลงเวลา QR', feat1Desc: 'ลงเวลาง่ายๆ ด้วยสแกน QR GPS บันทึกอัตโนมัติ',
+                feat2Title: 'AI ตรวจจับผิดปกติ', feat2Desc: 'AI วิเคราะห์รูปแบบการเข้างานเพื่อตรวจจับสัญญาณการหลบหนี',
+                feat3Title: 'สะสมคะแนน', feat3Desc: 'ให้คะแนนสำหรับการเข้างานสม่ำเสมอ โบนัสเมื่อกลับเข้าประเทศ',
+                feat4Title: 'ติดตามเรียลไทม์', feat4Desc: 'เก็บข้อมูลตำแหน่งเมื่อแรงงานเชื่อมต่อ แดชบอร์ดแผนที่',
+                feat5Title: 'รายงานครบถ้วน', feat5Desc: 'สร้างรายงาน Excel/PDF สำหรับการเข้างาน สถานะ คะแนน การให้คำปรึกษา',
+                feat6Title: 'จัดการ MOU', feat6Desc: 'จัดการสถานะข้อตกลงกับรัฐบาลต่างประเทศอย่างเป็นระบบ',
+                processTag: 'ขั้นตอน', processTitle: 'เริ่มต้นใน<br>4 ขั้นตอนง่ายๆ',
+                step1Title: 'ลงนาม MOU', step1Desc: 'ลงนามข้อตกลงส่งแรงงานตามฤดูกาล',
+                step2Title: 'ลงทะเบียนแรงงาน', step2Desc: 'แรงงานลงทะเบียนด้วยหนังสือเดินทางและวีซ่า',
+                step3Title: 'มอบหมาย', step3Desc: 'หลังถึงสนามบิน ส่งมอบให้รัฐบาลท้องถิ่น',
+                step4Title: 'จัดการอัจฉริยะ', step4Desc: 'เริ่มจัดการด้วย QR ลงเวลา AI ติดตาม สะสมคะแนน',
+                statsTag: 'ทำไมเลือกเรา', statsTitle: 'ข้อมูลพิสูจน์<br><span class="gradient-text">ความน่าเชื่อถือ</span>',
+                statsDesc: 'แพลตฟอร์ม KWV ได้รับการตรวจสอบโดยรัฐบาลท้องถิ่นทั่วประเทศ', statsCtaBtn: 'นำไปใช้ตอนนี้',
+                statLabel1: 'การจัดการแรงงาน', statLabel2: 'การติดตามเรียลไทม์', statUnit3: 'ภาษา', statLabel3: 'รองรับหลายภาษา', statUnit4: 'วินาที', statLabel4: 'ความเร็วแจ้งเตือน',
+                govTag: 'สำหรับรัฐบาลท้องถิ่น', govTitle: 'ฟีเจอร์สำหรับ<br>เจ้าหน้าที่ท้องถิ่น',
+                gov1Title: 'ป้องกันการหลบหนี', gov1Desc: 'แรงงานสะสมคะแนนจากการลงเวลาทุกวัน',
+                gov2Title: 'รายงานคลิกเดียว', gov2Desc: 'สร้างรายงาน Excel/PDF ทันที',
+                gov3Title: 'จัดการประกัน', gov3Desc: 'จัดการสถานะประกันตั้งแต่เข้าประเทศ',
+                gov4Title: 'ให้คำปรึกษา', gov4Desc: 'จัดการบันทึกการให้คำปรึกษา รองรับ 5 ภาษา',
+                ctaTitle: 'นำ KWV ไปใช้<br>ตอนนี้เลย', ctaDesc: 'รูปแบบใหม่ในการจัดการแรงงานตามฤดูกาลต่างชาติ',
+                ctaBtnStart: 'เริ่มต้น', ctaBtnRegister: 'สมัครสมาชิก', navLogin: 'เข้าสู่ระบบ'
+            },
+            tl: {
+                heroBadge: 'Platform ng pamamahala ng seasonal worker na sertipikado ng gobyerno',
+                heroTitle1: 'Korea', heroTitle2: 'Seasonal Workers', heroTitle3: 'Integrated Management',
+                heroSubtitle: 'Transparent na sistema ng pamamahala ng manggagawa batay sa MOU sa pagitan ng local governments at foreign governments.',
+                heroCtaStart: 'Magsimula', heroCtaLearn: 'Alamin pa',
+                heroStat1: 'MOU Countries', heroStat2: 'Local Governments', heroStat3: 'Registered Workers', heroStat4: 'Attendance Rate',
+                featuresTag: 'Mga Features', featuresTitle: 'Kumpletong Solusyon<br>sa Pamamahala',
+                featuresSubtitle: 'Pamahalaan ang buong proseso ng foreign seasonal workers sa isang platform.',
+                feat1Title: 'QR Attendance', feat1Desc: 'Simpleng check-in/out sa pamamagitan ng QR code scan. GPS location awtomatikong nire-record.',
+                feat2Title: 'AI Anomaly Detection', feat2Desc: 'Pinag-aaralan ng AI ang attendance patterns para maaga madetect ang paglayas.',
+                feat3Title: 'Point Incentives', feat3Desc: 'Points para sa regular na attendance. Re-entry bonus incentives.',
+                feat4Title: 'Real-time Tracking', feat4Desc: 'Kinokolekta ang location data kapag kumonekta ang manggagawa.',
+                feat5Title: 'Mga Ulat', feat5Desc: 'Gumawa ng iba\'t ibang ulat sa Excel/PDF format.',
+                feat6Title: 'MOU Management', feat6Desc: 'Sistematikong pamahalaan ang mga kasunduan sa dayuhang gobyerno.',
+                processTag: 'Proseso', processTitle: 'Magsimula sa<br>4 na Simpleng Hakbang',
+                step1Title: 'Pumirma ng MOU', step1Desc: 'Pumirma ng kasunduan sa pagpapadala ng seasonal worker.',
+                step2Title: 'Mag-register', step2Desc: 'Nag-register ang mga manggagawa gamit ang passport at visa.',
+                step3Title: 'Assignment', step3Desc: 'Pagdating sa airport, itinalaga sa local government.',
+                step4Title: 'Smart Management', step4Desc: 'Simulan ang sistematikong pamamahala gamit ang QR, AI, at points.',
+                statsTag: 'Bakit Kami', statsTitle: 'Pinatunayan ng Data<br><span class="gradient-text">Tiwala at Resulta</span>',
+                statsDesc: 'Napatunayan na ang KWV platform ng mga local governments sa buong bansa.', statsCtaBtn: 'Gamitin Ngayon',
+                statLabel1: 'Worker Management', statLabel2: 'Real-time Monitoring', statUnit3: 'wika', statLabel3: 'Multilingual Support', statUnit4: 'seg', statLabel4: 'Alert Speed',
+                govTag: 'Para sa Local Gov.', govTitle: 'Custom Features para sa<br>Local Gov. Officers',
+                gov1Title: 'Pag-iwas sa Paglayas', gov1Desc: 'Kumikita ng points ang mga manggagawa sa pang-araw-araw na attendance.',
+                gov2Title: 'One-Click Reports', gov2Desc: 'Agad gumawa ng Excel/PDF reports.',
+                gov3Title: 'Insurance Management', gov3Desc: 'Pamahalaan ang insurance status mula sa pagpasok.',
+                gov4Title: 'Counseling', gov4Desc: 'Pamahalaan ang counseling records. 5-language translation support.',
+                ctaTitle: 'Gamitin ang KWV<br>Ngayon Na', ctaDesc: 'Bagong paradigm sa pamamahala ng foreign seasonal workers.',
+                ctaBtnStart: 'Magsimula', ctaBtnRegister: 'Mag-sign Up', navLogin: 'Mag-login'
+            }
+        };
+
         function changeLandingLang(lang) {
             localStorage.setItem('kwv_language', lang);
-            // Simple redirect or dynamic translation could be added here
+            const dict = landingI18n[lang] || landingI18n['ko'];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) el.innerHTML = dict[key];
+            });
+            // Update nav login button
+            const loginBtn = document.querySelector('a[href="/kwv-login.html"]');
+            if (loginBtn && dict.navLogin) loginBtn.textContent = dict.navLogin;
         }
+
+        // Apply saved language on load
+        (function() {
+            const saved = localStorage.getItem('kwv_language');
+            if (saved && saved !== 'ko') {
+                changeLandingLang(saved);
+                const sel = document.querySelector('select[onchange*="changeLandingLang"]');
+                if (sel) sel.value = saved;
+            }
+        })();
     </script>
 </body>
 </html>
