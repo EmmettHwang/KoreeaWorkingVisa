@@ -479,15 +479,17 @@ async def login(credentials: UserLogin):
 
     try:
         cursor = conn.cursor()
+        # 이메일 또는 이름으로 로그인 가능
+        login_input = credentials.email.strip()
         cursor.execute("""
             SELECT id, email, password_hash, password_salt, name, user_type, admin_level, language, is_active
-            FROM kwv_users WHERE email = %s
-        """, (credentials.email,))
+            FROM kwv_users WHERE email = %s OR name = %s
+        """, (login_input, login_input))
 
         user = cursor.fetchone()
 
         if not user:
-            raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다")
+            raise HTTPException(status_code=401, detail="이메일/이름 또는 비밀번호가 올바르지 않습니다")
 
         user_id, email, password_hash, password_salt, name, user_type, admin_level, language, is_active = user
         name = name or email
@@ -2360,6 +2362,374 @@ async def admin_manual_check(request: Request, user: dict = Depends(get_current_
     finally:
         conn.close()
 
+# ==================== Phase 5: 활동일지 + 포인트 ====================
+
+class ActivityCreate(BaseModel):
+    workplace_id: Optional[int] = None
+    activity_date: str
+    activity_type: str = "work"
+    title: str
+    content: Optional[str] = None
+    hours: float = 0
+    photo_url: Optional[str] = None
+    photo_url_2: Optional[str] = None
+    photo_url_3: Optional[str] = None
+
+# --- 활동일지 ---
+
+@router.post("/activities")
+async def create_activity(data: ActivityCreate, user: dict = Depends(get_current_user)):
+    """활동일지 작성"""
+    user_id = user.get("user_id") or user.get("sub")
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO kwv_activity_logs (user_id, workplace_id, activity_date, activity_type,
+                title, content, hours, photo_url, photo_url_2, photo_url_3)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (user_id, data.workplace_id, data.activity_date, data.activity_type,
+              data.title, data.content, data.hours, data.photo_url, data.photo_url_2, data.photo_url_3))
+        activity_id = cursor.lastrowid
+        # 포인트 자동 적립 (활동일지 작성)
+        add_points(cursor, int(user_id), 'activity', 'activity_log', activity_id, 'activity_submitted')
+        conn.commit()
+        return {"id": activity_id, "message": "활동일지가 등록되었습니다"}
+    finally:
+        conn.close()
+
+@router.get("/activities/my")
+async def my_activities(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    status: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """내 활동일지"""
+    user_id = user.get("user_id") or user.get("sub")
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        where = "WHERE a.user_id = %s"
+        params = [user_id]
+        if date_from:
+            where += " AND a.activity_date >= %s"
+            params.append(date_from)
+        if date_to:
+            where += " AND a.activity_date <= %s"
+            params.append(date_to)
+        if status:
+            where += " AND a.status = %s"
+            params.append(status)
+        cursor.execute(f"""
+            SELECT a.id, a.activity_date, a.activity_type, a.title, a.content, a.hours,
+                   a.photo_url, a.status, a.created_at, w.name as workplace_name
+            FROM kwv_activity_logs a
+            LEFT JOIN kwv_workplaces w ON a.workplace_id = w.id
+            {where} ORDER BY a.activity_date DESC LIMIT 100
+        """, params)
+        return [{
+            "id": r[0], "activity_date": r[1].isoformat() if r[1] else None,
+            "activity_type": r[2], "title": r[3], "content": r[4], "hours": float(r[5]) if r[5] else 0,
+            "photo_url": r[6], "status": r[7],
+            "created_at": r[8].isoformat() if r[8] else None,
+            "workplace_name": r[9]
+        } for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+@router.get("/activities/admin")
+async def admin_activities(
+    user_id: Optional[int] = None,
+    workplace_id: Optional[int] = None,
+    status: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    page: int = 1,
+    per_page: int = 30,
+    user: dict = Depends(get_current_user)
+):
+    """관리자 활동일지 조회"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": [], "total": 0}
+    try:
+        cursor = conn.cursor()
+        where = "WHERE 1=1"
+        params = []
+        if user_id:
+            where += " AND a.user_id = %s"
+            params.append(user_id)
+        if workplace_id:
+            where += " AND a.workplace_id = %s"
+            params.append(workplace_id)
+        if status:
+            where += " AND a.status = %s"
+            params.append(status)
+        if date_from:
+            where += " AND a.activity_date >= %s"
+            params.append(date_from)
+        if date_to:
+            where += " AND a.activity_date <= %s"
+            params.append(date_to)
+
+        cursor.execute(f"SELECT COUNT(*) FROM kwv_activity_logs a {where}", params)
+        total = cursor.fetchone()[0]
+        offset = (page - 1) * per_page
+        cursor.execute(f"""
+            SELECT a.id, a.user_id, u.name as user_name, u.profile_photo,
+                   va.nationality, a.workplace_id, w.name as workplace_name,
+                   a.activity_date, a.activity_type, a.title, a.content, a.hours,
+                   a.photo_url, a.status, a.created_at
+            FROM kwv_activity_logs a
+            JOIN kwv_users u ON a.user_id = u.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            LEFT JOIN kwv_workplaces w ON a.workplace_id = w.id
+            {where} ORDER BY a.activity_date DESC, a.created_at DESC LIMIT %s OFFSET %s
+        """, params + [per_page, offset])
+        items = [{
+            "id": r[0], "user_id": r[1], "user_name": r[2], "profile_photo": r[3],
+            "nationality": r[4], "workplace_id": r[5], "workplace_name": r[6],
+            "activity_date": r[7].isoformat() if r[7] else None,
+            "activity_type": r[8], "title": r[9], "content": r[10],
+            "hours": float(r[11]) if r[11] else 0, "photo_url": r[12],
+            "status": r[13], "created_at": r[14].isoformat() if r[14] else None
+        } for r in cursor.fetchall()]
+        return {"items": items, "total": total, "page": page, "per_page": per_page}
+    finally:
+        conn.close()
+
+@router.put("/activities/{activity_id}/approve")
+async def approve_activity(activity_id: int, user: dict = Depends(get_current_user)):
+    """활동일지 승인"""
+    require_admin_level(user, 2)
+    admin_id = user.get("user_id") or user.get("sub")
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE kwv_activity_logs SET status = 'approved', approved_by = %s, approved_at = NOW()
+            WHERE id = %s AND status = 'submitted'
+        """, (admin_id, activity_id))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="활동일지를 찾을 수 없거나 이미 처리되었습니다")
+        # 활동일지 작성자에게 승인 포인트
+        cursor.execute("SELECT user_id FROM kwv_activity_logs WHERE id = %s", (activity_id,))
+        row = cursor.fetchone()
+        if row:
+            add_points(cursor, row[0], 'activity', 'activity_log', activity_id, 'activity_approved')
+        conn.commit()
+        return {"message": "활동일지가 승인되었습니다"}
+    finally:
+        conn.close()
+
+@router.put("/activities/{activity_id}/reject")
+async def reject_activity(activity_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """활동일지 반려"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    reason = body.get("reason", "")
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE kwv_activity_logs SET status = 'rejected', rejection_reason = %s
+            WHERE id = %s AND status = 'submitted'
+        """, (reason, activity_id))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="활동일지를 찾을 수 없거나 이미 처리되었습니다")
+        conn.commit()
+        return {"message": "활동일지가 반려되었습니다"}
+    finally:
+        conn.close()
+
+# --- 포인트 시스템 ---
+
+def add_points(cursor, user_id: int, point_type: str, ref_type: str, ref_id: int, rule_key: str, created_by: int = None):
+    """포인트 자동 적립 헬퍼"""
+    cursor.execute("SELECT points FROM kwv_point_rules WHERE rule_key = %s AND is_active = 1", (rule_key,))
+    row = cursor.fetchone()
+    if not row or row[0] == 0:
+        return 0
+    pts = row[0]
+    cursor.execute("""
+        INSERT INTO kwv_points (user_id, points, point_type, reference_type, reference_id, description, created_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (user_id, pts, point_type, ref_type, ref_id, rule_key, created_by))
+    return pts
+
+@router.get("/points/my")
+async def my_points(user: dict = Depends(get_current_user)):
+    """내 포인트 현황"""
+    user_id = user.get("user_id") or user.get("sub")
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"total": 0, "history": []}
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COALESCE(SUM(points),0) FROM kwv_points WHERE user_id = %s", (user_id,))
+        total = cursor.fetchone()[0]
+        cursor.execute("""
+            SELECT id, points, point_type, description, created_at
+            FROM kwv_points WHERE user_id = %s ORDER BY created_at DESC LIMIT 50
+        """, (user_id,))
+        history = [{
+            "id": r[0], "points": r[1], "point_type": r[2],
+            "description": r[3], "created_at": r[4].isoformat() if r[4] else None
+        } for r in cursor.fetchall()]
+        return {"total": total, "history": history}
+    finally:
+        conn.close()
+
+@router.get("/points/ranking")
+async def points_ranking(
+    limit: int = 20,
+    user: dict = Depends(get_current_user)
+):
+    """포인트 랭킹"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            SELECT p.user_id, u.name, u.profile_photo, va.nationality,
+                   SUM(p.points) as total_points
+            FROM kwv_points p
+            JOIN kwv_users u ON p.user_id = u.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            GROUP BY p.user_id ORDER BY total_points DESC LIMIT %s
+        """, (limit,))
+        rank = 1
+        result = []
+        for r in cursor.fetchall():
+            result.append({
+                "rank": rank, "user_id": r[0], "name": r[1], "profile_photo": r[2],
+                "nationality": r[3], "total_points": int(r[4])
+            })
+            rank += 1
+        return result
+    finally:
+        conn.close()
+
+@router.get("/points/admin")
+async def admin_points(
+    user_id: Optional[int] = None,
+    point_type: Optional[str] = None,
+    page: int = 1,
+    per_page: int = 50,
+    user: dict = Depends(get_current_user)
+):
+    """관리자 포인트 조회"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": [], "total": 0}
+    try:
+        cursor = conn.cursor()
+        where = "WHERE 1=1"
+        params = []
+        if user_id:
+            where += " AND p.user_id = %s"
+            params.append(user_id)
+        if point_type:
+            where += " AND p.point_type = %s"
+            params.append(point_type)
+        cursor.execute(f"SELECT COUNT(*) FROM kwv_points p {where}", params)
+        total = cursor.fetchone()[0]
+        offset = (page - 1) * per_page
+        cursor.execute(f"""
+            SELECT p.id, p.user_id, u.name as user_name, p.points, p.point_type,
+                   p.description, p.created_at
+            FROM kwv_points p
+            JOIN kwv_users u ON p.user_id = u.id
+            {where} ORDER BY p.created_at DESC LIMIT %s OFFSET %s
+        """, params + [per_page, offset])
+        items = [{
+            "id": r[0], "user_id": r[1], "user_name": r[2], "points": r[3],
+            "point_type": r[4], "description": r[5],
+            "created_at": r[6].isoformat() if r[6] else None
+        } for r in cursor.fetchall()]
+        return {"items": items, "total": total, "page": page, "per_page": per_page}
+    finally:
+        conn.close()
+
+@router.post("/points/admin/adjust")
+async def admin_adjust_points(request: Request, user: dict = Depends(get_current_user)):
+    """관리자 포인트 수동 조정"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    target_user_id = body.get("user_id")
+    points = body.get("points", 0)
+    description = body.get("description", "관리자 수동 조정")
+    if not target_user_id or not points:
+        raise HTTPException(status_code=400, detail="user_id, points 필요")
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        admin_id = user.get("user_id") or user.get("sub")
+        cursor.execute("""
+            INSERT INTO kwv_points (user_id, points, point_type, description, created_by)
+            VALUES (%s, %s, 'admin', %s, %s)
+        """, (target_user_id, points, description, admin_id))
+        conn.commit()
+        return {"message": f"{points}포인트가 조정되었습니다"}
+    finally:
+        conn.close()
+
+@router.get("/point-rules")
+async def get_point_rules(user: dict = Depends(get_current_user)):
+    """포인트 규칙 조회"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, rule_key, rule_name, points, description, is_active FROM kwv_point_rules ORDER BY id")
+        return [{
+            "id": r[0], "rule_key": r[1], "rule_name": r[2], "points": r[3],
+            "description": r[4], "is_active": bool(r[5])
+        } for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+@router.put("/point-rules/{rule_id}")
+async def update_point_rule(rule_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """포인트 규칙 수정"""
+    require_admin_level(user, 9)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        allowed = ['points', 'rule_name', 'description', 'is_active']
+        sets, params = [], []
+        for k, v in body.items():
+            if k in allowed:
+                sets.append(f"{k} = %s")
+                params.append(v)
+        if not sets:
+            raise HTTPException(status_code=400, detail="수정할 항목이 없습니다")
+        params.append(rule_id)
+        cursor.execute(f"UPDATE kwv_point_rules SET {', '.join(sets)} WHERE id = %s", params)
+        conn.commit()
+        return {"message": "포인트 규칙이 수정되었습니다"}
+    finally:
+        conn.close()
+
 # ==================== Health Check ====================
 
 @router.get("/health")
@@ -2368,7 +2738,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": "KoreaWorkingVisa API",
-        "version": "1.4.20260214",
+        "version": "1.5.20260214",
         "mock_mode": MOCK_MODE,
         "jwt_available": JWT_AVAILABLE,
         "bcrypt_available": BCRYPT_AVAILABLE,
