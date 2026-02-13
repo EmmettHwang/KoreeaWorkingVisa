@@ -6,15 +6,17 @@ KoreaWorkingVisa API 모듈
 - JWT 토큰 기반 인증
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header, UploadFile, File, Form, Request
+from fastapi import APIRouter, HTTPException, Depends, Header, UploadFile, File, Form, Request, Body
 from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from typing import Optional, List
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import os
 import json
 import hashlib
 import secrets
+import pymysql
+import pymysql.cursors
 import uuid
 import base64
 import httpx
@@ -2940,6 +2942,835 @@ async def delete_counseling(counsel_id: int, user: dict = Depends(get_current_us
     finally:
         conn.close()
 
+# ==================== Phase 7: 리포트 + Excel/PDF ====================
+
+from fastapi.responses import StreamingResponse
+import csv
+import io
+
+try:
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+
+@router.get("/reports/attendance/excel")
+async def export_attendance_excel(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    workplace_id: Optional[int] = None,
+    user: dict = Depends(get_current_user)
+):
+    """출퇴근 기록 Excel 다운로드"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        where = "WHERE 1=1"
+        params = []
+        if date_from:
+            where += " AND DATE(a.check_time) >= %s"
+            params.append(date_from)
+        if date_to:
+            where += " AND DATE(a.check_time) <= %s"
+            params.append(date_to)
+        if workplace_id:
+            where += " AND a.workplace_id = %s"
+            params.append(workplace_id)
+        cursor.execute(f"""
+            SELECT u.name, u.email, va.nationality, va.visa_type,
+                   w.name as workplace, a.check_type, a.check_method,
+                   a.check_time, a.is_valid, a.distance_from_workplace, a.invalid_reason
+            FROM kwv_attendance a
+            JOIN kwv_users u ON a.user_id = u.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            JOIN kwv_workplaces w ON a.workplace_id = w.id
+            {where} ORDER BY a.check_time DESC
+        """, params)
+        rows = cursor.fetchall()
+
+        if OPENPYXL_AVAILABLE:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "출퇴근기록"
+            headers = ['이름','이메일','국적','비자','사업장','유형','방법','시간','유효','거리(m)','비고']
+            header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+            header_font = Font(color="FFFFFF", bold=True, size=11)
+            thin_border = Border(
+                left=Side(style='thin'), right=Side(style='thin'),
+                top=Side(style='thin'), bottom=Side(style='thin')
+            )
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=h)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+            type_map = {'check_in':'출근','check_out':'퇴근'}
+            method_map = {'qr':'QR','gps':'GPS','manual':'수동','admin':'관리자'}
+            for i, r in enumerate(rows, 2):
+                vals = [r[0], r[1], r[2], r[3], r[4],
+                        type_map.get(r[5], r[5]), method_map.get(r[6], r[6]),
+                        r[7].strftime('%Y-%m-%d %H:%M') if r[7] else '',
+                        '유효' if r[8] else '이탈', r[9] or '', r[10] or '']
+                for col, v in enumerate(vals, 1):
+                    cell = ws.cell(row=i, column=col, value=v)
+                    cell.border = thin_border
+            for col in range(1, len(headers)+1):
+                ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 15
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            filename = f"attendance_{date_from or 'all'}_{date_to or 'all'}.xlsx"
+            return StreamingResponse(output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename={filename}"})
+        else:
+            # CSV fallback
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(['이름','이메일','국적','비자','사업장','유형','방법','시간','유효','거리','비고'])
+            for r in rows:
+                writer.writerow([r[0], r[1], r[2], r[3], r[4], r[5], r[6],
+                    r[7].strftime('%Y-%m-%d %H:%M') if r[7] else '', '유효' if r[8] else '이탈', r[9] or '', r[10] or ''])
+            return StreamingResponse(io.BytesIO(output.getvalue().encode('utf-8-sig')),
+                media_type="text/csv",
+                headers={"Content-Disposition": "attachment; filename=attendance.csv"})
+    finally:
+        conn.close()
+
+@router.get("/reports/applicants/excel")
+async def export_applicants_excel(
+    is_approved: Optional[str] = None,
+    nationality: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """지원자 목록 Excel 다운로드"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        where = "WHERE u.user_type = 'applicant'"
+        params = []
+        if is_approved == 'true':
+            where += " AND u.is_approved = 1"
+        elif is_approved == 'false':
+            where += " AND u.is_approved = 0"
+        if nationality:
+            where += " AND va.nationality = %s"
+            params.append(nationality)
+        cursor.execute(f"""
+            SELECT u.id, u.name, u.email, u.phone, va.nationality, va.visa_type,
+                   va.passport_number, va.birth_date, va.gender,
+                   u.is_approved, lg.name as lg_name, u.created_at
+            FROM kwv_users u
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            LEFT JOIN kwv_local_governments lg ON u.local_government_id = lg.id
+            {where} ORDER BY u.created_at DESC
+        """, params)
+        rows = cursor.fetchall()
+
+        if OPENPYXL_AVAILABLE:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "지원자목록"
+            headers = ['ID','이름','이메일','전화번호','국적','비자','여권번호','생년월일','성별','승인','배정지자체','가입일']
+            header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+            header_font = Font(color="FFFFFF", bold=True, size=11)
+            thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=h)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+            gender_map = {'male':'남','female':'여'}
+            for i, r in enumerate(rows, 2):
+                vals = [r[0], r[1], r[2], r[3], r[4], r[5], r[6],
+                        r[7].strftime('%Y-%m-%d') if r[7] else '',
+                        gender_map.get(r[8], r[8] or ''),
+                        '승인' if r[9] else '대기', r[10] or '',
+                        r[11].strftime('%Y-%m-%d') if r[11] else '']
+                for col, v in enumerate(vals, 1):
+                    cell = ws.cell(row=i, column=col, value=v)
+                    cell.border = thin_border
+            for col in range(1, len(headers)+1):
+                ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 15
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            return StreamingResponse(output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": "attachment; filename=applicants.xlsx"})
+        else:
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(headers)
+            for r in rows:
+                writer.writerow(r)
+            return StreamingResponse(io.BytesIO(output.getvalue().encode('utf-8-sig')),
+                media_type="text/csv",
+                headers={"Content-Disposition": "attachment; filename=applicants.csv"})
+    finally:
+        conn.close()
+
+@router.get("/reports/points/excel")
+async def export_points_excel(user: dict = Depends(get_current_user)):
+    """포인트 내역 Excel 다운로드"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT u.name, u.email, va.nationality, p.points, p.point_type,
+                   p.description, p.created_at
+            FROM kwv_points p
+            JOIN kwv_users u ON p.user_id = u.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            ORDER BY p.created_at DESC
+        """)
+        rows = cursor.fetchall()
+        if OPENPYXL_AVAILABLE:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "포인트내역"
+            headers = ['이름','이메일','국적','포인트','유형','설명','일시']
+            header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+            header_font = Font(color="FFFFFF", bold=True, size=11)
+            thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=h)
+                cell.fill = header_fill; cell.font = header_font
+                cell.alignment = Alignment(horizontal='center'); cell.border = thin_border
+            type_map = {'attendance':'출퇴근','activity':'활동','training':'교육','community':'봉사','bonus':'보너스','penalty':'패널티','admin':'관리자'}
+            for i, r in enumerate(rows, 2):
+                vals = [r[0], r[1], r[2], r[3], type_map.get(r[4],r[4]), r[5],
+                        r[6].strftime('%Y-%m-%d %H:%M') if r[6] else '']
+                for col, v in enumerate(vals, 1):
+                    cell = ws.cell(row=i, column=col, value=v); cell.border = thin_border
+            for col in range(1, len(headers)+1):
+                ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 15
+            output = io.BytesIO()
+            wb.save(output); output.seek(0)
+            return StreamingResponse(output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": "attachment; filename=points.xlsx"})
+        else:
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(['이름','이메일','국적','포인트','유형','설명','일시'])
+            for r in rows: writer.writerow(r)
+            return StreamingResponse(io.BytesIO(output.getvalue().encode('utf-8-sig')),
+                media_type="text/csv", headers={"Content-Disposition": "attachment; filename=points.csv"})
+    finally:
+        conn.close()
+
+@router.get("/reports/counseling/excel")
+async def export_counseling_excel(user: dict = Depends(get_current_user)):
+    """상담일지 Excel 다운로드"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT u.name, va.nationality, co.name as counselor,
+                   c.counseling_date, c.counseling_type, c.category,
+                   c.title, c.content, c.action_taken, c.severity, c.status,
+                   c.follow_up_date, c.is_confidential
+            FROM kwv_counseling c
+            JOIN kwv_users u ON c.user_id = u.id
+            JOIN kwv_users co ON c.counselor_id = co.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            ORDER BY c.counseling_date DESC
+        """)
+        rows = cursor.fetchall()
+        if OPENPYXL_AVAILABLE:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "상담일지"
+            headers = ['근로자','국적','상담사','날짜','방식','분류','제목','내용','조치','심각도','상태','후속상담일','기밀']
+            header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+            header_font = Font(color="FFFFFF", bold=True, size=11)
+            thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=h)
+                cell.fill = header_fill; cell.font = header_font
+                cell.alignment = Alignment(horizontal='center'); cell.border = thin_border
+            cat_map = {'work':'근무','health':'건강','legal':'법률','housing':'숙소','salary':'급여','homesick':'향수병','conflict':'갈등','other':'기타'}
+            sev_map = {'low':'낮음','medium':'보통','high':'높음','urgent':'긴급'}
+            st_map = {'open':'진행중','in_progress':'처리중','resolved':'해결','closed':'종료'}
+            type_map = {'in_person':'대면','phone':'전화','video':'화상','text':'문자'}
+            for i, r in enumerate(rows, 2):
+                vals = [r[0], r[1], r[2],
+                        r[3].strftime('%Y-%m-%d') if r[3] else '',
+                        type_map.get(r[4],r[4]), cat_map.get(r[5],r[5]),
+                        r[6], r[7], r[8], sev_map.get(r[9],r[9]), st_map.get(r[10],r[10]),
+                        r[11].strftime('%Y-%m-%d') if r[11] else '',
+                        'Y' if r[12] else 'N']
+                for col, v in enumerate(vals, 1):
+                    cell = ws.cell(row=i, column=col, value=v); cell.border = thin_border
+            for col in range(1, len(headers)+1):
+                ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 16
+            output = io.BytesIO()
+            wb.save(output); output.seek(0)
+            return StreamingResponse(output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": "attachment; filename=counseling.xlsx"})
+        else:
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(headers)
+            for r in rows: writer.writerow(r)
+            return StreamingResponse(io.BytesIO(output.getvalue().encode('utf-8-sig')),
+                media_type="text/csv", headers={"Content-Disposition": "attachment; filename=counseling.csv"})
+    finally:
+        conn.close()
+
+@router.get("/reports/dashboard")
+async def dashboard_report(user: dict = Depends(get_current_user)):
+    """종합 대시보드 리포트 데이터"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {}
+    try:
+        cursor = conn.cursor()
+        # 총 근로자
+        cursor.execute("SELECT COUNT(*) FROM kwv_users WHERE user_type='applicant'")
+        total_workers = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM kwv_users WHERE user_type='applicant' AND is_approved=1")
+        approved_workers = cursor.fetchone()[0]
+        # 총 사업장
+        cursor.execute("SELECT COUNT(*) FROM kwv_workplaces WHERE is_active=1")
+        total_workplaces = cursor.fetchone()[0]
+        # 총 지자체
+        cursor.execute("SELECT COUNT(*) FROM kwv_local_governments WHERE is_active=1")
+        total_lgs = cursor.fetchone()[0]
+        # MOU
+        cursor.execute("SELECT COUNT(*) FROM kwv_mou_agreements WHERE status='active'")
+        active_mous = cursor.fetchone()[0]
+        # 오늘 출근
+        cursor.execute("SELECT COUNT(DISTINCT user_id) FROM kwv_attendance WHERE check_type='check_in' AND DATE(check_time)=CURDATE()")
+        today_checkins = cursor.fetchone()[0]
+        # 포인트 총합
+        cursor.execute("SELECT COALESCE(SUM(points),0) FROM kwv_points")
+        total_points = cursor.fetchone()[0]
+        # 상담
+        cursor.execute("SELECT COUNT(*) FROM kwv_counseling WHERE status IN ('open','in_progress')")
+        open_counseling = cursor.fetchone()[0]
+        return {
+            "total_workers": total_workers,
+            "approved_workers": approved_workers,
+            "total_workplaces": total_workplaces,
+            "total_lgs": total_lgs,
+            "active_mous": active_mous,
+            "today_checkins": today_checkins,
+            "total_points_issued": int(total_points),
+            "open_counseling": open_counseling
+        }
+    finally:
+        conn.close()
+
+# ==================== Phase 8: 이상감지 + 알림 ====================
+
+# --- 이상감지 스캔 ---
+@router.post("/admin/anomalies/scan")
+async def scan_anomalies(user: dict = Depends(get_current_user)):
+    """이상감지 규칙 기반 스캔"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(500, "DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # 활성 규칙 로드
+        cursor.execute("SELECT * FROM kwv_anomaly_rules WHERE is_active=1")
+        rules = {r['rule_key']: r for r in cursor.fetchall()}
+
+        detected = []
+        today = datetime.now().date()
+
+        # 규칙1: 3일 연속 결근
+        rule = rules.get('absent_3days')
+        if rule:
+            threshold = rule['threshold'] or 3
+            cursor.execute("""
+                SELECT u.id, u.name, u.email,
+                    (SELECT MAX(DATE(check_time)) FROM kwv_attendance WHERE user_id=u.id AND check_type='check_in') as last_checkin
+                FROM kwv_users u
+                WHERE u.user_type='applicant' AND u.is_active=1 AND u.is_approved=1
+            """)
+            workers = cursor.fetchall()
+            for w in workers:
+                last = w['last_checkin']
+                if last and (today - last).days >= threshold:
+                    days_absent = (today - last).days
+                    # 중복 체크
+                    cursor.execute("""
+                        SELECT id FROM kwv_anomalies WHERE user_id=%s AND anomaly_type='absent_streak'
+                        AND status IN ('detected','reviewing') AND DATE(created_at)=CURDATE()
+                    """, (w['id'],))
+                    if not cursor.fetchone():
+                        cursor.execute("""
+                            INSERT INTO kwv_anomalies (user_id, anomaly_type, score, description, details)
+                            VALUES (%s, 'absent_streak', %s, %s, %s)
+                        """, (w['id'], rule['score'],
+                              f"{w['name']} - {days_absent}일 연속 결근",
+                              json.dumps({"days_absent": days_absent, "last_checkin": str(last)})))
+                        detected.append({"user": w['name'], "type": "absent_streak", "days": days_absent})
+
+        # 규칙2: GPS 이탈 (최근 7일)
+        rule = rules.get('gps_violation')
+        if rule:
+            cursor.execute("""
+                SELECT a.user_id, u.name, COUNT(*) as cnt
+                FROM kwv_attendance a
+                JOIN kwv_users u ON u.id=a.user_id
+                WHERE a.is_valid=0 AND a.check_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                GROUP BY a.user_id
+                HAVING cnt >= 2
+            """)
+            for row in cursor.fetchall():
+                cursor.execute("""
+                    SELECT id FROM kwv_anomalies WHERE user_id=%s AND anomaly_type='gps_violation'
+                    AND status IN ('detected','reviewing') AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                """, (row['user_id'],))
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        INSERT INTO kwv_anomalies (user_id, anomaly_type, score, description, details)
+                        VALUES (%s, 'gps_violation', %s, %s, %s)
+                    """, (row['user_id'], rule['score'],
+                          f"{row['name']} - 최근 7일 GPS 이탈 {row['cnt']}회",
+                          json.dumps({"violation_count": row['cnt']})))
+                    detected.append({"user": row['name'], "type": "gps_violation", "count": row['cnt']})
+
+        # 규칙3: 미퇴근 3회 이상 (최근 14일)
+        rule = rules.get('no_checkout_3')
+        if rule:
+            threshold = rule['threshold'] or 3
+            cursor.execute("""
+                SELECT ci.user_id, u.name, COUNT(*) as cnt
+                FROM kwv_attendance ci
+                JOIN kwv_users u ON u.id=ci.user_id
+                LEFT JOIN kwv_attendance co ON co.user_id=ci.user_id
+                    AND co.check_type='check_out' AND DATE(co.check_time)=DATE(ci.check_time)
+                WHERE ci.check_type='check_in' AND ci.check_time >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+                    AND co.id IS NULL
+                GROUP BY ci.user_id
+                HAVING cnt >= %s
+            """, (threshold,))
+            for row in cursor.fetchall():
+                cursor.execute("""
+                    SELECT id FROM kwv_anomalies WHERE user_id=%s AND anomaly_type='no_checkout'
+                    AND status IN ('detected','reviewing') AND created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+                """, (row['user_id'],))
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        INSERT INTO kwv_anomalies (user_id, anomaly_type, score, description, details)
+                        VALUES (%s, 'no_checkout', %s, %s, %s)
+                    """, (row['user_id'], rule['score'],
+                          f"{row['name']} - 최근 14일 미퇴근 {row['cnt']}회",
+                          json.dumps({"no_checkout_count": row['cnt']})))
+                    detected.append({"user": row['name'], "type": "no_checkout", "count": row['cnt']})
+
+        conn.commit()
+
+        # 감지된 이상에 대해 관리자 알림 생성
+        if detected:
+            cursor.execute("SELECT id FROM kwv_users WHERE admin_level >= 5")
+            admins = cursor.fetchall()
+            for admin in admins:
+                cursor.execute("""
+                    INSERT INTO kwv_notifications (user_id, title, message, notification_type, reference_type)
+                    VALUES (%s, %s, %s, 'warning', 'anomaly')
+                """, (admin['id'],
+                      f"이상감지 스캔: {len(detected)}건 발견",
+                      f"스캔 결과 {len(detected)}건의 이상 행동이 감지되었습니다."))
+            conn.commit()
+
+        return {"scanned": True, "detected_count": len(detected), "details": detected}
+    finally:
+        conn.close()
+
+@router.get("/admin/anomalies")
+async def list_anomalies(
+    status: str = None, anomaly_type: str = None,
+    page: int = 1, per_page: int = 20,
+    user: dict = Depends(get_current_user)
+):
+    """이상감지 목록"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": [], "total": 0}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        where = ["1=1"]
+        params = []
+        if status:
+            where.append("a.status=%s")
+            params.append(status)
+        if anomaly_type:
+            where.append("a.anomaly_type=%s")
+            params.append(anomaly_type)
+
+        w = " AND ".join(where)
+        cursor.execute(f"SELECT COUNT(*) as cnt FROM kwv_anomalies a WHERE {w}", params)
+        total = cursor.fetchone()['cnt']
+
+        offset = (page - 1) * per_page
+        cursor.execute(f"""
+            SELECT a.*, u.name as user_name, u.email as user_email,
+                   r.name as resolver_name
+            FROM kwv_anomalies a
+            JOIN kwv_users u ON u.id=a.user_id
+            LEFT JOIN kwv_users r ON r.id=a.resolved_by
+            WHERE {w}
+            ORDER BY a.score DESC, a.created_at DESC
+            LIMIT %s OFFSET %s
+        """, params + [per_page, offset])
+        items = cursor.fetchall()
+        for item in items:
+            for k, v in item.items():
+                if isinstance(v, (datetime, date)):
+                    item[k] = v.isoformat()
+                if k == 'details' and isinstance(v, str):
+                    try:
+                        item[k] = json.loads(v)
+                    except:
+                        pass
+        return {"items": items, "total": total, "page": page, "per_page": per_page}
+    finally:
+        conn.close()
+
+@router.put("/admin/anomalies/{anomaly_id}/resolve")
+async def resolve_anomaly(anomaly_id: int, body: dict = Body(...), user: dict = Depends(get_current_user)):
+    """이상감지 해결 처리"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(500, "DB 연결 실패")
+    try:
+        cursor = conn.cursor()
+        new_status = body.get("status", "resolved")
+        note = body.get("note", "")
+        cursor.execute("""
+            UPDATE kwv_anomalies SET status=%s, resolved_by=%s, resolved_at=NOW(), resolve_note=%s
+            WHERE id=%s
+        """, (new_status, int(user['sub']), note, anomaly_id))
+        conn.commit()
+        return {"success": True}
+    finally:
+        conn.close()
+
+@router.get("/admin/anomalies/summary")
+async def anomaly_summary(user: dict = Depends(get_current_user)):
+    """이상감지 요약"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("SELECT COUNT(*) as cnt FROM kwv_anomalies WHERE status IN ('detected','reviewing')")
+        active = cursor.fetchone()['cnt']
+        cursor.execute("SELECT COUNT(*) as cnt FROM kwv_anomalies WHERE score >= 30 AND status IN ('detected','reviewing')")
+        high_risk = cursor.fetchone()['cnt']
+        cursor.execute("""
+            SELECT anomaly_type, COUNT(*) as cnt
+            FROM kwv_anomalies WHERE status IN ('detected','reviewing')
+            GROUP BY anomaly_type
+        """)
+        by_type = {r['anomaly_type']: r['cnt'] for r in cursor.fetchall()}
+        cursor.execute("SELECT COUNT(*) as cnt FROM kwv_anomalies WHERE status='resolved'")
+        resolved = cursor.fetchone()['cnt']
+        return {"active": active, "high_risk": high_risk, "resolved": resolved, "by_type": by_type}
+    finally:
+        conn.close()
+
+# --- 알림 ---
+@router.get("/notifications/my")
+async def my_notifications(page: int = 1, per_page: int = 20, user: dict = Depends(get_current_user)):
+    """내 알림 목록"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": [], "total": 0}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("SELECT COUNT(*) as cnt FROM kwv_notifications WHERE user_id=%s", (int(user['sub']),))
+        total = cursor.fetchone()['cnt']
+        offset = (page - 1) * per_page
+        cursor.execute("""
+            SELECT * FROM kwv_notifications WHERE user_id=%s
+            ORDER BY created_at DESC LIMIT %s OFFSET %s
+        """, (int(user['sub']), per_page, offset))
+        items = cursor.fetchall()
+        for item in items:
+            for k, v in item.items():
+                if isinstance(v, (datetime, date)):
+                    item[k] = v.isoformat()
+        return {"items": items, "total": total}
+    finally:
+        conn.close()
+
+@router.get("/notifications/my/unread-count")
+async def unread_count(user: dict = Depends(get_current_user)):
+    """안읽은 알림 수"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"count": 0}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("SELECT COUNT(*) as cnt FROM kwv_notifications WHERE user_id=%s AND is_read=0", (int(user['sub']),))
+        return {"count": cursor.fetchone()['cnt']}
+    finally:
+        conn.close()
+
+@router.put("/notifications/{noti_id}/read")
+async def mark_notification_read(noti_id: int, user: dict = Depends(get_current_user)):
+    """알림 읽음 처리"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(500, "DB 연결 실패")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE kwv_notifications SET is_read=1, read_at=NOW() WHERE id=%s AND user_id=%s", (noti_id, int(user['sub'])))
+        conn.commit()
+        return {"success": True}
+    finally:
+        conn.close()
+
+@router.put("/notifications/read-all")
+async def mark_all_read(user: dict = Depends(get_current_user)):
+    """모든 알림 읽음 처리"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(500, "DB 연결 실패")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE kwv_notifications SET is_read=1, read_at=NOW() WHERE user_id=%s AND is_read=0", (int(user['sub']),))
+        conn.commit()
+        return {"success": True, "updated": cursor.rowcount}
+    finally:
+        conn.close()
+
+@router.post("/admin/notifications/send")
+async def send_notification(body: dict = Body(...), user: dict = Depends(get_current_user)):
+    """관리자 알림 전송"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(500, "DB 연결 실패")
+    try:
+        cursor = conn.cursor()
+        target = body.get("target", "all")  # all, admins, user_id
+        title = body.get("title", "")
+        message = body.get("message", "")
+        ntype = body.get("type", "info")
+
+        if not title:
+            raise HTTPException(400, "제목을 입력하세요")
+
+        user_ids = []
+        if target == "all":
+            cursor.execute("SELECT id FROM kwv_users WHERE is_active=1")
+            user_ids = [r[0] for r in cursor.fetchall()]
+        elif target == "admins":
+            cursor.execute("SELECT id FROM kwv_users WHERE admin_level >= 5")
+            user_ids = [r[0] for r in cursor.fetchall()]
+        elif target == "workers":
+            cursor.execute("SELECT id FROM kwv_users WHERE user_type='applicant' AND is_active=1")
+            user_ids = [r[0] for r in cursor.fetchall()]
+        else:
+            try:
+                user_ids = [int(target)]
+            except:
+                raise HTTPException(400, "유효하지 않은 대상")
+
+        for uid in user_ids:
+            cursor.execute("""
+                INSERT INTO kwv_notifications (user_id, title, message, notification_type)
+                VALUES (%s, %s, %s, %s)
+            """, (uid, title, message, ntype))
+        conn.commit()
+        return {"success": True, "sent_count": len(user_ids)}
+    finally:
+        conn.close()
+
+# ==================== Phase 9: 보험 관리 ====================
+
+class InsuranceCreate(BaseModel):
+    user_id: int
+    insurance_type: str = "health"
+    provider: Optional[str] = None
+    policy_number: Optional[str] = None
+    start_date: str
+    end_date: str
+    premium: Optional[int] = 0
+    coverage: Optional[str] = None
+    status: Optional[str] = "active"
+    note: Optional[str] = None
+
+@router.post("/admin/insurance")
+async def create_insurance(ins: InsuranceCreate, user: dict = Depends(get_current_user)):
+    """보험 등록"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(500, "DB 연결 실패")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO kwv_insurance (user_id, insurance_type, provider, policy_number,
+                start_date, end_date, premium, coverage, status, note, created_by)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (ins.user_id, ins.insurance_type, ins.provider, ins.policy_number,
+              ins.start_date, ins.end_date, ins.premium, ins.coverage, ins.status,
+              ins.note, int(user['sub'])))
+        conn.commit()
+        return {"success": True, "id": cursor.lastrowid}
+    finally:
+        conn.close()
+
+@router.put("/admin/insurance/{ins_id}")
+async def update_insurance(ins_id: int, body: dict = Body(...), user: dict = Depends(get_current_user)):
+    """보험 수정"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(500, "DB 연결 실패")
+    try:
+        cursor = conn.cursor()
+        fields = []
+        params = []
+        for key in ['insurance_type','provider','policy_number','start_date','end_date','premium','coverage','status','note']:
+            if key in body:
+                fields.append(f"{key}=%s")
+                params.append(body[key])
+        if not fields:
+            raise HTTPException(400, "수정할 항목이 없습니다")
+        params.append(ins_id)
+        cursor.execute(f"UPDATE kwv_insurance SET {','.join(fields)} WHERE id=%s", params)
+        conn.commit()
+        return {"success": True}
+    finally:
+        conn.close()
+
+@router.delete("/admin/insurance/{ins_id}")
+async def delete_insurance(ins_id: int, user: dict = Depends(get_current_user)):
+    """보험 삭제"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(500, "DB 연결 실패")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM kwv_insurance WHERE id=%s", (ins_id,))
+        conn.commit()
+        return {"success": True}
+    finally:
+        conn.close()
+
+@router.get("/admin/insurance")
+async def list_insurance(
+    user_id: int = None, insurance_type: str = None, status: str = None,
+    page: int = 1, per_page: int = 20,
+    user: dict = Depends(get_current_user)
+):
+    """보험 목록 (관리자)"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": [], "total": 0}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        where = ["1=1"]
+        params = []
+        if user_id:
+            where.append("i.user_id=%s"); params.append(user_id)
+        if insurance_type:
+            where.append("i.insurance_type=%s"); params.append(insurance_type)
+        if status:
+            where.append("i.status=%s"); params.append(status)
+
+        w = " AND ".join(where)
+        cursor.execute(f"SELECT COUNT(*) as cnt FROM kwv_insurance i WHERE {w}", params)
+        total = cursor.fetchone()['cnt']
+
+        offset = (page - 1) * per_page
+        cursor.execute(f"""
+            SELECT i.*, u.name as user_name, u.email as user_email
+            FROM kwv_insurance i
+            JOIN kwv_users u ON u.id=i.user_id
+            WHERE {w}
+            ORDER BY i.end_date ASC
+            LIMIT %s OFFSET %s
+        """, params + [per_page, offset])
+        items = cursor.fetchall()
+        for item in items:
+            for k, v in item.items():
+                if isinstance(v, (datetime, date)):
+                    item[k] = v.isoformat()
+                if isinstance(v, type(None)):
+                    pass
+        return {"items": items, "total": total, "page": page}
+    finally:
+        conn.close()
+
+@router.get("/admin/insurance/expiring")
+async def expiring_insurance(days: int = 30, user: dict = Depends(get_current_user)):
+    """만료 임박 보험"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": []}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT i.*, u.name as user_name, u.email as user_email
+            FROM kwv_insurance i
+            JOIN kwv_users u ON u.id=i.user_id
+            WHERE i.status='active' AND i.end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL %s DAY)
+            ORDER BY i.end_date ASC
+        """, (days,))
+        items = cursor.fetchall()
+        for item in items:
+            for k, v in item.items():
+                if isinstance(v, (datetime, date)):
+                    item[k] = v.isoformat()
+        return {"items": items, "total": len(items)}
+    finally:
+        conn.close()
+
+@router.get("/insurance/my")
+async def my_insurance(user: dict = Depends(get_current_user)):
+    """내 보험 목록"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": []}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT * FROM kwv_insurance WHERE user_id=%s ORDER BY end_date DESC
+        """, (int(user['sub']),))
+        items = cursor.fetchall()
+        for item in items:
+            for k, v in item.items():
+                if isinstance(v, (datetime, date)):
+                    item[k] = v.isoformat()
+        return {"items": items}
+    finally:
+        conn.close()
+
 # ==================== Health Check ====================
 
 @router.get("/health")
@@ -2948,7 +3779,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": "KoreaWorkingVisa API",
-        "version": "1.6.20260214",
+        "version": "1.9.20260214",
         "mock_mode": MOCK_MODE,
         "jwt_available": JWT_AVAILABLE,
         "bcrypt_available": BCRYPT_AVAILABLE,
