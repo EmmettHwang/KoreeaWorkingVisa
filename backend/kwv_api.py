@@ -2730,6 +2730,216 @@ async def update_point_rule(rule_id: int, request: Request, user: dict = Depends
     finally:
         conn.close()
 
+# ==================== Phase 6: 상담일지 ====================
+
+class CounselingCreate(BaseModel):
+    user_id: int
+    counseling_date: str
+    counseling_type: str = "in_person"
+    category: str = "other"
+    title: str
+    content: Optional[str] = None
+    action_taken: Optional[str] = None
+    follow_up_date: Optional[str] = None
+    follow_up_note: Optional[str] = None
+    severity: str = "low"
+    is_confidential: bool = False
+
+@router.get("/counseling")
+async def list_counseling(
+    user_id: Optional[int] = None,
+    category: Optional[str] = None,
+    severity: Optional[str] = None,
+    status: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    page: int = 1,
+    per_page: int = 30,
+    user: dict = Depends(get_current_user)
+):
+    """상담일지 목록"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": [], "total": 0}
+    try:
+        cursor = conn.cursor()
+        where = "WHERE 1=1"
+        params = []
+        if user_id:
+            where += " AND c.user_id = %s"
+            params.append(user_id)
+        if category:
+            where += " AND c.category = %s"
+            params.append(category)
+        if severity:
+            where += " AND c.severity = %s"
+            params.append(severity)
+        if status:
+            where += " AND c.status = %s"
+            params.append(status)
+        if date_from:
+            where += " AND c.counseling_date >= %s"
+            params.append(date_from)
+        if date_to:
+            where += " AND c.counseling_date <= %s"
+            params.append(date_to)
+        cursor.execute(f"SELECT COUNT(*) FROM kwv_counseling c {where}", params)
+        total = cursor.fetchone()[0]
+        offset = (page - 1) * per_page
+        cursor.execute(f"""
+            SELECT c.id, c.user_id, u.name as user_name, va.nationality,
+                   c.counselor_id, co.name as counselor_name,
+                   c.counseling_date, c.counseling_type, c.category, c.title,
+                   c.severity, c.status, c.follow_up_date, c.is_confidential, c.created_at
+            FROM kwv_counseling c
+            JOIN kwv_users u ON c.user_id = u.id
+            JOIN kwv_users co ON c.counselor_id = co.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            {where} ORDER BY c.counseling_date DESC, c.created_at DESC LIMIT %s OFFSET %s
+        """, params + [per_page, offset])
+        items = [{
+            "id": r[0], "user_id": r[1], "user_name": r[2], "nationality": r[3],
+            "counselor_id": r[4], "counselor_name": r[5],
+            "counseling_date": r[6].isoformat() if r[6] else None,
+            "counseling_type": r[7], "category": r[8], "title": r[9],
+            "severity": r[10], "status": r[11],
+            "follow_up_date": r[12].isoformat() if r[12] else None,
+            "is_confidential": bool(r[13]),
+            "created_at": r[14].isoformat() if r[14] else None
+        } for r in cursor.fetchall()]
+        return {"items": items, "total": total, "page": page, "per_page": per_page}
+    finally:
+        conn.close()
+
+@router.get("/counseling/summary")
+async def counseling_summary(user: dict = Depends(get_current_user)):
+    """상담 통계"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {}
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM kwv_counseling")
+        total = cursor.fetchone()[0]
+        cursor.execute("SELECT status, COUNT(*) FROM kwv_counseling GROUP BY status")
+        by_status = {r[0]: r[1] for r in cursor.fetchall()}
+        cursor.execute("SELECT category, COUNT(*) FROM kwv_counseling GROUP BY category ORDER BY COUNT(*) DESC")
+        by_category = {r[0]: r[1] for r in cursor.fetchall()}
+        cursor.execute("SELECT severity, COUNT(*) FROM kwv_counseling GROUP BY severity")
+        by_severity = {r[0]: r[1] for r in cursor.fetchall()}
+        cursor.execute("SELECT COUNT(*) FROM kwv_counseling WHERE follow_up_date IS NOT NULL AND follow_up_date <= CURDATE() AND status IN ('open','in_progress')")
+        overdue = cursor.fetchone()[0]
+        return {
+            "total": total, "by_status": by_status, "by_category": by_category,
+            "by_severity": by_severity, "overdue_followups": overdue
+        }
+    finally:
+        conn.close()
+
+@router.get("/counseling/{counsel_id}")
+async def get_counseling(counsel_id: int, user: dict = Depends(get_current_user)):
+    """상담일지 상세"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT c.*, u.name as user_name, co.name as counselor_name, va.nationality
+            FROM kwv_counseling c
+            JOIN kwv_users u ON c.user_id = u.id
+            JOIN kwv_users co ON c.counselor_id = co.id
+            LEFT JOIN kwv_visa_applicants va ON va.user_id = u.id
+            WHERE c.id = %s
+        """, (counsel_id,))
+        r = cursor.fetchone()
+        if not r:
+            raise HTTPException(status_code=404, detail="상담일지를 찾을 수 없습니다")
+        cols = [d[0] for d in cursor.description]
+        result = {}
+        for i, col in enumerate(cols):
+            val = r[i]
+            if hasattr(val, 'isoformat'):
+                val = val.isoformat()
+            if isinstance(val, bytes):
+                val = bool(val[0]) if len(val) == 1 else val.decode()
+            result[col] = val
+        return result
+    finally:
+        conn.close()
+
+@router.post("/counseling")
+async def create_counseling(data: CounselingCreate, user: dict = Depends(get_current_user)):
+    """상담일지 등록"""
+    require_admin_level(user, 2)
+    counselor_id = user.get("user_id") or user.get("sub")
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO kwv_counseling (user_id, counselor_id, counseling_date, counseling_type,
+                category, title, content, action_taken, follow_up_date, follow_up_note,
+                severity, is_confidential)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (data.user_id, counselor_id, data.counseling_date, data.counseling_type,
+              data.category, data.title, data.content, data.action_taken,
+              data.follow_up_date or None, data.follow_up_note,
+              data.severity, data.is_confidential))
+        conn.commit()
+        return {"id": cursor.lastrowid, "message": "상담일지가 등록되었습니다"}
+    finally:
+        conn.close()
+
+@router.put("/counseling/{counsel_id}")
+async def update_counseling(counsel_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """상담일지 수정"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        allowed = ['counseling_date','counseling_type','category','title','content',
+                    'action_taken','follow_up_date','follow_up_note','severity','status','is_confidential']
+        sets, params = [], []
+        for k, v in body.items():
+            if k in allowed:
+                sets.append(f"{k} = %s")
+                params.append(v)
+        if not sets:
+            raise HTTPException(status_code=400, detail="수정할 항목이 없습니다")
+        params.append(counsel_id)
+        cursor.execute(f"UPDATE kwv_counseling SET {', '.join(sets)} WHERE id = %s", params)
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="상담일지를 찾을 수 없습니다")
+        conn.commit()
+        return {"message": "상담일지가 수정되었습니다"}
+    finally:
+        conn.close()
+
+@router.delete("/counseling/{counsel_id}")
+async def delete_counseling(counsel_id: int, user: dict = Depends(get_current_user)):
+    """상담일지 삭제"""
+    require_admin_level(user, 9)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM kwv_counseling WHERE id = %s", (counsel_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="상담일지를 찾을 수 없습니다")
+        conn.commit()
+        return {"message": "상담일지가 삭제되었습니다"}
+    finally:
+        conn.close()
+
 # ==================== Health Check ====================
 
 @router.get("/health")
@@ -2738,7 +2948,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": "KoreaWorkingVisa API",
-        "version": "1.5.20260214",
+        "version": "1.6.20260214",
         "mock_mode": MOCK_MODE,
         "jwt_available": JWT_AVAILABLE,
         "bcrypt_available": BCRYPT_AVAILABLE,

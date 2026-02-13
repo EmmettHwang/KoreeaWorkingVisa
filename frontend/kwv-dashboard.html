@@ -305,6 +305,9 @@
                 <button onclick="showTab('points')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="points">
                     <i class="fas fa-star mr-2"></i><span>포인트</span>
                 </button>
+                <button onclick="showTab('counseling')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="counseling">
+                    <i class="fas fa-comments mr-2"></i><span>상담</span>
+                </button>
                 <button onclick="showTab('faq')" class="tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="faq">
                     <i class="fas fa-question-circle mr-2"></i><span data-i18n="tabFaq">FAQ</span>
                 </button>
@@ -1072,6 +1075,135 @@
                 <div class="flex justify-end gap-2 p-6 border-t">
                     <button onclick="document.getElementById('pointAdjustModal').style.display='none'" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200">취소</button>
                     <button onclick="submitPointAdjust()" class="px-6 py-2 bg-blue-500 text-white rounded-xl text-sm hover:bg-blue-600">조정</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 상담일지 탭 ==================== -->
+        <div id="tab-counseling" class="tab-content">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-3">
+                <h2 class="text-2xl font-bold text-gray-800">💬 상담일지</h2>
+                <button onclick="openCounselingModal()" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm hover:bg-blue-600 transition">
+                    <i class="fas fa-plus mr-1"></i>상담 등록
+                </button>
+            </div>
+            <!-- 요약 -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6" id="counselingSummary">
+                <div class="card p-4 text-center"><p class="text-2xl font-bold text-gray-800" id="csTotal">0</p><p class="text-xs text-gray-500">전체</p></div>
+                <div class="card p-4 text-center"><p class="text-2xl font-bold text-yellow-600" id="csOpen">0</p><p class="text-xs text-gray-500">진행중</p></div>
+                <div class="card p-4 text-center"><p class="text-2xl font-bold text-green-600" id="csResolved">0</p><p class="text-xs text-gray-500">해결</p></div>
+                <div class="card p-4 text-center"><p class="text-2xl font-bold text-red-500" id="csUrgent">0</p><p class="text-xs text-gray-500">긴급</p></div>
+                <div class="card p-4 text-center"><p class="text-2xl font-bold text-orange-500" id="csOverdue">0</p><p class="text-xs text-gray-500">후속상담 지연</p></div>
+            </div>
+            <!-- 필터 -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <select id="csStatusFilter" class="input-apple text-sm" onchange="loadCounselingList()">
+                    <option value="">전체 상태</option>
+                    <option value="open">진행중</option>
+                    <option value="resolved">해결</option>
+                    <option value="closed">종료</option>
+                </select>
+                <select id="csCategoryFilter" class="input-apple text-sm" onchange="loadCounselingList()">
+                    <option value="">전체 분류</option>
+                    <option value="work">근무</option><option value="health">건강</option>
+                    <option value="legal">법률</option><option value="housing">숙소</option>
+                    <option value="salary">급여</option><option value="homesick">향수병</option>
+                    <option value="conflict">갈등</option><option value="other">기타</option>
+                </select>
+                <select id="csSeverityFilter" class="input-apple text-sm" onchange="loadCounselingList()">
+                    <option value="">전체 심각도</option>
+                    <option value="low">낮음</option><option value="medium">보통</option>
+                    <option value="high">높음</option><option value="urgent">긴급</option>
+                </select>
+            </div>
+            <!-- 테이블 -->
+            <div class="card overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">근로자</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">날짜</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">분류</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">제목</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">심각도</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">상태</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">상담사</th>
+                        </tr>
+                    </thead>
+                    <tbody id="counselingTableBody">
+                        <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">상담 기록이 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 상담 등록/수정 모달 -->
+        <div id="counselingModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4" style="display:none;">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center p-6 border-b sticky top-0 bg-white rounded-t-2xl">
+                    <h3 class="font-bold text-lg text-gray-800" id="csModalTitle">상담 등록</h3>
+                    <button onclick="closeCounselingModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">근로자 ID <span class="text-red-500">*</span></label>
+                            <input type="number" id="csUserId" class="input-apple w-full" placeholder="사용자 ID">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">상담일 <span class="text-red-500">*</span></label>
+                            <input type="date" id="csDate" class="input-apple w-full">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">상담 방식</label>
+                            <select id="csType" class="input-apple w-full">
+                                <option value="in_person">대면</option><option value="phone">전화</option>
+                                <option value="video">화상</option><option value="text">문자</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">분류</label>
+                            <select id="csCategory" class="input-apple w-full">
+                                <option value="work">근무</option><option value="health">건강</option>
+                                <option value="legal">법률</option><option value="housing">숙소</option>
+                                <option value="salary">급여</option><option value="homesick">향수병</option>
+                                <option value="conflict">갈등</option><option value="other">기타</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-sm text-gray-600 mb-1 block">제목 <span class="text-red-500">*</span></label>
+                            <input type="text" id="csTitle" class="input-apple w-full" placeholder="상담 제목">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-sm text-gray-600 mb-1 block">상담 내용</label>
+                            <textarea id="csContent" class="input-apple w-full" rows="4" placeholder="상담 내용 기록..."></textarea>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-sm text-gray-600 mb-1 block">조치 사항</label>
+                            <textarea id="csAction" class="input-apple w-full" rows="2" placeholder="취한 조치 또는 계획..."></textarea>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">심각도</label>
+                            <select id="csSeverity" class="input-apple w-full">
+                                <option value="low">낮음</option><option value="medium">보통</option>
+                                <option value="high">높음</option><option value="urgent">긴급</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">후속 상담일</label>
+                            <input type="date" id="csFollowUp" class="input-apple w-full">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="csConfidential" class="w-4 h-4">
+                                <span class="text-sm text-gray-600">비공개 (기밀)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 p-6 border-t">
+                    <button onclick="closeCounselingModal()" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200">취소</button>
+                    <button onclick="saveCounseling()" id="csSaveBtn" class="px-6 py-2 bg-blue-500 text-white rounded-xl text-sm hover:bg-blue-600">저장</button>
                 </div>
             </div>
         </div>
@@ -4269,6 +4401,7 @@
             if (tabName === 'attendance') loadAttendanceTab();
             if (tabName === 'activities') loadActivities();
             if (tabName === 'points') loadPointsTab();
+            if (tabName === 'counseling') loadCounselingTab();
             if (tabName === 'dashboard') loadDashboardCharts();
         }
 
@@ -4735,6 +4868,136 @@
                 document.getElementById('pointAdjustModal').style.display = 'none';
                 loadPointsTab();
             } catch(e) { alert('포인트 조정 실패: ' + e.message); }
+        }
+
+        // ==================== 상담일지 JS ====================
+        const csCategoryLabels = {work:'근무',health:'건강',legal:'법률',housing:'숙소',salary:'급여',homesick:'향수병',conflict:'갈등',other:'기타'};
+        const csStatusLabels = {open:'진행중',in_progress:'처리중',resolved:'해결',closed:'종료'};
+        const csStatusColors = {open:'bg-yellow-100 text-yellow-700',in_progress:'bg-blue-100 text-blue-700',resolved:'bg-green-100 text-green-700',closed:'bg-gray-100 text-gray-500'};
+        const csSeverityLabels = {low:'낮음',medium:'보통',high:'높음',urgent:'긴급'};
+        const csSeverityColors = {low:'bg-gray-100 text-gray-600',medium:'bg-blue-100 text-blue-600',high:'bg-orange-100 text-orange-700',urgent:'bg-red-100 text-red-700'};
+        let csEditingId = null;
+
+        async function loadCounselingTab() {
+            await Promise.all([loadCounselingSummary(), loadCounselingList()]);
+        }
+
+        async function loadCounselingSummary() {
+            const token = sessionStorage.getItem('kwv_token');
+            if (!token) return;
+            try {
+                const res = await fetch(API_BASE + '/counseling/summary', {headers:{'Authorization':`Bearer ${token}`}});
+                const s = await res.json();
+                document.getElementById('csTotal').textContent = s.total || 0;
+                document.getElementById('csOpen').textContent = (s.by_status?.open||0) + (s.by_status?.in_progress||0);
+                document.getElementById('csResolved').textContent = (s.by_status?.resolved||0) + (s.by_status?.closed||0);
+                document.getElementById('csUrgent').textContent = s.by_severity?.urgent || 0;
+                document.getElementById('csOverdue').textContent = s.overdue_followups || 0;
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadCounselingList() {
+            const token = sessionStorage.getItem('kwv_token');
+            if (!token) return;
+            const status = document.getElementById('csStatusFilter')?.value || '';
+            const category = document.getElementById('csCategoryFilter')?.value || '';
+            const severity = document.getElementById('csSeverityFilter')?.value || '';
+            let url = API_BASE + '/counseling?per_page=50&';
+            if (status) url += `status=${status}&`;
+            if (category) url += `category=${category}&`;
+            if (severity) url += `severity=${severity}&`;
+            try {
+                const res = await fetch(url, {headers:{'Authorization':`Bearer ${token}`}});
+                const data = await res.json();
+                renderCounselingTable(data.items || []);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderCounselingTable(items) {
+            const body = document.getElementById('counselingTableBody');
+            if (!items.length) {
+                body.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">상담 기록이 없습니다.</td></tr>';
+                return;
+            }
+            body.innerHTML = items.map(c => {
+                const flag = countryFlags[c.nationality] || '';
+                return `<tr class="border-t hover:bg-gray-50 transition cursor-pointer" onclick="openCounselingModal(${c.id})">
+                    <td class="px-4 py-3"><div class="flex items-center gap-1">${flag}<span class="font-medium text-gray-800">${c.user_name}</span></div></td>
+                    <td class="px-4 py-3 text-xs text-gray-600">${c.counseling_date||''}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-1 rounded-lg text-xs bg-blue-50 text-blue-600">${csCategoryLabels[c.category]||c.category}</span></td>
+                    <td class="px-4 py-3 text-gray-800">${c.title}${c.is_confidential?'<i class="fas fa-lock text-red-400 ml-1 text-xs"></i>':''}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-1 rounded-lg text-xs ${csSeverityColors[c.severity]||''}">${csSeverityLabels[c.severity]||c.severity}</span></td>
+                    <td class="px-4 py-3"><span class="px-2 py-1 rounded-lg text-xs ${csStatusColors[c.status]||''}">${csStatusLabels[c.status]||c.status}</span></td>
+                    <td class="px-4 py-3 text-xs text-gray-500">${c.counselor_name}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function openCounselingModal(id = null) {
+            csEditingId = id;
+            document.getElementById('csModalTitle').textContent = id ? '상담 수정' : '상담 등록';
+            ['csUserId','csTitle','csContent','csAction','csFollowUp'].forEach(f => {
+                const el = document.getElementById(f);
+                if (el) el.value = '';
+            });
+            document.getElementById('csDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('csType').value = 'in_person';
+            document.getElementById('csCategory').value = 'other';
+            document.getElementById('csSeverity').value = 'low';
+            document.getElementById('csConfidential').checked = false;
+            if (id) {
+                const token = sessionStorage.getItem('kwv_token');
+                try {
+                    const res = await fetch(API_BASE + `/counseling/${id}`, {headers:{'Authorization':`Bearer ${token}`}});
+                    const c = await res.json();
+                    document.getElementById('csUserId').value = c.user_id || '';
+                    document.getElementById('csDate').value = c.counseling_date ? c.counseling_date.split('T')[0] : '';
+                    document.getElementById('csType').value = c.counseling_type || 'in_person';
+                    document.getElementById('csCategory').value = c.category || 'other';
+                    document.getElementById('csTitle').value = c.title || '';
+                    document.getElementById('csContent').value = c.content || '';
+                    document.getElementById('csAction').value = c.action_taken || '';
+                    document.getElementById('csSeverity').value = c.severity || 'low';
+                    document.getElementById('csFollowUp').value = c.follow_up_date ? c.follow_up_date.split('T')[0] : '';
+                    document.getElementById('csConfidential').checked = !!c.is_confidential;
+                } catch(e) { alert('상담 정보를 불러올 수 없습니다.'); return; }
+            }
+            document.getElementById('counselingModal').style.display = 'flex';
+        }
+
+        function closeCounselingModal() { document.getElementById('counselingModal').style.display = 'none'; csEditingId = null; }
+
+        async function saveCounseling() {
+            const token = sessionStorage.getItem('kwv_token');
+            const userId = document.getElementById('csUserId').value;
+            const title = document.getElementById('csTitle').value.trim();
+            const date = document.getElementById('csDate').value;
+            if (!userId || !title || !date) { alert('근로자 ID, 상담일, 제목을 입력하세요.'); return; }
+            const data = {
+                user_id: parseInt(userId), counseling_date: date,
+                counseling_type: document.getElementById('csType').value,
+                category: document.getElementById('csCategory').value,
+                title: title,
+                content: document.getElementById('csContent').value.trim() || null,
+                action_taken: document.getElementById('csAction').value.trim() || null,
+                severity: document.getElementById('csSeverity').value,
+                follow_up_date: document.getElementById('csFollowUp').value || null,
+                is_confidential: document.getElementById('csConfidential').checked
+            };
+            const btn = document.getElementById('csSaveBtn');
+            btn.disabled = true; btn.textContent = '저장 중...';
+            try {
+                const url = csEditingId ? API_BASE + `/counseling/${csEditingId}` : API_BASE + '/counseling';
+                const method = csEditingId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method, headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail||'저장 실패'); }
+                closeCounselingModal();
+                loadCounselingTab();
+            } catch(e) { alert('상담 저장 실패: ' + e.message); }
+            finally { btn.disabled = false; btn.textContent = '저장'; }
         }
 
         // ==================== MOU 관리 JS ====================
