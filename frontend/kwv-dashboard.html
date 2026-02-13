@@ -7209,52 +7209,7 @@
             updateRegionMapMarkers();
         }
 
-        // Legacy compatibility - keep old function signature but unused
-        function initRegionMapLegacy() {
-            const legendContainer = document.getElementById('mapLegend');
-            if (!legendContainer) return;
-            // Handled by updateRegionMapMarkers now
-                const markerIcon = L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div style="
-                        background: ${data.color};
-                        width: 40px;
-                        height: 40px;
-                        border-radius: 50% 50% 50% 0;
-                        transform: rotate(-45deg);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                        border: 3px solid white;
-                    ">
-                        <span style="transform: rotate(45deg); color: white; font-weight: bold; font-size: 12px;">${data.workers}</span>
-                    </div>`,
-                    iconSize: [40, 40],
-                    iconAnchor: [20, 40],
-                    popupAnchor: [0, -40]
-                });
-
-                const marker = L.marker([data.lat, data.lng], { icon: markerIcon }).addTo(regionMap);
-                regionMarkers[name] = marker;
-
-                // 팝업 내용
-                marker.bindPopup(getPopupContent(name, data));
-
-                // 범례 카드
-                legendContainer.innerHTML += `
-                    <div class="card p-4 cursor-pointer hover:shadow-lg transition" onclick="focusRegion('${name}')">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-4 h-4 rounded-full" style="background: ${data.color};"></div>
-                            <div>
-                                <p class="font-semibold text-gray-800">${t(name)}</p>
-                                <p class="text-sm text-gray-500">${data.workers}${t('unit_people')}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
+        // initRegionMapLegacy removed - replaced by updateRegionMapMarkers
 
         function getPopupContent(name, data) {
             return `
@@ -7792,7 +7747,7 @@
 
         // ==================== 등급별 UI 제어 ====================
         function applyGradePermissions(level) {
-            const permBtn = document.getElementById('permissionsTabBtn');
+            const permBtn = document.getElementById('permissionsTabBtn') || document.getElementById('menuGroupSystem');
 
             if (level === 0) {
                 // 미승인: "권한이 필요합니다" 오버레이 표시
