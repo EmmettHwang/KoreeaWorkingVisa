@@ -228,7 +228,7 @@
     <nav class="glass sticky top-0 z-50 border-b border-gray-200/50 desktop-only">
         <div class="max-w-7xl mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="showTab('dashboard')">
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--header-bg-start), var(--header-bg-end));">
                         <i class="fas fa-globe-asia text-white text-lg"></i>
                     </div>
@@ -328,7 +328,6 @@
                     </div>
                     <div class="menu-dropdown">
                         <a href="#" onclick="showTab('basicsettings');return false;" data-tab="basicsettings"><i class="fas fa-sliders-h"></i> 기본 설정</a>
-                        <a href="#" onclick="showTab('admins');return false;" data-tab="admins"><i class="fas fa-user-shield"></i> 관리자 관리</a>
                         <a href="#" onclick="showTab('permissions');return false;" data-tab="permissions"><i class="fas fa-shield-alt"></i> 권한 관리</a>
                         <a href="#" onclick="showTab('notices');return false;" data-tab="notices"><i class="fas fa-bullhorn"></i> 공지사항</a>
                         <a href="#" onclick="showTab('themesettings');return false;" data-tab="themesettings"><i class="fas fa-palette"></i> 테마 설정</a>
@@ -1214,8 +1213,14 @@
                 <div class="card p-4 text-center"><p class="text-2xl font-bold text-red-500" id="csUrgent">0</p><p class="text-xs text-gray-500">긴급</p></div>
                 <div class="card p-4 text-center"><p class="text-2xl font-bold text-orange-500" id="csOverdue">0</p><p class="text-xs text-gray-500">후속상담 지연</p></div>
             </div>
-            <!-- 필터 -->
+            <!-- 근로자 필터 + 상태 필터 -->
             <div class="flex flex-wrap gap-2 mb-4">
+                <select id="csWorkerFilter" class="input-apple text-sm" onchange="loadCounselingList()">
+                    <option value="">전체 근로자</option>
+                </select>
+                <select id="csLgFilter" class="input-apple text-sm" onchange="loadCounselingList()">
+                    <option value="">전체 지자체</option>
+                </select>
                 <select id="csStatusFilter" class="input-apple text-sm" onchange="loadCounselingList()">
                     <option value="">전체 상태</option>
                     <option value="open">진행중</option>
@@ -1234,6 +1239,7 @@
                     <option value="low">낮음</option><option value="medium">보통</option>
                     <option value="high">높음</option><option value="urgent">긴급</option>
                 </select>
+                <input type="text" id="csSearchFilter" class="input-apple text-sm" placeholder="근로자 검색..." onkeyup="loadCounselingList()">
             </div>
             <!-- 테이블 -->
             <div class="card overflow-x-auto">
@@ -1592,31 +1598,6 @@
         </div>
 
         <!-- ==================== 관리자 관리 탭 ==================== -->
-        <div id="tab-admins" class="tab-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">👨‍💼 관리자 관리</h2>
-                <button onclick="openAdminModal()" class="btn-primary text-sm" id="addAdminBtn" style="display:none;"><i class="fas fa-plus mr-2"></i>관리자 추가</button>
-            </div>
-            <div class="card overflow-hidden">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-gray-600">이름</th>
-                            <th class="px-4 py-3 text-left text-gray-600">이메일</th>
-                            <th class="px-4 py-3 text-center text-gray-600">소속</th>
-                            <th class="px-4 py-3 text-center text-gray-600">등급</th>
-                            <th class="px-4 py-3 text-center text-gray-600">상태</th>
-                            <th class="px-4 py-3 text-center text-gray-600">마지막 로그인</th>
-                            <th class="px-4 py-3 text-center text-gray-600">관리</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminsTableBody">
-                        <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>로딩 중...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
         <!-- ==================== 테마 설정 탭 (관리자 전용) ==================== -->
         <div id="tab-themesettings" class="tab-content">
             <div class="flex justify-between items-center mb-6">
@@ -1703,95 +1684,38 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div class="card p-5">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">전체 관리자</p>
-                            <p class="text-2xl font-bold text-gray-800">8</p>
-                        </div>
-                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-users text-blue-500 text-xl"></i>
-                        </div>
+                        <div><p class="text-xs text-gray-500 mb-1">전체 관리자</p><p class="text-2xl font-bold text-gray-800" id="permTotalAdmins">0</p></div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fas fa-users text-blue-500 text-xl"></i></div>
                     </div>
                 </div>
                 <div class="card p-5">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">승인 대기</p>
-                            <p class="text-2xl font-bold text-orange-500">2</p>
-                        </div>
-                        <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-clock text-orange-500 text-xl"></i>
-                        </div>
+                        <div><p class="text-xs text-gray-500 mb-1">승인 대기</p><p class="text-2xl font-bold text-orange-500" id="permPendingAdmins">0</p></div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center"><i class="fas fa-clock text-orange-500 text-xl"></i></div>
                     </div>
                 </div>
                 <div class="card p-5">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">일반 신청자</p>
-                            <p class="text-2xl font-bold text-green-600">24</p>
-                        </div>
-                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-user text-green-500 text-xl"></i>
-                        </div>
+                        <div><p class="text-xs text-gray-500 mb-1">일반 신청자</p><p class="text-2xl font-bold text-green-600" id="permTotalApplicants">0</p></div>
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center"><i class="fas fa-user text-green-500 text-xl"></i></div>
                     </div>
                 </div>
                 <div class="card p-5">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">비활성 계정</p>
-                            <p class="text-2xl font-bold text-gray-400">3</p>
-                        </div>
-                        <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-user-slash text-gray-400 text-xl"></i>
-                        </div>
+                        <div><p class="text-xs text-gray-500 mb-1">비활성 계정</p><p class="text-2xl font-bold text-gray-400" id="permInactiveCount">0</p></div>
+                        <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center"><i class="fas fa-user-slash text-gray-400 text-xl"></i></div>
                     </div>
                 </div>
             </div>
 
             <!-- 승인 대기열 -->
-            <div class="card p-6 mb-6">
+            <div class="card p-6 mb-6" id="permPendingSection">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <i class="fas fa-user-clock text-orange-500 mr-2"></i> 승인 대기 중인 관리자
-                    <span class="ml-2 bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">2명</span>
+                    <i class="fas fa-user-clock text-orange-500 mr-2"></i> 승인 대기 중
+                    <span class="ml-2 bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full" id="permPendingBadge">0명</span>
                 </h3>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-100">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center">
-                                <i class="fas fa-user text-orange-600"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Nguyen Van A</p>
-                                <p class="text-xs text-gray-500">nguyen.a@example.com · 2026-02-06 가입</p>
-                            </div>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button onclick="approveAdmin('nguyen')" class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition">
-                                <i class="fas fa-check mr-1"></i> 승인
-                            </button>
-                            <button onclick="rejectAdmin('nguyen')" class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition">
-                                <i class="fas fa-times mr-1"></i> 거절
-                            </button>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-100">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center">
-                                <i class="fas fa-user text-orange-600"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Somchai T.</p>
-                                <p class="text-xs text-gray-500">somchai@example.com · 2026-02-07 가입</p>
-                            </div>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button onclick="approveAdmin('somchai')" class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition">
-                                <i class="fas fa-check mr-1"></i> 승인
-                            </button>
-                            <button onclick="rejectAdmin('somchai')" class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition">
-                                <i class="fas fa-times mr-1"></i> 거절
-                            </button>
-                        </div>
-                    </div>
+                <div class="space-y-3" id="permPendingList">
+                    <p class="text-center text-gray-400 py-4">승인 대기 중인 사용자가 없습니다</p>
                 </div>
             </div>
 
@@ -1802,12 +1726,12 @@
                         <i class="fas fa-user-shield text-purple-500 mr-2"></i> 관리자 목록
                     </h3>
                     <div class="flex space-x-2">
-                        <select id="gradeFilter" class="input-apple text-sm py-2 px-3" onchange="filterAdminsByGrade()">
+                        <select id="permGradeFilter" class="input-apple text-sm py-2 px-3" onchange="loadPermissionsTab()">
                             <option value="all">전체 등급</option>
-                            <option value="M">M (Master)</option>
-                            <option value="G">G (Gold)</option>
-                            <option value="S">S (Silver)</option>
-                            <option value="-">- (없음)</option>
+                            <option value="9">M (Master)</option>
+                            <option value="3">G (Gold)</option>
+                            <option value="2">S (Silver)</option>
+                            <option value="0">- (미승인)</option>
                         </select>
                     </div>
                 </div>
@@ -1817,97 +1741,15 @@
                             <tr class="border-b border-gray-200">
                                 <th class="text-left py-3 px-4 text-gray-500 font-medium">이름</th>
                                 <th class="text-left py-3 px-4 text-gray-500 font-medium">이메일</th>
+                                <th class="text-left py-3 px-4 text-gray-500 font-medium">소속</th>
                                 <th class="text-center py-3 px-4 text-gray-500 font-medium">등급</th>
-                                <th class="text-center py-3 px-4 text-gray-500 font-medium">가입일</th>
                                 <th class="text-center py-3 px-4 text-gray-500 font-medium">상태</th>
+                                <th class="text-center py-3 px-4 text-gray-500 font-medium">가입일</th>
                                 <th class="text-center py-3 px-4 text-gray-500 font-medium">등급 변경</th>
+                                <th class="text-center py-3 px-4 text-gray-500 font-medium">관리</th>
                             </tr>
                         </thead>
-                        <tbody id="adminListBody">
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-4 font-medium text-gray-800">관리자 (나)</td>
-                                <td class="py-3 px-4 text-gray-600">admin@kwv.com</td>
-                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-master">M</span></td>
-                                <td class="py-3 px-4 text-center text-gray-500">2026-01-01</td>
-                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
-                                <td class="py-3 px-4 text-center text-gray-300">-</td>
-                            </tr>
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-4 font-medium text-gray-800">김영희</td>
-                                <td class="py-3 px-4 text-gray-600">yhkim@kwv.com</td>
-                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-gold">G</span></td>
-                                <td class="py-3 px-4 text-center text-gray-500">2026-01-15</td>
-                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
-                                <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('yhkim', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="G">
-                                        <option value="M">M</option>
-                                        <option value="G" selected>G</option>
-                                        <option value="S">S</option>
-                                        <option value="-">-</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-4 font-medium text-gray-800">박철수</td>
-                                <td class="py-3 px-4 text-gray-600">cspark@kwv.com</td>
-                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-gold">G</span></td>
-                                <td class="py-3 px-4 text-center text-gray-500">2026-01-20</td>
-                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
-                                <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('cspark', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="G">
-                                        <option value="M">M</option>
-                                        <option value="G" selected>G</option>
-                                        <option value="S">S</option>
-                                        <option value="-">-</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-4 font-medium text-gray-800">이지은</td>
-                                <td class="py-3 px-4 text-gray-600">jilee@kwv.com</td>
-                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-silver">S</span></td>
-                                <td class="py-3 px-4 text-center text-gray-500">2026-02-01</td>
-                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
-                                <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('jilee', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="S">
-                                        <option value="M">M</option>
-                                        <option value="G">G</option>
-                                        <option value="S" selected>S</option>
-                                        <option value="-">-</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-4 font-medium text-gray-800">Tran Minh</td>
-                                <td class="py-3 px-4 text-gray-600">tminh@kwv.com</td>
-                                <td class="py-3 px-4 text-center"><span class="admin-badge badge-silver">S</span></td>
-                                <td class="py-3 px-4 text-center text-gray-500">2026-02-03</td>
-                                <td class="py-3 px-4 text-center"><span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span></td>
-                                <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('tminh', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="S">
-                                        <option value="M">M</option>
-                                        <option value="G">G</option>
-                                        <option value="S" selected>S</option>
-                                        <option value="-">-</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-4 font-medium text-gray-800">정민호</td>
-                                <td class="py-3 px-4 text-gray-600">mhjung@kwv.com</td>
-                                <td class="py-3 px-4 text-center"><span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-200 text-gray-500 text-xs font-bold">-</span></td>
-                                <td class="py-3 px-4 text-center text-gray-500">2026-02-05</td>
-                                <td class="py-3 px-4 text-center"><span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">미승인</span></td>
-                                <td class="py-3 px-4 text-center">
-                                    <select onchange="changeGrade('mhjung', this.value, this)" class="text-xs border rounded-lg px-2 py-1" data-prev="-">
-                                        <option value="M">M</option>
-                                        <option value="G">G</option>
-                                        <option value="S">S</option>
-                                        <option value="-" selected>-</option>
-                                    </select>
-                                </td>
-                            </tr>
-                        </tbody>
+                        <tbody id="permAdminListBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -1917,10 +1759,7 @@
                 <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-info-circle text-blue-500 mr-2"></i> 등급별 권한 안내</h3>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="p-4 rounded-xl border-2 border-purple-200 bg-purple-50">
-                        <div class="flex items-center mb-2">
-                            <span class="admin-badge badge-master mr-2">M</span>
-                            <span class="font-bold text-purple-700">Master</span>
-                        </div>
+                        <div class="flex items-center mb-2"><span class="admin-badge badge-master mr-2">M</span><span class="font-bold text-purple-700">Master (9)</span></div>
                         <ul class="text-xs text-gray-600 space-y-1">
                             <li><i class="fas fa-check text-green-500 mr-1"></i> 모든 기능 접근</li>
                             <li><i class="fas fa-check text-green-500 mr-1"></i> 관리자 등급 변경</li>
@@ -1929,10 +1768,7 @@
                         </ul>
                     </div>
                     <div class="p-4 rounded-xl border-2 border-yellow-200 bg-yellow-50">
-                        <div class="flex items-center mb-2">
-                            <span class="admin-badge badge-gold mr-2">G</span>
-                            <span class="font-bold text-yellow-700">Gold</span>
-                        </div>
+                        <div class="flex items-center mb-2"><span class="admin-badge badge-gold mr-2">G</span><span class="font-bold text-yellow-700">Gold (3)</span></div>
                         <ul class="text-xs text-gray-600 space-y-1">
                             <li><i class="fas fa-check text-green-500 mr-1"></i> 지원자 관리</li>
                             <li><i class="fas fa-check text-green-500 mr-1"></i> 상담/구인구직 관리</li>
@@ -1941,10 +1777,7 @@
                         </ul>
                     </div>
                     <div class="p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
-                        <div class="flex items-center mb-2">
-                            <span class="admin-badge badge-silver mr-2">S</span>
-                            <span class="font-bold text-gray-600">Silver</span>
-                        </div>
+                        <div class="flex items-center mb-2"><span class="admin-badge badge-silver mr-2">S</span><span class="font-bold text-gray-600">Silver (2)</span></div>
                         <ul class="text-xs text-gray-600 space-y-1">
                             <li><i class="fas fa-check text-green-500 mr-1"></i> 데이터 조회</li>
                             <li><i class="fas fa-check text-green-500 mr-1"></i> 기본 관리 기능</li>
@@ -1953,10 +1786,7 @@
                         </ul>
                     </div>
                     <div class="p-4 rounded-xl border-2 border-red-200 bg-red-50">
-                        <div class="flex items-center mb-2">
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-300 text-gray-600 text-xs font-bold mr-2">-</span>
-                            <span class="font-bold text-red-600">미승인</span>
-                        </div>
+                        <div class="flex items-center mb-2"><span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-300 text-gray-600 text-xs font-bold mr-2">-</span><span class="font-bold text-red-600">미승인 (0)</span></div>
                         <ul class="text-xs text-gray-600 space-y-1">
                             <li><i class="fas fa-times text-red-400 mr-1"></i> 접근 불가</li>
                             <li><i class="fas fa-times text-red-400 mr-1"></i> 관리자 승인 필요</li>
@@ -2305,6 +2135,12 @@
             <!-- 필터 -->
             <div class="card p-4 mb-6">
                 <div class="flex flex-wrap gap-4 items-center">
+                    <select id="insWorkerFilter" onchange="loadInsurance()" class="input-apple text-sm">
+                        <option value="">전체 근로자</option>
+                    </select>
+                    <select id="insLgFilter" onchange="loadInsurance()" class="input-apple text-sm">
+                        <option value="">전체 지자체</option>
+                    </select>
                     <select id="insTypeFilter" onchange="loadInsurance()" class="input-apple text-sm">
                         <option value="">전체 유형</option>
                         <option value="health">건강보험</option>
@@ -2320,6 +2156,7 @@
                         <option value="cancelled">취소</option>
                         <option value="pending">대기</option>
                     </select>
+                    <input type="text" id="insSearchFilter" class="input-apple text-sm" placeholder="근로자 검색..." onkeyup="loadInsurance()">
                 </div>
             </div>
 
@@ -2607,29 +2444,6 @@
     </div>
 
     <!-- 관리자 추가/수정 모달 -->
-    <div id="adminModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-[60]">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4">
-            <h3 id="adminModalTitle" class="text-xl font-bold text-gray-800 mb-6">👨‍💼 관리자 추가</h3>
-            <input type="hidden" id="adminEditId">
-            <div class="space-y-4">
-                <div><label class="text-xs text-gray-500">이메일 *</label><input type="email" id="adminEmail" class="w-full input-apple text-sm mt-1" placeholder="admin@example.com"></div>
-                <div><label class="text-xs text-gray-500">이름 *</label><input type="text" id="adminName" class="w-full input-apple text-sm mt-1" placeholder="관리자 이름"></div>
-                <div><label class="text-xs text-gray-500">연락처</label><input type="text" id="adminPhone" class="w-full input-apple text-sm mt-1" placeholder="010-0000-0000"></div>
-                <div><label class="text-xs text-gray-500">소속</label><input type="text" id="adminOrg" class="w-full input-apple text-sm mt-1" placeholder="소속 기관"></div>
-                <div><label class="text-xs text-gray-500">관리자 등급</label>
-                    <select id="adminLevel" class="w-full input-apple text-sm mt-1">
-                        <option value="1">1 - 일반 관리자</option><option value="2">2 - 지자체 관리자</option><option value="3">3 - 수석 관리자</option><option value="9">9 - Super Admin</option>
-                    </select>
-                </div>
-                <div><label class="text-xs text-gray-500">비밀번호 (빈칸=기본값)</label><input type="password" id="adminPassword" class="w-full input-apple text-sm mt-1" placeholder="kwv2026"></div>
-            </div>
-            <div class="flex space-x-3 mt-6">
-                <button onclick="document.getElementById('adminModal').classList.remove('active')" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">취소</button>
-                <button onclick="saveAdmin()" class="flex-1 btn-primary">저장</button>
-            </div>
-        </div>
-    </div>
-
     <!-- ===== 모바일 전용 레이아웃 ===== -->
     <div id="mobileLayout" class="mobile-only">
         <!-- 모바일 헤더 (스와이프 컨테이너 밖, 항상 최상단 고정) -->
@@ -5093,7 +4907,7 @@
         // 탭 전환
         // 탭→그룹 매핑
         const tabGroupMap = {
-            basicsettings: 'menuGroupSysSet', admins: 'menuGroupSysSet',
+            basicsettings: 'menuGroupSysSet',
             permissions: 'menuGroupSysSet', notices: 'menuGroupSysSet',
             themesettings: 'menuGroupSysSet',
             regions: 'menuGroupLg', mou: 'menuGroupLg', hiring: 'menuGroupLg',
@@ -5146,7 +4960,7 @@
             if (tabName === 'dashboard') loadDashboardCharts();
             if (tabName === 'hiring') loadHiringList();
             if (tabName === 'jobseeking') loadJobSeeking();
-            if (tabName === 'admins') loadAdminsList();
+            if (tabName === 'permissions') loadPermissionsTab();
             if (tabName === 'themesettings') loadThemeSettings();
             if (tabName === 'basicsettings') loadSystemSettings();
         }
@@ -5647,7 +5461,25 @@
         let csEditingId = null;
 
         async function loadCounselingTab() {
+            await ensureLgListCached();
+            await populateWorkerFilters('cs');
             await Promise.all([loadCounselingSummary(), loadCounselingList()]);
+        }
+        // 근로자 목록을 필터 드롭다운에 채우기 (prefix: cs=상담, ins=보험)
+        async function populateWorkerFilters(prefix) {
+            const token = sessionStorage.getItem('kwv_token');
+            const workerSel = document.getElementById(prefix + 'WorkerFilter');
+            const lgSel = document.getElementById(prefix + 'LgFilter');
+            if (workerSel && workerSel.options.length <= 1) {
+                try {
+                    const res = await fetch(API_BASE + '/admin/applicants?limit=200&is_approved=true', { headers: {'Authorization':'Bearer '+token} });
+                    const data = await res.json();
+                    (data.applicants || []).forEach(a => { const o = document.createElement('option'); o.value = a.user_id || a.id; o.textContent = a.name + (a.nationality ? ' ('+a.nationality+')' : ''); workerSel.appendChild(o); });
+                } catch(e) {}
+            }
+            if (lgSel && lgSel.options.length <= 1) {
+                window._cachedLgList.forEach(lg => { const o = document.createElement('option'); o.value = lg.id; o.textContent = lg.name; lgSel.appendChild(o); });
+            }
         }
 
         async function loadCounselingSummary() {
@@ -6188,6 +6020,8 @@
         const insStatusColors = {active:'bg-green-100 text-green-700',expired:'bg-gray-100 text-gray-500',cancelled:'bg-red-100 text-red-700',pending:'bg-yellow-100 text-yellow-700'};
 
         async function loadInsuranceTab() {
+            await ensureLgListCached();
+            await populateWorkerFilters('ins');
             await Promise.all([loadInsurance(), loadExpiringInsurance()]);
         }
 
@@ -7219,9 +7053,9 @@
                                 <div><label class="text-xs text-gray-500">배정 연도</label><input type="number" id="lgQuotaYear" class="w-full input-apple text-sm mt-1" value="${lg?.quota_year||new Date().getFullYear()}"></div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-xs text-gray-500">위도</label><input type="number" step="0.0000001" id="lgLat" class="w-full input-apple text-sm mt-1" value="${lg?.latitude||''}" placeholder="36.5"></div>
-                            <div><label class="text-xs text-gray-500">경도</label><input type="number" step="0.0000001" id="lgLng" class="w-full input-apple text-sm mt-1" value="${lg?.longitude||''}" placeholder="127.0"></div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="const addr=document.getElementById('lgAddress').value; if(addr) window.open('https://www.google.com/maps/search/'+encodeURIComponent(addr),'_blank'); else alert('주소를 먼저 입력하세요.');" class="px-4 py-2 bg-green-500 text-white rounded-xl text-sm hover:bg-green-600 transition"><i class="fas fa-map-marked-alt mr-2"></i>지도에서 확인</button>
+                            <span class="text-xs text-gray-400">주소 입력 후 지도에서 위치를 확인할 수 있습니다</span>
                         </div>
                         <div><label class="text-xs text-gray-500">설명</label><textarea id="lgDesc" class="w-full input-apple text-sm mt-1" rows="3" placeholder="지자체 소개...">${lg?.description||''}</textarea></div>
                         <button onclick="saveLg(${lgId||'null'})" class="w-full btn-primary text-center"><i class="fas fa-save mr-2"></i>${isEdit ? '수정' : '등록'}</button>
@@ -7245,8 +7079,8 @@
                 representative_email: document.getElementById('lgRepEmail').value.trim() || null,
                 allocated_quota: parseInt(document.getElementById('lgQuota').value) || 0,
                 quota_year: parseInt(document.getElementById('lgQuotaYear').value) || new Date().getFullYear(),
-                latitude: parseFloat(document.getElementById('lgLat').value) || null,
-                longitude: parseFloat(document.getElementById('lgLng').value) || null,
+                latitude: null,
+                longitude: null,
                 description: document.getElementById('lgDesc').value.trim() || null
             };
             if (!data.name || !data.region) { alert('지자체명과 광역 지역은 필수입니다.'); return; }
@@ -7581,8 +7415,38 @@
 
         // ==================== 지원자 관리 (API 연동) ====================
         let applicantPage = 1;
+        window._cachedLgList = [];
+        // 지자체 목록 캐시 (지원자/상담/보험 등에서 공용)
+        async function ensureLgListCached() {
+            if (window._cachedLgList.length > 0) return;
+            try {
+                const res = await fetch(API_BASE + '/local-governments');
+                const data = await res.json();
+                window._cachedLgList = Array.isArray(data) ? data : (data.items || []);
+                // 필터 드롭다운도 채우기
+                const filterLg = document.getElementById('filterLg');
+                if (filterLg && filterLg.options.length <= 1) {
+                    window._cachedLgList.forEach(lg => { const o = document.createElement('option'); o.value = lg.id; o.textContent = lg.name; filterLg.appendChild(o); });
+                }
+            } catch(e) {}
+        }
+
+        async function assignLgDirect(userId, lgId) {
+            if (!lgId) return;
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(`/api/kwv/admin/applicants/${userId}/assign-lg`, {
+                    method: 'PUT',
+                    headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+                    body: JSON.stringify({local_government_id: parseInt(lgId)})
+                });
+                if (!res.ok) { const r = await res.json(); throw new Error(r.detail || '배정 실패'); }
+                loadApplicants(applicantPage);
+            } catch(e) { alert('오류: ' + e.message); }
+        }
 
         async function loadApplicants(page = 1) {
+            await ensureLgListCached();
             applicantPage = page;
             let token = sessionStorage.getItem('kwv_token');
             const params = new URLSearchParams({page, limit: 20});
@@ -7648,7 +7512,7 @@
                             <div class="flex justify-center gap-1">
                                 ${!a.is_approved ? `<button onclick="approveApplicant(${a.id})" class="w-7 h-7 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 text-xs" title="승인"><i class="fas fa-check"></i></button>` : ''}
                                 ${a.status !== 'rejected' ? `<button onclick="rejectApplicant(${a.id})" class="w-7 h-7 bg-red-100 text-red-500 rounded-lg hover:bg-red-200 text-xs" title="반려"><i class="fas fa-times"></i></button>` : ''}
-                                ${!a.local_government_id ? `<button onclick="assignLgModal(${a.id},'${a.name}')" class="w-7 h-7 bg-blue-100 text-blue-500 rounded-lg hover:bg-blue-200 text-xs" title="지자체 배정"><i class="fas fa-building"></i></button>` : ''}
+                                ${!a.local_government_id ? `<select onchange="assignLgDirect(${a.id}, this.value)" class="text-xs border rounded-lg px-1 py-1 w-20" title="지자체 배정"><option value="">배정</option>${(window._cachedLgList||[]).map(lg=>'<option value=\"'+lg.id+'\">'+lg.name+'</option>').join('')}</select>` : ''}
                             </div>
                         </td>
                     </tr>
@@ -8893,8 +8757,9 @@
             try {
                 const res = await fetch(API_BASE + '/local-governments');
                 const data = await res.json();
+                const lgList = Array.isArray(data) ? data : (data.items || []);
                 const sel = document.getElementById('hiringLgId');
-                sel.innerHTML = '<option value="">선택</option>' + (data.items || []).map(lg => `<option value="${lg.id}">${lg.name}</option>`).join('');
+                sel.innerHTML = '<option value="">선택</option>' + lgList.map(lg => `<option value="${lg.id}">${lg.name}</option>`).join('');
             } catch(e) {}
             if (editId) {
                 try {
@@ -8995,120 +8860,174 @@
                         ${j.location ? `<div class="flex items-center text-sm text-gray-600 mb-2"><i class="fas fa-map-marker-alt mr-2 text-red-500"></i>${j.location}</div>` : ''}
                         ${j.visa_types ? `<div class="flex items-center text-sm text-gray-600 mb-3"><i class="fas fa-passport mr-2 text-purple-500"></i>${j.visa_types}</div>` : ''}
                         ${j.description ? `<p class="text-sm text-gray-500 mb-3 line-clamp-2">${j.description}</p>` : ''}
-                        ${j.contact_phone ? `<div class="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500"><i class="fas fa-phone mr-1"></i>${j.contact_phone}</div>` : ''}
+                        <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+                            ${j.contact_phone ? `<span class="text-sm text-gray-500"><i class="fas fa-phone mr-1"></i>${j.contact_phone}</span>` : '<span></span>'}
+                            <button onclick="applyForJob(${j.id}, '${(j.title||'').replace(/'/g,"\\'")}')" class="px-4 py-2 bg-blue-500 text-white text-sm rounded-xl hover:bg-blue-600 transition font-semibold"><i class="fas fa-paper-plane mr-1"></i>지원하기</button>
+                        </div>
                     </div>
                 `).join('');
                 // Load LG filter options
                 try {
                     const lgRes = await fetch(API_BASE + '/local-governments');
                     const lgData = await lgRes.json();
+                    const lgItems = Array.isArray(lgData) ? lgData : (lgData.items || []);
                     const lgSel = document.getElementById('jobSeekFilterLg');
                     if (lgSel && lgSel.options.length <= 1) {
-                        (lgData.items || []).forEach(lg => { const o = document.createElement('option'); o.value = lg.id; o.textContent = lg.name; lgSel.appendChild(o); });
+                        lgItems.forEach(lg => { const o = document.createElement('option'); o.value = lg.id; o.textContent = lg.name; lgSel.appendChild(o); });
                     }
                 } catch(e) {}
             } catch(e) { console.error('loadJobSeeking error:', e); }
         }
 
-        // ==================== 관리자 관리 (Admins) ====================
-        async function loadAdminsList() {
+        async function applyForJob(jobId, jobTitle) {
+            const user = JSON.parse(sessionStorage.getItem('kwv_user') || '{}');
             const token = sessionStorage.getItem('kwv_token');
-            // Show add button for super admin
-            const userStr = sessionStorage.getItem('kwv_user');
-            if (userStr) {
-                const u = JSON.parse(userStr);
-                if ((u.admin_level || u.adminLevel || 0) >= 9) {
-                    document.getElementById('addAdminBtn').style.display = 'inline-flex';
-                }
-            }
+            if (!token) { alert('로그인이 필요합니다'); return; }
+            if (!confirm(`"${jobTitle}" 구인에 지원하시겠습니까?\n\n지원 후 관리자가 검토합니다.`)) return;
             try {
-                const res = await fetch(API_BASE + '/admin/admins', { headers: {'Authorization':'Bearer '+token} });
-                const data = await res.json();
-                const tbody = document.getElementById('adminsTableBody');
-                if (!data.items || data.items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">관리자가 없습니다</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = data.items.map(a => {
-                    const levelBadge = a.admin_level >= 9 ? '<span class="admin-badge badge-master">M</span>' :
-                        a.admin_level >= 3 ? '<span class="admin-badge badge-gold">' + a.admin_level + '</span>' :
-                        '<span class="admin-badge badge-silver">' + a.admin_level + '</span>';
-                    const statusBadge = a.is_active ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">활성</span>' :
-                        '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs">비활성</span>';
-                    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
-                        <td class="px-4 py-3 font-medium">${a.name}</td>
-                        <td class="px-4 py-3 text-gray-500">${a.email}</td>
-                        <td class="px-4 py-3 text-center">${a.organization || '-'}</td>
-                        <td class="px-4 py-3 text-center">${levelBadge}</td>
-                        <td class="px-4 py-3 text-center">${statusBadge}</td>
-                        <td class="px-4 py-3 text-center text-gray-400 text-xs">${a.last_login ? a.last_login.split('T')[0] : '-'}</td>
-                        <td class="px-4 py-3 text-center">
-                            <button onclick="openAdminModal(${a.id})" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteAdmin(${a.id})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>`;
-                }).join('');
-            } catch(e) { console.error('loadAdminsList error:', e); }
-        }
-
-        async function openAdminModal(editId) {
-            document.getElementById('adminEditId').value = editId || '';
-            document.getElementById('adminModalTitle').textContent = editId ? '👨‍💼 관리자 수정' : '👨‍💼 관리자 추가';
-            if (editId) {
-                const token = sessionStorage.getItem('kwv_token');
-                try {
-                    const res = await fetch(API_BASE + '/admin/admins', { headers: {'Authorization':'Bearer '+token} });
+                const res = await fetch(API_BASE + '/jobs/' + jobId + '/apply', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                    body: JSON.stringify({message: '지원합니다'})
+                });
+                if (res.ok) {
+                    alert('지원이 완료되었습니다! 관리자가 검토 후 연락드립니다.');
+                } else {
                     const data = await res.json();
-                    const admin = (data.items || []).find(a => a.id === editId);
-                    if (admin) {
-                        document.getElementById('adminEmail').value = admin.email || '';
-                        document.getElementById('adminName').value = admin.name || '';
-                        document.getElementById('adminPhone').value = admin.phone || '';
-                        document.getElementById('adminOrg').value = admin.organization || '';
-                        document.getElementById('adminLevel').value = admin.admin_level || 1;
-                    }
-                } catch(e) {}
-                document.getElementById('adminEmail').disabled = true;
-            } else {
-                ['adminEmail','adminName','adminPhone','adminOrg','adminPassword'].forEach(id => { document.getElementById(id).value = ''; });
-                document.getElementById('adminLevel').value = 1;
-                document.getElementById('adminEmail').disabled = false;
-            }
-            document.getElementById('adminModal').classList.add('active');
-        }
-
-        async function saveAdmin() {
-            const token = sessionStorage.getItem('kwv_token');
-            const editId = document.getElementById('adminEditId').value;
-            const body = {
-                email: document.getElementById('adminEmail').value,
-                name: document.getElementById('adminName').value,
-                phone: document.getElementById('adminPhone').value,
-                organization: document.getElementById('adminOrg').value,
-                admin_level: parseInt(document.getElementById('adminLevel').value) || 1
-            };
-            const pw = document.getElementById('adminPassword').value;
-            if (pw) body.password = pw;
-            if (!body.email || !body.name) { alert('이메일과 이름을 입력하세요'); return; }
-            try {
-                const url = editId ? API_BASE + '/admin/admins/' + editId : API_BASE + '/admin/admins';
-                const method = editId ? 'PUT' : 'POST';
-                const res = await fetch(url, { method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify(body) });
-                const result = await res.json();
-                if (!res.ok) throw new Error(result.detail || '저장 실패');
-                document.getElementById('adminModal').classList.remove('active');
-                alert(editId ? '수정되었습니다' : '추가되었습니다');
-                loadAdminsList();
+                    alert(data.detail || '지원 실패');
+                }
             } catch(e) { alert('오류: ' + e.message); }
         }
 
-        async function deleteAdmin(id) {
-            if (!confirm('이 관리자를 비활성화하시겠습니까?')) return;
+        // ==================== 권한 관리 (Permissions CRUD) ====================
+        async function loadPermissionsTab() {
+            const token = sessionStorage.getItem('kwv_token');
+            const filterLevel = document.getElementById('permGradeFilter')?.value || 'all';
+            try {
+                const res = await fetch(API_BASE + '/admin/admins', { headers: {'Authorization':'Bearer '+token} });
+                const data = await res.json();
+                const admins = data.items || [];
+                // Summary counts
+                document.getElementById('permTotalAdmins').textContent = admins.filter(a => a.user_type === 'admin').length;
+                document.getElementById('permPendingAdmins').textContent = admins.filter(a => !a.is_approved).length;
+                document.getElementById('permInactiveCount').textContent = admins.filter(a => !a.is_active).length;
+                // Count applicants
+                try {
+                    const aRes = await fetch(API_BASE + '/applicants?limit=1', { headers: {'Authorization':'Bearer '+token} });
+                    const aData = await aRes.json();
+                    document.getElementById('permTotalApplicants').textContent = aData.total || 0;
+                } catch(e) { document.getElementById('permTotalApplicants').textContent = '-'; }
+                // Pending approval queue (admins + applicants who are not approved)
+                const pendingUsers = admins.filter(a => !a.is_approved && a.is_active);
+                const pendingSection = document.getElementById('permPendingSection');
+                const pendingList = document.getElementById('permPendingList');
+                document.getElementById('permPendingBadge').textContent = pendingUsers.length + '명';
+                if (pendingUsers.length === 0) {
+                    pendingList.innerHTML = '<p class="text-center text-gray-400 py-4">승인 대기 중인 사용자가 없습니다</p>';
+                } else {
+                    pendingList.innerHTML = pendingUsers.map(u => `
+                        <div class="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-100">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center"><i class="fas fa-user text-orange-600"></i></div>
+                                <div>
+                                    <p class="font-medium text-gray-800">${u.name} <span class="text-xs text-gray-400">(${u.user_type === 'admin' ? '관리자' : '신청자'})</span></p>
+                                    <p class="text-xs text-gray-500">${u.email} · ${u.organization || '-'} · ${(u.created_at||'').split('T')[0]} 가입</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="permApproveUser(${u.id})" class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition"><i class="fas fa-check mr-1"></i> 승인</button>
+                                <button onclick="permDeleteUser(${u.id})" class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition"><i class="fas fa-times mr-1"></i> 거절</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                // Admin list table (filtered)
+                let filtered = admins.filter(a => a.is_approved);
+                if (filterLevel !== 'all') {
+                    const fl = parseInt(filterLevel);
+                    if (fl === 9) filtered = filtered.filter(a => a.admin_level >= 9);
+                    else if (fl === 3) filtered = filtered.filter(a => a.admin_level >= 3 && a.admin_level < 9);
+                    else if (fl === 2) filtered = filtered.filter(a => a.admin_level >= 1 && a.admin_level < 3);
+                    else filtered = filtered.filter(a => !a.admin_level || a.admin_level === 0);
+                }
+                const myUser = JSON.parse(sessionStorage.getItem('kwv_user') || '{}');
+                const myId = myUser.id;
+                const tbody = document.getElementById('permAdminListBody');
+                if (filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">관리자가 없습니다</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = filtered.map(a => {
+                    const lvl = a.admin_level || 0;
+                    const badge = lvl >= 9 ? '<span class="admin-badge badge-master">M</span>' :
+                        lvl >= 3 ? '<span class="admin-badge badge-gold">G</span>' :
+                        lvl >= 1 ? '<span class="admin-badge badge-silver">S</span>' :
+                        '<span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-200 text-gray-500 text-xs font-bold">-</span>';
+                    const statusBadge = a.is_active ?
+                        '<span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span>' :
+                        '<span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">비활성</span>';
+                    const isMe = a.id === myId;
+                    const gradeSelect = isMe ? '<span class="text-gray-300">-</span>' :
+                        `<select onchange="permChangeGrade(${a.id}, this.value)" class="text-xs border rounded-lg px-2 py-1">
+                            <option value="9" ${lvl>=9?'selected':''}>M (9)</option>
+                            <option value="3" ${lvl>=3&&lvl<9?'selected':''}>G (3)</option>
+                            <option value="2" ${lvl>=1&&lvl<3?'selected':''}>S (2)</option>
+                            <option value="0" ${lvl===0?'selected':''}>- (0)</option>
+                        </select>`;
+                    const actions = isMe ? '' :
+                        `<button onclick="permDeleteUser(${a.id})" class="text-red-500 hover:text-red-700" title="비활성화"><i class="fas fa-user-slash"></i></button>`;
+                    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="py-3 px-4 font-medium text-gray-800">${a.name}${isMe?' (나)':''}</td>
+                        <td class="py-3 px-4 text-gray-600">${a.email}</td>
+                        <td class="py-3 px-4 text-gray-500">${a.organization || '-'}</td>
+                        <td class="py-3 px-4 text-center">${badge}</td>
+                        <td class="py-3 px-4 text-center">${statusBadge}</td>
+                        <td class="py-3 px-4 text-center text-gray-400 text-xs">${(a.created_at||'').split('T')[0]}</td>
+                        <td class="py-3 px-4 text-center">${gradeSelect}</td>
+                        <td class="py-3 px-4 text-center">${actions}</td>
+                    </tr>`;
+                }).join('');
+            } catch(e) { console.error('loadPermissionsTab error:', e); }
+        }
+
+        async function permApproveUser(userId) {
             const token = sessionStorage.getItem('kwv_token');
             try {
-                const res = await fetch(API_BASE + '/admin/admins/' + id, { method: 'DELETE', headers: {'Authorization':'Bearer '+token} });
+                const res = await fetch(API_BASE + '/admin/admins/' + userId, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                    body: JSON.stringify({ admin_level: 2 })
+                });
+                if (!res.ok) { const r = await res.json(); throw new Error(r.detail); }
+                // Also approve the user
+                await fetch(API_BASE + '/applicants/' + userId + '/approve', {
+                    method: 'POST', headers: {'Authorization':'Bearer '+token}
+                }).catch(() => {});
+                alert('승인되었습니다');
+                loadPermissionsTab();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        async function permChangeGrade(userId, newLevel) {
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(API_BASE + '/admin/admins/' + userId, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                    body: JSON.stringify({ admin_level: parseInt(newLevel) })
+                });
+                if (!res.ok) { const r = await res.json(); throw new Error(r.detail); }
+                loadPermissionsTab();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        async function permDeleteUser(userId) {
+            if (!confirm('이 사용자를 비활성화하시겠습니까?')) return;
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(API_BASE + '/admin/admins/' + userId, { method: 'DELETE', headers: {'Authorization':'Bearer '+token} });
                 if (!res.ok) { const r = await res.json(); throw new Error(r.detail || '삭제 실패'); }
-                loadAdminsList();
+                loadPermissionsTab();
             } catch(e) { alert('오류: ' + e.message); }
         }
 

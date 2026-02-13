@@ -317,8 +317,8 @@ async def register(user_data: UserRegister):
         except:
             pass
 
-        # applicant는 일단 미승인으로 생성, 자동 승인은 필수항목 검증 후 결정
-        is_approved = True if user_type == 'admin' else False
+        # 모든 사용자는 미승인 상태로 생성 (관리자도 승인 필수)
+        is_approved = False
 
         cursor.execute("""
             INSERT INTO kwv_users (email, password_hash, password_salt, name, phone, address,
@@ -409,7 +409,7 @@ async def register(user_data: UserRegister):
                 "user_type": user_type,
                 "admin_level": 2 if user_type == 'admin' else 0,
                 "language": user_data.language,
-                "is_approved": auto_approved if user_type == 'applicant' else True
+                "is_approved": auto_approved if user_type == 'applicant' else False
             }
         }
         # 자동 승인 실패 시 누락 항목 알려주기
@@ -4063,6 +4063,40 @@ async def delete_job(job_id: int, user: dict = Depends(get_current_user)):
     finally:
         conn.close()
 
+@router.post("/jobs/{job_id}/apply")
+async def apply_for_job(job_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """구인에 지원"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # 구인 공고 확인
+        cursor.execute("SELECT id, title, status FROM kwv_jobs WHERE id = %s", (job_id,))
+        job = cursor.fetchone()
+        if not job:
+            raise HTTPException(status_code=404, detail="구인 공고를 찾을 수 없습니다")
+        if job['status'] != 'active':
+            raise HTTPException(status_code=400, detail="현재 지원 가능한 공고가 아닙니다")
+        body = await request.json()
+        user_id = int(user['sub'])
+        # 알림 생성 (관리자에게)
+        try:
+            user_name = user.get('name', user.get('email', ''))
+            cursor.execute("""
+                INSERT INTO kwv_notifications (user_id, type, title, message)
+                SELECT id, 'info', %s, %s FROM kwv_users WHERE user_type = 'admin' AND admin_level >= 2 AND is_active = TRUE
+            """, (
+                f"구직 지원: {job['title']}",
+                f"{user_name}님이 '{job['title']}' 공고에 지원했습니다. 메시지: {body.get('message', '')}"
+            ))
+        except:
+            pass
+        conn.commit()
+        return {"message": "지원이 완료되었습니다"}
+    finally:
+        conn.close()
+
 # ==================== 관리자 관리 API ====================
 
 @router.get("/admin/admins")
@@ -4075,8 +4109,8 @@ async def list_admins(user: dict = Depends(get_current_user)):
     try:
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor.execute("""
-            SELECT id, email, name, phone, organization, admin_level, is_active,
-                   created_at, last_login_at as last_login
+            SELECT id, email, name, phone, organization, admin_level, is_active, is_approved,
+                   user_type, created_at, last_login_at as last_login
             FROM kwv_users
             WHERE user_type = 'admin'
             ORDER BY admin_level DESC, created_at ASC
@@ -4132,10 +4166,14 @@ async def update_admin(admin_id: int, request: Request, user: dict = Depends(get
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         fields = []
         params = []
-        for field in ['name', 'phone', 'organization', 'admin_level', 'is_active']:
+        for field in ['name', 'phone', 'organization', 'admin_level', 'is_active', 'is_approved']:
             if field in body:
                 fields.append(f"{field} = %s")
                 params.append(body[field])
+        # 승인 시 approved_at 설정
+        if body.get('is_approved') or (body.get('admin_level') and int(body.get('admin_level', 0)) > 0):
+            fields.append("is_approved = TRUE")
+            fields.append("approved_at = NOW()")
         if 'password' in body and body['password']:
             fields.append("password = %s")
             params.append(hash_password(body['password']))

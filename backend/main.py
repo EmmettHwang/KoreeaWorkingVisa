@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# .env 파일을 먼저 로드 (다른 모듈 import 전에 환경변수 설정)
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path, override=True)
+
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Form, Request
 # KWV Auth Module
 from auth import router as auth_router
@@ -10,19 +18,16 @@ from typing import Optional, List
 import pymysql
 import pandas as pd
 import io
-import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime, timedelta, date
 from openai import OpenAI
-from dotenv import load_dotenv
 import requests
 from ftplib import FTP
 import uuid
 import threading
 import base64
 from PIL import Image
-from pathlib import Path
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
@@ -31,10 +36,6 @@ from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
-
-# .env 파일을 상위 디렉토리에서 로드
-env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
 
 app = FastAPI(
     title="학급 관리 시스템 API",
