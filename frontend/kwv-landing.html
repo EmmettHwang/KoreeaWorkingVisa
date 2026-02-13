@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Korea Working Visa - 외국인 계절근로자 관리 플랫폼</title>
+    <title>대한민국 계절 근로자 통합 관리</title>
+    <meta name="description" content="대한민국 외국인 계절근로자 통합 관리 플랫폼 - 비자신청, 출퇴근, 활동일지, 지자체 매칭">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="대한민국 계절 근로자 통합 관리">
+    <meta property="og:description" content="외국인 계절근로자 비자신청부터 출퇴근, 활동일지, 포인트까지 한번에 관리하세요.">
+    <meta property="og:image" content="/static/og-kwv.svg">
+    <meta property="og:site_name" content="대한민국 계절 근로자 통합 관리">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="대한민국 계절 근로자 통합 관리">
+    <meta name="twitter:description" content="외국인 계절근로자 비자신청부터 출퇴근, 활동일지, 포인트까지 한번에 관리하세요.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127472;&#127479;</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -223,10 +233,10 @@
                 <span class="text-white font-bold text-xl tracking-tight">KWV</span>
             </a>
             <div class="hidden md:flex items-center space-x-8">
-                <a href="#features" class="text-white/70 hover:text-white transition text-sm font-medium">주요 기능</a>
-                <a href="#process" class="text-white/70 hover:text-white transition text-sm font-medium">절차 안내</a>
-                <a href="#stats" class="text-white/70 hover:text-white transition text-sm font-medium">현황</a>
-                <a href="#partners" class="text-white/70 hover:text-white transition text-sm font-medium">파트너</a>
+                <a href="#features" class="text-white/70 hover:text-white transition text-sm font-medium" data-i18n="navFeatures">주요 기능</a>
+                <a href="#process" class="text-white/70 hover:text-white transition text-sm font-medium" data-i18n="navProcess">절차 안내</a>
+                <a href="#stats" class="text-white/70 hover:text-white transition text-sm font-medium" data-i18n="navStats">현황</a>
+                <a href="#partners" class="text-white/70 hover:text-white transition text-sm font-medium" data-i18n="navPartners">파트너</a>
             </div>
             <div class="flex items-center space-x-3">
                 <select onchange="changeLandingLang(this.value)" class="bg-white/10 text-white text-sm rounded-lg px-3 py-2 border border-white/20 outline-none cursor-pointer">
@@ -236,7 +246,7 @@
                     <option value="th" class="text-gray-900">🇹🇭 ภาษาไทย</option>
                     <option value="tl" class="text-gray-900">🇵🇭 Filipino</option>
                 </select>
-                <a href="/kwv-login.html" class="bg-white text-gray-900 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-50 transition">
+                <a href="/kwv-login.html" class="bg-white text-gray-900 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-50 transition" data-i18n="navLogin">
                     로그인
                 </a>
             </div>
@@ -705,7 +715,8 @@
                 gov3Title: '보험 통합 관리', gov3Desc: '입국 시점부터 4대 보험 가입 현황을 체계적으로 관리합니다.',
                 gov4Title: '상담일지 & 소통', gov4Desc: '근로자와의 상담 기록을 체계적으로 관리. 5개 국어 번역 지원.',
                 ctaTitle: '지금 바로<br>KWV를 도입하세요', ctaDesc: '외국인 계절근로자 관리의 새로운 패러다임.',
-                ctaBtnStart: '바로가기', ctaBtnRegister: '회원가입', navLogin: '로그인'
+                ctaBtnStart: '바로가기', ctaBtnRegister: '회원가입',
+                navFeatures: '주요 기능', navProcess: '절차 안내', navStats: '현황', navPartners: '파트너', navLogin: '로그인'
             },
             en: {
                 heroBadge: 'Government-certified seasonal worker management platform',
@@ -735,7 +746,8 @@
                 gov3Title: 'Insurance Management', gov3Desc: 'Systematically manage 4 major insurance enrollment status from entry.',
                 gov4Title: 'Counseling & Communication', gov4Desc: 'Systematically manage counseling records with workers. 5-language translation.',
                 ctaTitle: 'Adopt KWV<br>Right Now', ctaDesc: 'A new paradigm in foreign seasonal worker management.',
-                ctaBtnStart: 'Get Started', ctaBtnRegister: 'Sign Up', navLogin: 'Login'
+                ctaBtnStart: 'Get Started', ctaBtnRegister: 'Sign Up',
+                navFeatures: 'Features', navProcess: 'Process', navStats: 'Stats', navPartners: 'Partners', navLogin: 'Login'
             },
             vi: {
                 heroBadge: 'Nền tảng quản lý lao động thời vụ được chính phủ chứng nhận',
@@ -765,7 +777,8 @@
                 gov3Title: 'Quản lý bảo hiểm', gov3Desc: 'Quản lý tình trạng bảo hiểm từ khi nhập cảnh.',
                 gov4Title: 'Tư vấn & Giao tiếp', gov4Desc: 'Quản lý hồ sơ tư vấn. Hỗ trợ dịch 5 ngôn ngữ.',
                 ctaTitle: 'Áp dụng KWV<br>ngay bây giờ', ctaDesc: 'Mô hình mới trong quản lý lao động thời vụ nước ngoài.',
-                ctaBtnStart: 'Bắt đầu', ctaBtnRegister: 'Đăng ký', navLogin: 'Đăng nhập'
+                ctaBtnStart: 'Bắt đầu', ctaBtnRegister: 'Đăng ký',
+                navFeatures: 'Tính năng', navProcess: 'Quy trình', navStats: 'Thống kê', navPartners: 'Đối tác', navLogin: 'Đăng nhập'
             },
             th: {
                 heroBadge: 'แพลตฟอร์มจัดการแรงงานตามฤดูกาลที่ได้รับการรับรองจากรัฐบาล',
@@ -795,7 +808,8 @@
                 gov3Title: 'จัดการประกัน', gov3Desc: 'จัดการสถานะประกันตั้งแต่เข้าประเทศ',
                 gov4Title: 'ให้คำปรึกษา', gov4Desc: 'จัดการบันทึกการให้คำปรึกษา รองรับ 5 ภาษา',
                 ctaTitle: 'นำ KWV ไปใช้<br>ตอนนี้เลย', ctaDesc: 'รูปแบบใหม่ในการจัดการแรงงานตามฤดูกาลต่างชาติ',
-                ctaBtnStart: 'เริ่มต้น', ctaBtnRegister: 'สมัครสมาชิก', navLogin: 'เข้าสู่ระบบ'
+                ctaBtnStart: 'เริ่มต้น', ctaBtnRegister: 'สมัครสมาชิก',
+                navFeatures: 'คุณสมบัติ', navProcess: 'ขั้นตอน', navStats: 'สถิติ', navPartners: 'พันธมิตร', navLogin: 'เข้าสู่ระบบ'
             },
             tl: {
                 heroBadge: 'Platform ng pamamahala ng seasonal worker na sertipikado ng gobyerno',
@@ -825,7 +839,8 @@
                 gov3Title: 'Insurance Management', gov3Desc: 'Pamahalaan ang insurance status mula sa pagpasok.',
                 gov4Title: 'Counseling', gov4Desc: 'Pamahalaan ang counseling records. 5-language translation support.',
                 ctaTitle: 'Gamitin ang KWV<br>Ngayon Na', ctaDesc: 'Bagong paradigm sa pamamahala ng foreign seasonal workers.',
-                ctaBtnStart: 'Magsimula', ctaBtnRegister: 'Mag-sign Up', navLogin: 'Mag-login'
+                ctaBtnStart: 'Magsimula', ctaBtnRegister: 'Mag-sign Up',
+                navFeatures: 'Features', navProcess: 'Proseso', navStats: 'Istatistika', navPartners: 'Partners', navLogin: 'Mag-login'
             }
         };
 
@@ -836,9 +851,6 @@
                 const key = el.getAttribute('data-i18n');
                 if (dict[key]) el.innerHTML = dict[key];
             });
-            // Update nav login button
-            const loginBtn = document.querySelector('a[href="/kwv-login.html"]');
-            if (loginBtn && dict.navLogin) loginBtn.textContent = dict.navLogin;
         }
 
         // Apply saved language on load

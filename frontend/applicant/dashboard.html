@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Dashboard - Korea Working Visa</title>
+    <title>근로자 - 대한민국 계절 근로자 통합 관리</title>
+    <meta name="description" content="대한민국 계절 근로자 통합 관리 - 근로자 대시보드">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="근로자 - 대한민국 계절 근로자 통합 관리">
+    <meta property="og:description" content="비자신청, 출퇴근, 활동일지, 포인트를 확인하세요.">
+    <meta property="og:image" content="/static/og-kwv.svg">
+    <meta property="og:site_name" content="대한민국 계절 근로자 통합 관리">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127472;&#127479;</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -13,6 +20,22 @@
         .card { background: white; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
         .tab-btn { transition: all 0.2s; }
         .tab-btn.active { color: #007AFF; border-bottom: 2px solid #007AFF; }
+        /* 활동 드롭다운 메뉴 */
+        .tab-dropdown { position: relative; display: inline-flex; flex-shrink: 0; }
+        .tab-dropdown-btn { cursor: pointer; }
+        .tab-dropdown-menu {
+            display: none; position: absolute; top: 100%; left: 0; z-index: 50;
+            background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            min-width: 160px; overflow: hidden; border: 1px solid #e5e7eb;
+        }
+        .tab-dropdown:hover .tab-dropdown-menu { display: block; }
+        .tab-dropdown-menu a {
+            display: flex; align-items: center; padding: 10px 16px;
+            font-size: 13px; color: #374151; text-decoration: none; transition: background 0.15s;
+        }
+        .tab-dropdown-menu a:hover { background: #f3f4f6; }
+        .tab-dropdown-menu a i { margin-right: 8px; width: 16px; text-align: center; }
+        .tab-dropdown-menu a.sub-active { background: #EFF6FF; color: #2563EB; font-weight: 600; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .status-badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
@@ -204,6 +227,16 @@
             <button onclick="showTab('guide')" class="tab-btn flex-shrink-0 px-4 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent" data-tab="guide">
                 <i class="fas fa-book mr-1"></i> <span data-i18n="tabGuide">Guide</span>
             </button>
+            <div class="tab-dropdown">
+                <div class="tab-dropdown-btn tab-btn flex-shrink-0 px-4 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent" id="activityGroupBtn">
+                    <i class="fas fa-clipboard-list mr-1"></i> <span data-i18n="tabActivity">Activity</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
+                </div>
+                <div class="tab-dropdown-menu">
+                    <a href="#" onclick="showTab('attendance');return false;" data-tab="attendance"><i class="fas fa-clock text-blue-500"></i> Attendance</a>
+                    <a href="#" onclick="showTab('activities');return false;" data-tab="activities"><i class="fas fa-book text-purple-500"></i> Activity Log</a>
+                    <a href="#" onclick="showTab('points');return false;" data-tab="points"><i class="fas fa-star text-yellow-500"></i> Points</a>
+                </div>
+            </div>
             <button onclick="showTab('profile')" class="tab-btn flex-shrink-0 px-4 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent" data-tab="profile">
                 <i class="fas fa-user-cog mr-1"></i> <span data-i18n="tabProfile">Profile</span>
             </button>
@@ -766,6 +799,199 @@
         </div>
     </div>
 
+    <!-- ==================== 출퇴근 탭 ==================== -->
+    <div id="tab-attendance" class="tab-content">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-clock mr-2 text-blue-500"></i> <span data-i18n="attTitle">My Attendance</span></h2>
+        </div>
+
+        <!-- 이번 달 요약 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div class="card p-4 text-center">
+                <p class="text-2xl font-bold text-green-600" id="myAttWorkdays">0</p>
+                <p class="text-xs text-gray-500" data-i18n="attWorkdays">Work Days</p>
+            </div>
+            <div class="card p-4 text-center">
+                <p class="text-2xl font-bold text-blue-600" id="myAttPresent">0</p>
+                <p class="text-xs text-gray-500" data-i18n="attPresent">Present</p>
+            </div>
+            <div class="card p-4 text-center">
+                <p class="text-2xl font-bold text-orange-500" id="myAttLate">0</p>
+                <p class="text-xs text-gray-500" data-i18n="attLate">Late</p>
+            </div>
+            <div class="card p-4 text-center">
+                <p class="text-2xl font-bold text-red-500" id="myAttAbsent">0</p>
+                <p class="text-xs text-gray-500" data-i18n="attAbsent">Absent</p>
+            </div>
+        </div>
+
+        <!-- 달력 뷰 -->
+        <div class="card p-5 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="changeAttMonth(-1)" class="px-3 py-1 text-gray-500 hover:text-gray-700"><i class="fas fa-chevron-left"></i></button>
+                <h3 class="font-semibold text-gray-800" id="attCalendarMonth"></h3>
+                <button onclick="changeAttMonth(1)" class="px-3 py-1 text-gray-500 hover:text-gray-700"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+                <div class="font-semibold text-red-400">Sun</div>
+                <div class="font-semibold text-gray-500">Mon</div>
+                <div class="font-semibold text-gray-500">Tue</div>
+                <div class="font-semibold text-gray-500">Wed</div>
+                <div class="font-semibold text-gray-500">Thu</div>
+                <div class="font-semibold text-gray-500">Fri</div>
+                <div class="font-semibold text-blue-400">Sat</div>
+            </div>
+            <div class="grid grid-cols-7 gap-1" id="attCalendarGrid"></div>
+        </div>
+
+        <!-- 최근 출퇴근 기록 -->
+        <div class="card overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="attDate">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="attType">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="attTime">Time</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="attMethod">Method</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="attStatus">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="myAttendanceBody">
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400" data-i18n="attNoRecords">No attendance records yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== 활동일지 탭 ==================== -->
+    <div id="tab-activities" class="tab-content">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-book mr-2 text-purple-500"></i> <span data-i18n="actTitle">My Activities</span></h2>
+            <button onclick="openActivityModal()" class="px-4 py-2 bg-purple-500 text-white text-sm rounded-xl hover:bg-purple-600 transition">
+                <i class="fas fa-plus mr-1"></i> <span data-i18n="actWrite">Write</span>
+            </button>
+        </div>
+
+        <!-- 활동일지 목록 -->
+        <div id="myActivitiesList" class="space-y-3">
+            <div class="text-center text-gray-400 py-8"><i class="fas fa-folder-open text-4xl mb-3"></i><p class="text-sm" data-i18n="actNoRecords">No activity logs yet.</p></div>
+        </div>
+    </div>
+
+    <!-- 활동일지 작성 모달 -->
+    <div id="activityModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" style="display:none;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h3 class="font-bold text-lg text-gray-800" data-i18n="actWriteTitle">Write Activity Log</h3>
+                <button onclick="closeActivityModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="text-sm text-gray-600 mb-1 block" data-i18n="actDateLabel">Date</label>
+                    <input type="date" id="actDate" class="w-full px-4 py-2.5 border rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600 mb-1 block" data-i18n="actTypeLabel">Activity Type</label>
+                    <select id="actType" class="w-full px-4 py-2.5 border rounded-xl text-sm">
+                        <option value="work">Work</option>
+                        <option value="training">Training</option>
+                        <option value="community">Community Service</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600 mb-1 block" data-i18n="actTitleLabel">Title</label>
+                    <input type="text" id="actTitleInput" class="w-full px-4 py-2.5 border rounded-xl text-sm" placeholder="Activity title">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600 mb-1 block" data-i18n="actContentLabel">Content</label>
+                    <textarea id="actContent" rows="4" class="w-full px-4 py-2.5 border rounded-xl text-sm" placeholder="Describe your activity..."></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm text-gray-600 mb-1 block" data-i18n="actHoursLabel">Hours</label>
+                        <input type="number" id="actHours" class="w-full px-4 py-2.5 border rounded-xl text-sm" value="8" min="0" max="24" step="0.5">
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 p-6 border-t">
+                <button onclick="closeActivityModal()" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200">Cancel</button>
+                <button onclick="submitActivity()" class="px-6 py-2 bg-purple-500 text-white rounded-xl text-sm hover:bg-purple-600">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 포인트 탭 ==================== -->
+    <div id="tab-points" class="tab-content">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-star mr-2 text-yellow-500"></i> <span data-i18n="ptsTitle">My Points</span></h2>
+        </div>
+
+        <!-- 포인트 요약 -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            <div class="card p-5 text-center bg-gradient-to-br from-yellow-50 to-orange-50">
+                <p class="text-3xl font-bold text-yellow-600" id="myTotalPoints">0</p>
+                <p class="text-xs text-gray-500" data-i18n="ptsTotalPoints">Total Points</p>
+            </div>
+            <div class="card p-5 text-center">
+                <p class="text-2xl font-bold text-blue-600" id="myMonthPoints">0</p>
+                <p class="text-xs text-gray-500" data-i18n="ptsThisMonth">This Month</p>
+            </div>
+            <div class="card p-5 text-center">
+                <p class="text-2xl font-bold text-purple-600" id="myPointsRank">-</p>
+                <p class="text-xs text-gray-500" data-i18n="ptsRank">My Rank</p>
+            </div>
+        </div>
+
+        <!-- 포인트 규칙 안내 -->
+        <div class="card p-5 mb-6">
+            <h3 class="font-semibold text-gray-800 mb-3"><i class="fas fa-info-circle text-blue-500 mr-2"></i> <span data-i18n="ptsRulesTitle">Point Rules</span></h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2" id="myPointRules">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                    <span class="text-sm text-gray-700">On-time Check-in</span>
+                    <span class="text-sm font-bold text-green-600">+10</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                    <span class="text-sm text-gray-700">Activity Log Submitted</span>
+                    <span class="text-sm font-bold text-green-600">+5</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                    <span class="text-sm text-gray-700">Training Completion</span>
+                    <span class="text-sm font-bold text-green-600">+20</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                    <span class="text-sm text-gray-700">Late Check-in</span>
+                    <span class="text-sm font-bold text-red-500">-5</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                    <span class="text-sm text-gray-700">Absent</span>
+                    <span class="text-sm font-bold text-red-500">-10</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                    <span class="text-sm text-gray-700">Community Service</span>
+                    <span class="text-sm font-bold text-green-600">+15</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 포인트 내역 -->
+        <div class="card overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="ptsDate">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="ptsPoints">Points</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="ptsType">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500" data-i18n="ptsDesc">Description</th>
+                    </tr>
+                </thead>
+                <tbody id="myPointsBody">
+                    <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400" data-i18n="ptsNoRecords">No point records yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </main>
 
 <!-- 푸터 -->
@@ -1258,7 +1484,247 @@
         if (mls) mls.value = currentLang;
     }
 
+    // ==================== 출퇴근 ====================
+    let attCalYear, attCalMonth;
+    (function() {
+        const now = new Date();
+        attCalYear = now.getFullYear();
+        attCalMonth = now.getMonth();
+    })();
+
+    function changeAttMonth(delta) {
+        attCalMonth += delta;
+        if (attCalMonth > 11) { attCalMonth = 0; attCalYear++; }
+        if (attCalMonth < 0) { attCalMonth = 11; attCalYear--; }
+        loadMyAttendance();
+    }
+
+    async function loadMyAttendance() {
+        const token = sessionStorage.getItem('kwv_token');
+        if (!token) return;
+
+        // 달력 제목
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const monthEl = document.getElementById('attCalendarMonth');
+        if (monthEl) monthEl.textContent = `${months[attCalMonth]} ${attCalYear}`;
+
+        try {
+            const res = await fetch(`${API_BASE}/attendance/my?year=${attCalYear}&month=${attCalMonth+1}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            const records = Array.isArray(data) ? data : (data.records || []);
+
+            // 요약 업데이트
+            const summary = data.summary || {};
+            const el = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+            el('myAttWorkdays', summary.workdays || records.length || 0);
+            el('myAttPresent', summary.present || 0);
+            el('myAttLate', summary.late || 0);
+            el('myAttAbsent', summary.absent || 0);
+
+            // 달력 렌더링
+            renderAttCalendar(records);
+
+            // 테이블 렌더링
+            const tbody = document.getElementById('myAttendanceBody');
+            if (tbody) {
+                if (records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No attendance records yet.</td></tr>';
+                } else {
+                    tbody.innerHTML = records.slice(0, 30).map(r => {
+                        const typeLabel = r.check_type === 'check_in' ? '<span class="text-green-600">Check In</span>' : '<span class="text-blue-600">Check Out</span>';
+                        const statusBadge = r.is_valid !== false
+                            ? '<span class="status-badge status-approved">Valid</span>'
+                            : '<span class="status-badge status-rejected">Invalid</span>';
+                        return `<tr class="border-b border-gray-50 hover:bg-gray-50">
+                            <td class="px-4 py-3 text-gray-700">${r.check_date || r.created_at?.substring(0,10) || '-'}</td>
+                            <td class="px-4 py-3">${typeLabel}</td>
+                            <td class="px-4 py-3 text-gray-600">${r.check_time || r.created_at?.substring(11,19) || '-'}</td>
+                            <td class="px-4 py-3 text-gray-500">${r.method || 'GPS'}</td>
+                            <td class="px-4 py-3">${statusBadge}</td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
+        } catch(e) {
+            console.warn('loadMyAttendance error:', e);
+        }
+    }
+
+    function renderAttCalendar(records) {
+        const grid = document.getElementById('attCalendarGrid');
+        if (!grid) return;
+        const firstDay = new Date(attCalYear, attCalMonth, 1).getDay();
+        const daysInMonth = new Date(attCalYear, attCalMonth + 1, 0).getDate();
+        const today = new Date();
+
+        // Build attendance map
+        const attMap = {};
+        (records || []).forEach(r => {
+            const d = r.check_date || r.created_at?.substring(0,10);
+            if (d) {
+                const day = parseInt(d.substring(8,10));
+                if (!attMap[day]) attMap[day] = [];
+                attMap[day].push(r.check_type);
+            }
+        });
+
+        let html = '';
+        for (let i = 0; i < firstDay; i++) html += '<div class="p-2"></div>';
+        for (let d = 1; d <= daysInMonth; d++) {
+            const isToday = (d === today.getDate() && attCalMonth === today.getMonth() && attCalYear === today.getFullYear());
+            const att = attMap[d];
+            let bg = 'bg-gray-50';
+            let dot = '';
+            if (att) {
+                bg = 'bg-green-100';
+                dot = '<div class="w-1.5 h-1.5 bg-green-500 rounded-full mx-auto mt-0.5"></div>';
+            }
+            if (isToday) bg = 'bg-blue-100 ring-2 ring-blue-400';
+            html += `<div class="p-2 rounded-lg text-center ${bg}">
+                <span class="text-xs ${isToday ? 'font-bold text-blue-600' : 'text-gray-700'}">${d}</span>
+                ${dot}
+            </div>`;
+        }
+        grid.innerHTML = html;
+    }
+
+    // ==================== 활동일지 ====================
+    function openActivityModal() {
+        const modal = document.getElementById('activityModal');
+        if (modal) modal.style.display = 'flex';
+        const dateInput = document.getElementById('actDate');
+        if (dateInput) dateInput.value = new Date().toISOString().substring(0,10);
+    }
+
+    function closeActivityModal() {
+        const modal = document.getElementById('activityModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    async function loadMyActivities() {
+        const token = sessionStorage.getItem('kwv_token');
+        if (!token) return;
+        const container = document.getElementById('myActivitiesList');
+        if (!container) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/activities/my`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            const activities = Array.isArray(data) ? data : (data.activities || []);
+
+            if (activities.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-folder-open text-4xl mb-3"></i><p class="text-sm">No activity logs yet.</p></div>';
+                return;
+            }
+
+            container.innerHTML = activities.map(a => {
+                const statusColors = { submitted: 'status-processing', approved: 'status-approved', rejected: 'status-rejected' };
+                const statusLabels = { submitted: 'Submitted', approved: 'Approved', rejected: 'Rejected' };
+                const typeIcons = { work: 'fa-hammer', training: 'fa-graduation-cap', community: 'fa-hands-helping', other: 'fa-file-alt' };
+                return `<div class="card p-4">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas ${typeIcons[a.activity_type] || 'fa-file-alt'} text-purple-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">${a.title || 'Activity'}</p>
+                                <p class="text-xs text-gray-500">${a.activity_date || ''} · ${a.hours || 0}h · ${a.activity_type || ''}</p>
+                                <p class="text-sm text-gray-600 mt-1">${a.content || ''}</p>
+                            </div>
+                        </div>
+                        <span class="status-badge ${statusColors[a.status] || 'status-pending'}">${statusLabels[a.status] || a.status || 'Pending'}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            console.warn('loadMyActivities error:', e);
+            container.innerHTML = '<div class="text-center text-red-400 py-8"><i class="fas fa-exclamation-circle mr-2"></i> Failed to load activities</div>';
+        }
+    }
+
+    async function submitActivity() {
+        const token = sessionStorage.getItem('kwv_token');
+        if (!token) return;
+
+        const body = {
+            activity_date: document.getElementById('actDate')?.value,
+            activity_type: document.getElementById('actType')?.value,
+            title: document.getElementById('actTitleInput')?.value,
+            content: document.getElementById('actContent')?.value,
+            hours: parseFloat(document.getElementById('actHours')?.value) || 8
+        };
+
+        if (!body.title || !body.activity_date) {
+            alert('Please fill in the date and title.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/activities`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (res.ok) {
+                closeActivityModal();
+                loadMyActivities();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                alert(err.detail || 'Failed to submit activity.');
+            }
+        } catch(e) {
+            alert('Network error. Please try again.');
+        }
+    }
+
+    // ==================== 포인트 ====================
+    async function loadMyPoints() {
+        const token = sessionStorage.getItem('kwv_token');
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/points/my`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+
+            const el = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+            el('myTotalPoints', data.total_points || 0);
+            el('myMonthPoints', data.month_points || 0);
+            el('myPointsRank', data.rank ? `#${data.rank}` : '-');
+
+            const records = data.records || data.history || [];
+            const tbody = document.getElementById('myPointsBody');
+            if (tbody) {
+                if (records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">No point records yet.</td></tr>';
+                } else {
+                    tbody.innerHTML = records.map(r => {
+                        const pts = r.points || 0;
+                        const ptsClass = pts >= 0 ? 'text-green-600' : 'text-red-500';
+                        const ptsStr = pts >= 0 ? `+${pts}` : `${pts}`;
+                        return `<tr class="border-b border-gray-50 hover:bg-gray-50">
+                            <td class="px-4 py-3 text-gray-700">${r.created_at?.substring(0,10) || r.date || '-'}</td>
+                            <td class="px-4 py-3 font-bold ${ptsClass}">${ptsStr}</td>
+                            <td class="px-4 py-3 text-gray-500">${r.reason_type || r.type || '-'}</td>
+                            <td class="px-4 py-3 text-gray-600">${r.description || r.reason || '-'}</td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
+        } catch(e) {
+            console.warn('loadMyPoints error:', e);
+        }
+    }
+
     // ==================== UI ====================
+    const activityTabs = ['attendance', 'activities', 'points'];
+
     function showTab(tabName) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => {
@@ -1266,16 +1732,34 @@
             el.classList.add('text-gray-500');
             el.style.borderBottomColor = 'transparent';
         });
+        document.querySelectorAll('.tab-dropdown-menu a').forEach(el => el.classList.remove('sub-active'));
+
         const tab = document.getElementById('tab-' + tabName);
         if (tab) tab.classList.add('active');
-        const btn = document.querySelector(`[data-tab="${tabName}"]`);
-        if (btn) {
-            btn.classList.add('active', 'text-blue-600');
-            btn.classList.remove('text-gray-500');
-            btn.style.borderBottomColor = '#007AFF';
+
+        // 활동 그룹 드롭다운 하이라이트
+        if (activityTabs.includes(tabName)) {
+            const groupBtn = document.getElementById('activityGroupBtn');
+            if (groupBtn) {
+                groupBtn.classList.add('active', 'text-blue-600');
+                groupBtn.classList.remove('text-gray-500');
+                groupBtn.style.borderBottomColor = '#007AFF';
+            }
+            const subLink = document.querySelector(`.tab-dropdown-menu a[data-tab="${tabName}"]`);
+            if (subLink) subLink.classList.add('sub-active');
+        } else {
+            const btn = document.querySelector(`button[data-tab="${tabName}"]`);
+            if (btn) {
+                btn.classList.add('active', 'text-blue-600');
+                btn.classList.remove('text-gray-500');
+                btn.style.borderBottomColor = '#007AFF';
+            }
         }
         if (tabName === 'documents') loadMyDocuments();
         if (tabName === 'jobs') loadApplicantJobs();
+        if (tabName === 'attendance') loadMyAttendance();
+        if (tabName === 'activities') loadMyActivities();
+        if (tabName === 'points') loadMyPoints();
     }
 
     // ==================== 서류 관리 ====================
@@ -1770,6 +2254,7 @@
             { id: 'jobs', icon: 'fa-briefcase', label: t('tabJobs') || 'Jobs', desc: t('mobileJobsDesc') || 'Find work', color: 'mobile-menu-orange' },
             { id: 'consulting', icon: 'fa-headset', label: t('tabConsulting') || 'Consulting', desc: t('mobileConsultDesc') || 'Book session', color: 'mobile-menu-indigo' },
             { id: 'guide', icon: 'fa-book', label: t('tabGuide') || 'Guide', desc: t('mobileGuideDesc') || 'Info & FAQ', color: 'mobile-menu-teal' },
+            { id: 'activity-group', icon: 'fa-clipboard-list', label: t('tabActivity') || 'Activity', desc: 'Work & Points', color: 'mobile-menu-purple', isGroup: true },
             { id: 'profile', icon: 'fa-user-cog', label: t('tabProfile') || 'Profile', desc: t('mobileProfileDesc') || 'My settings', color: 'mobile-menu-pink' },
             { id: 'notifications', icon: 'fa-bell', label: t('notifsTitle') || 'Notifications', desc: t('mobileNotifsDesc') || 'Alerts', color: 'mobile-menu-orange' }
         ];
@@ -1790,6 +2275,35 @@
     function handleMobileMenuClick(tabId) {
         if (tabId === 'home') {
             switchMobilePage(0);
+            return;
+        }
+        // 활동 그룹 → 서브메뉴 표시
+        if (tabId === 'activity-group') {
+            const mobileTabContent = document.getElementById('mobileTabContent');
+            const menuGrid = document.getElementById('mobileMenuGrid');
+            if (mobileTabContent) {
+                menuGrid.style.display = 'none';
+                mobileTabContent.style.display = 'block';
+                mobileTabContent.innerHTML = `
+                    <button onclick="closeMobileTab()" class="mb-3 text-sm text-blue-600 font-medium"><i class="fas fa-arrow-left mr-1"></i> ${t('mobileMenu') || 'Menu'}</button>
+                    <h3 class="font-bold text-gray-800 mb-3"><i class="fas fa-clipboard-list mr-2 text-purple-500"></i>${t('tabActivity') || 'Activity'}</h3>
+                    <div class="space-y-2">
+                        <div onclick="handleMobileMenuClick('attendance')" class="card p-4 flex items-center space-x-3 cursor-pointer active:scale-95 transition-transform">
+                            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fas fa-clock text-blue-500"></i></div>
+                            <div><p class="font-medium text-gray-800">${t('tabAttendance') || 'Attendance'}</p><p class="text-xs text-gray-500">Check in/out records</p></div>
+                        </div>
+                        <div onclick="handleMobileMenuClick('activities')" class="card p-4 flex items-center space-x-3 cursor-pointer active:scale-95 transition-transform">
+                            <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fas fa-book text-purple-500"></i></div>
+                            <div><p class="font-medium text-gray-800">${t('tabActivities') || 'Activity Log'}</p><p class="text-xs text-gray-500">Write & view logs</p></div>
+                        </div>
+                        <div onclick="handleMobileMenuClick('points')" class="card p-4 flex items-center space-x-3 cursor-pointer active:scale-95 transition-transform">
+                            <div class="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center"><i class="fas fa-star text-yellow-500"></i></div>
+                            <div><p class="font-medium text-gray-800">${t('tabPoints') || 'Points'}</p><p class="text-xs text-gray-500">Point history</p></div>
+                        </div>
+                    </div>
+                `;
+                if (mobileCurrentPage !== 1) switchMobilePage(1);
+            }
             return;
         }
         const tabContent = document.getElementById('tab-' + tabId);

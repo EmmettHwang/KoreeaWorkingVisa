@@ -1307,7 +1307,7 @@ async def get_dashboard_stats_real():
     """대시보드 통계 (실제 DB 조회)"""
     conn = get_kwv_db_connection()
     if not conn:
-        return {"success": True, "data": {"total_jobs": 0, "total_positions": 0, "kr_regions": 0, "foreign_regions": 0, "visa_types": 0}}
+        return {"success": True, "data": {"total_jobs": 0, "total_positions": 0, "allocated_quota": 0, "kr_regions": 0, "foreign_regions": 0, "visa_types": 0}}
     try:
         cursor = conn.cursor()
         # 구인 통계
@@ -1315,18 +1315,21 @@ async def get_dashboard_stats_real():
         jobs_row = cursor.fetchone()
         total_jobs = jobs_row[0] or 0
         total_positions = int(jobs_row[1] or 0)
-        # 지자체 통계 (한국 지자체 = kwv_local_governments, 해외 기관 = kwv_mou_agreements의 고유 국가)
-        cursor.execute("SELECT COUNT(*) FROM kwv_local_governments")
+        # 모집 가능 TO (활성 지자체 allocated_quota 합산)
+        cursor.execute("SELECT COALESCE(SUM(allocated_quota),0) FROM kwv_local_governments WHERE is_active=1")
+        allocated_quota = int(cursor.fetchone()[0] or 0)
+        # 한국 지자체 (활성만)
+        cursor.execute("SELECT COUNT(*) FROM kwv_local_governments WHERE is_active=1")
         kr_regions = cursor.fetchone()[0] or 0
+        # 해외 기관
         cursor.execute("SELECT COUNT(DISTINCT partner_country) FROM kwv_mou_agreements")
         foreign_regions = cursor.fetchone()[0] or 0
-        # 비자 종류
-        cursor.execute("SELECT COUNT(DISTINCT visa_type) FROM kwv_visa_applicants")
+        # 비자 종류 (신청자 기준)
+        cursor.execute("SELECT COUNT(DISTINCT visa_type) FROM kwv_visa_applicants WHERE visa_type IS NOT NULL AND visa_type != ''")
         visa_types = cursor.fetchone()[0] or 0
-        if visa_types == 0:
-            visa_types = 5  # 기본 비자 종류 (E-8, E-9, H-2, F-2, D-10)
         return {"success": True, "data": {
             "total_jobs": total_jobs, "total_positions": total_positions,
+            "allocated_quota": allocated_quota,
             "kr_regions": kr_regions, "foreign_regions": foreign_regions, "visa_types": visa_types
         }}
     finally:

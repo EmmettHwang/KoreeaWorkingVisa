@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KoreaWorkingVisa</title>
+    <title>관리자 - 대한민국 계절 근로자 통합 관리</title>
+    <meta name="description" content="대한민국 계절 근로자 통합 관리 - 관리자 대시보드">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="관리자 - 대한민국 계절 근로자 통합 관리">
+    <meta property="og:description" content="지원자, 출퇴근, 활동일지, 포인트, 지자체를 한번에 관리하세요.">
+    <meta property="og:image" content="/static/og-kwv.svg">
+    <meta property="og:site_name" content="대한민국 계절 근로자 통합 관리">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127472;&#127479;</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -353,23 +360,14 @@
                     </div>
                     <div class="menu-dropdown">
                         <a href="#" onclick="showTab('applicants');return false;" data-tab="applicants"><i class="fas fa-user-plus"></i> 지원자 현황</a>
+                        <a href="#" onclick="showTab('attendance');return false;" data-tab="attendance"><i class="fas fa-clock"></i> 출퇴근 관리</a>
+                        <a href="#" onclick="showTab('activities');return false;" data-tab="activities"><i class="fas fa-book"></i> 활동일지 관리</a>
+                        <a href="#" onclick="showTab('points');return false;" data-tab="points"><i class="fas fa-star"></i> 포인트 관리</a>
                         <a href="#" onclick="showTab('counseling');return false;" data-tab="counseling"><i class="fas fa-comments"></i> 상담일지</a>
                         <a href="#" onclick="showTab('insurance');return false;" data-tab="insurance"><i class="fas fa-shield-alt"></i> 보험 관리</a>
                     </div>
                 </div>
 
-                <!-- 근로자 (일상) 그룹 -->
-                <div class="menu-group">
-                    <div class="menu-group-btn tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" id="menuGroupDaily">
-                        <i class="fas fa-user mr-2"></i><span>근로자</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
-                    </div>
-                    <div class="menu-dropdown">
-                        <a href="#" onclick="showTab('attendance');return false;" data-tab="attendance"><i class="fas fa-clock"></i> 출퇴근</a>
-                        <a href="#" onclick="showTab('activities');return false;" data-tab="activities"><i class="fas fa-book"></i> 활동일지</a>
-                        <a href="#" onclick="showTab('points');return false;" data-tab="points"><i class="fas fa-star"></i> 포인트</a>
-                        <a href="#" onclick="showTab('jobseeking');return false;" data-tab="jobseeking"><i class="fas fa-search"></i> 구직</a>
-                    </div>
-                </div>
 
                 <!-- 리포트 & AI 그룹 -->
                 <div class="menu-group">
@@ -425,20 +423,19 @@
                             <i class="fas fa-briefcase text-lg"></i>
                         </div>
                     </div>
-                    <div class="flex items-baseline mt-2">
-                        <p class="text-3xl font-bold" id="totalJobs">-</p>
-                        <span class="ml-1 text-lg text-white/80" data-i18n="unit_count">건</span>
+                    <div class="mt-2">
+                        <p class="text-2xl font-bold"><span id="totalJobs">-</span><span class="text-base text-white/80" data-i18n="unit_count">건</span> / <span id="totalPositions">-</span><span class="text-base text-white/80" data-i18n="unit_people">명</span></p>
                     </div>
                 </div>
-                <div class="stat-card green rounded-2xl p-5 text-white">
+                <div class="stat-card green rounded-2xl p-5 text-white cursor-pointer" onclick="showTab('regions')">
                     <div class="flex justify-between items-start">
-                        <p class="text-white/70 text-sm" data-i18n="totalPositions">모집 인원</p>
+                        <p class="text-white/70 text-sm" data-i18n="allocatedQuota">모집 가능 TO</p>
                         <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                             <i class="fas fa-users text-lg"></i>
                         </div>
                     </div>
                     <div class="flex items-baseline mt-2">
-                        <p class="text-3xl font-bold" id="totalPositions">-</p>
+                        <p class="text-3xl font-bold" id="allocatedQuota">-</p>
                         <span class="ml-1 text-lg text-white/80" data-i18n="unit_people">명</span>
                     </div>
                 </div>
@@ -687,28 +684,6 @@
                         <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>로딩 중...</td></tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- ==================== 구직 탭 (근로자용, 읽기 전용) ==================== -->
-        <div id="tab-jobseeking" class="tab-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">🔍 구직 정보</h2>
-                <div class="flex items-center gap-3">
-                    <select id="jobSeekFilterVisa" class="input-apple text-sm" onchange="loadJobSeeking()">
-                        <option value="">모든 비자</option>
-                        <option value="E-8">E-8 계절근로</option>
-                        <option value="E-9">E-9 비전문취업</option>
-                        <option value="D-2">D-2 유학</option>
-                        <option value="D-4">D-4 어학연수</option>
-                    </select>
-                    <select id="jobSeekFilterLg" class="input-apple text-sm" onchange="loadJobSeeking()">
-                        <option value="">모든 지자체</option>
-                    </select>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="jobSeekCards">
-                <div class="text-center text-gray-400 py-8 col-span-3"><i class="fas fa-spinner fa-spin mr-2"></i>로딩 중...</div>
             </div>
         </div>
 
@@ -2613,6 +2588,7 @@
                 checkApplicants: '지원자 확인',
                 totalJobs: '총 구인',
                 totalPositions: '모집 인원',
+                allocatedQuota: '모집 가능 TO',
                 krRegions: '한국 지자체',
                 foreignRegions: '해외 지자체',
                 visaTypes: '비자 종류',
@@ -3082,6 +3058,7 @@
                 checkApplicants: 'Check Applicants',
                 totalJobs: 'Total Jobs',
                 totalPositions: 'Positions',
+                allocatedQuota: 'Available Quota',
                 krRegions: 'Korean Regions',
                 foreignRegions: 'Foreign Regions',
                 visaTypes: 'Visa Types',
@@ -3536,6 +3513,7 @@
                 checkApplicants: 'Kiểm tra ứng viên',
                 totalJobs: 'Tổng việc làm',
                 totalPositions: 'Vị trí',
+                allocatedQuota: 'Hạn ngạch',
                 krRegions: 'Khu vực Hàn Quốc',
                 foreignRegions: 'Khu vực nước ngoài',
                 visaTypes: 'Loại Visa',
@@ -3988,6 +3966,7 @@
                 checkApplicants: 'ตรวจสอบผู้สมัคร',
                 totalJobs: 'งานทั้งหมด',
                 totalPositions: 'ตำแหน่ง',
+                allocatedQuota: 'โควตา',
                 krRegions: 'ภูมิภาคเกาหลี',
                 foreignRegions: 'ภูมิภาคต่างประเทศ',
                 visaTypes: 'ประเภทวีซ่า',
@@ -4440,6 +4419,7 @@
                 checkApplicants: 'Tingnan ang Aplikante',
                 totalJobs: 'Kabuuang Trabaho',
                 totalPositions: 'Mga Posisyon',
+                allocatedQuota: 'Quota',
                 krRegions: 'Rehiyon ng Korea',
                 foreignRegions: 'Dayuhang Rehiyon',
                 visaTypes: 'Mga Uri ng Visa',
@@ -4922,8 +4902,8 @@
             themesettings: 'menuGroupSysSet',
             regions: 'menuGroupLg', mou: 'menuGroupLg', hiring: 'menuGroupLg',
             applicants: 'menuGroupWorker', counseling: 'menuGroupWorker', insurance: 'menuGroupWorker',
-            attendance: 'menuGroupDaily', activities: 'menuGroupDaily',
-            points: 'menuGroupDaily', jobseeking: 'menuGroupDaily',
+            attendance: 'menuGroupWorker', activities: 'menuGroupWorker',
+            points: 'menuGroupWorker',
             reports: 'menuGroupReport', anomalies: 'menuGroupReport',
             visa: 'menuGroupFaq', faq: 'menuGroupFaq', chatbot: 'menuGroupFaq'
         };
@@ -4969,7 +4949,7 @@
             if (tabName === 'notices') loadNoticesTab();
             if (tabName === 'dashboard') loadDashboardCharts();
             if (tabName === 'hiring') loadHiringList();
-            if (tabName === 'jobseeking') loadJobSeeking();
+
             if (tabName === 'permissions') loadPermissionsTab();
             if (tabName === 'themesettings') loadThemeSettings();
             if (tabName === 'basicsettings') loadSystemSettings();
@@ -6619,6 +6599,8 @@
                 if (data.success) {
                     document.getElementById('totalJobs').textContent = data.data.total_jobs;
                     document.getElementById('totalPositions').textContent = data.data.total_positions;
+                    const aq = document.getElementById('allocatedQuota');
+                    if (aq) aq.textContent = data.data.allocated_quota || 0;
                     document.getElementById('krRegions').textContent = data.data.kr_regions;
                     document.getElementById('foreignRegions').textContent = data.data.foreign_regions;
                     document.getElementById('visaTypes').textContent = data.data.visa_types;
@@ -9272,16 +9254,16 @@
                     <div class="mobile-fade-in mobile-stat-blue rounded-2xl p-4 text-white" style="${fd()}">
                         <div class="flex items-center justify-between">
                             <i class="fas fa-briefcase text-white/70 text-xl"></i>
-                            <span class="text-2xl font-bold" id="mTotalJobs">-</span>
+                            <span class="text-lg font-bold"><span id="mTotalJobs">-</span>건 / <span id="mTotalPositions">-</span>명</span>
                         </div>
                         <p class="text-white/70 text-xs mt-2">${t('totalJobs') || '총 구인'}</p>
                     </div>
                     <div class="mobile-fade-in mobile-stat-green rounded-2xl p-4 text-white" style="${fd()}">
                         <div class="flex items-center justify-between">
                             <i class="fas fa-users text-white/70 text-xl"></i>
-                            <span class="text-2xl font-bold" id="mTotalPositions">-</span>
+                            <span class="text-2xl font-bold" id="mAllocatedQuota">-</span>
                         </div>
-                        <p class="text-white/70 text-xs mt-2">${t('totalPositions') || '모집 인원'}</p>
+                        <p class="text-white/70 text-xs mt-2">${t('allocatedQuota') || '모집 가능 TO'}</p>
                     </div>
                     <div class="mobile-fade-in mobile-stat-orange rounded-2xl p-4 text-white" style="${fd()}">
                         <div class="flex items-center justify-between">
@@ -9340,7 +9322,7 @@
         }
 
         function syncMobileStats() {
-            const ids = [['totalJobs','mTotalJobs'],['totalPositions','mTotalPositions'],['krRegions','mKrRegions'],['foreignRegions','mForeignRegions'],['visaTypes','mVisaTypes']];
+            const ids = [['totalJobs','mTotalJobs'],['totalPositions','mTotalPositions'],['allocatedQuota','mAllocatedQuota'],['krRegions','mKrRegions'],['foreignRegions','mForeignRegions'],['visaTypes','mVisaTypes']];
             ids.forEach(([desk, mob]) => {
                 const dEl = document.getElementById(desk);
                 const mEl = document.getElementById(mob);
