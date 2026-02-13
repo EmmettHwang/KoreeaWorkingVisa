@@ -26,7 +26,7 @@
         </select>
     </div>
 
-    <div class="w-full max-w-md">
+    <div class="w-full max-w-lg">
         <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
             <!-- Header -->
             <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-center">
@@ -57,6 +57,9 @@
                                 <i class="fas fa-eye" id="eyeIcon"></i>
                             </button>
                         </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i><span data-i18n="defaultPwdHint">Default password: kwv2026</span>
+                        </p>
                     </div>
 
                     <div id="errorMessage" class="hidden p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
@@ -67,11 +70,53 @@
                     </button>
                 </form>
 
-                <div class="mt-6 text-center">
+                <!-- Divider -->
+                <div class="relative my-4">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-white text-gray-500" data-i18n="orSocial">or</span>
+                    </div>
+                </div>
+
+                <!-- Google Login -->
+                <button type="button" onclick="window.location.href='/api/kwv/auth/google/start?mode=login'"
+                    class="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow border border-gray-300">
+                    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    <span data-i18n="googleLogin">Login with Google</span>
+                </button>
+
+                <!-- Register Link -->
+                <div class="mt-4 text-center">
                     <p class="text-gray-600 text-sm">
                         <span data-i18n="noAccount">Don't have an account?</span>
                         <a href="/kwv-register.html" class="text-blue-600 font-medium hover:underline" data-i18n="register">Register</a>
                     </p>
+                </div>
+
+                <!-- 비자안내 Section -->
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <div class="border-2 border-blue-200 rounded-xl p-4 bg-blue-50/50 space-y-2">
+                        <p class="text-sm font-semibold text-blue-700 mb-2 text-center">
+                            <i class="fas fa-bullhorn mr-1"></i><span data-i18n="visaInfo">Visa Information</span>
+                        </p>
+                        <button type="button" onclick="window.location.href='/course-intro.html'"
+                            class="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-bold py-2.5 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow">
+                            <i class="fas fa-info-circle mr-2"></i><span data-i18n="visaGuide">Visa Guide</span>
+                        </button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="window.location.href='/kwv-register.html'"
+                                class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-2.5 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow text-sm">
+                                <i class="fas fa-pen-to-square mr-1"></i><span data-i18n="applyRegister">Apply for Registration</span>
+                            </button>
+                            <button type="button" onclick="window.location.href='/api/kwv/auth/google/start?mode=register'"
+                                class="flex-1 flex items-center justify-center gap-1 bg-white hover:bg-gray-50 text-gray-700 font-bold py-2.5 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow border border-gray-300 text-sm">
+                                <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                                <span data-i18n="googleRegister">Google</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -90,9 +135,16 @@
                 subtitle: 'Seasonal Worker Portal',
                 email: 'Email',
                 password: 'Password',
+                defaultPwdHint: 'Default password: kwv2026',
                 login: 'Login',
+                orSocial: 'or',
+                googleLogin: 'Login with Google',
                 noAccount: "Don't have an account?",
                 register: 'Register',
+                visaInfo: 'Visa Information',
+                visaGuide: 'Visa Guide',
+                applyRegister: 'Apply for Registration',
+                googleRegister: 'Google',
                 redirectingAdmin: 'Redirecting to Admin Dashboard...',
                 redirectingApplicant: 'Redirecting to My Dashboard...'
             },
@@ -101,9 +153,16 @@
                 subtitle: '계절근로자 포털',
                 email: '이메일',
                 password: '비밀번호',
+                defaultPwdHint: '초기 비밀번호: kwv2026',
                 login: '로그인',
+                orSocial: '또는',
+                googleLogin: 'Google로 로그인',
                 noAccount: '계정이 없으신가요?',
                 register: '회원가입',
+                visaInfo: '비자안내',
+                visaGuide: '비자 안내',
+                applyRegister: '회원가입 신청',
+                googleRegister: 'Google',
                 redirectingAdmin: '관리자 대시보드로 이동 중...',
                 redirectingApplicant: '내 대시보드로 이동 중...'
             },
@@ -112,27 +171,48 @@
                 subtitle: 'Cổng Thông Tin Lao Động Thời Vụ',
                 email: 'Email',
                 password: 'Mật khẩu',
+                defaultPwdHint: 'Mật khẩu mặc định: kwv2026',
                 login: 'Đăng nhập',
+                orSocial: 'hoặc',
+                googleLogin: 'Đăng nhập bằng Google',
                 noAccount: 'Chưa có tài khoản?',
-                register: 'Đăng ký'
+                register: 'Đăng ký',
+                visaInfo: 'Thông tin Visa',
+                visaGuide: 'Hướng dẫn Visa',
+                applyRegister: 'Đăng ký tài khoản',
+                googleRegister: 'Google'
             },
             th: {
                 title: 'วีซ่าทำงานเกาหลี',
                 subtitle: 'พอร์ทัลแรงงานตามฤดูกาล',
                 email: 'อีเมล',
                 password: 'รหัสผ่าน',
+                defaultPwdHint: 'รหัสผ่านเริ่มต้น: kwv2026',
                 login: 'เข้าสู่ระบบ',
+                orSocial: 'หรือ',
+                googleLogin: 'เข้าสู่ระบบด้วย Google',
                 noAccount: 'ยังไม่มีบัญชี?',
-                register: 'ลงทะเบียน'
+                register: 'ลงทะเบียน',
+                visaInfo: 'ข้อมูลวีซ่า',
+                visaGuide: 'คู่มือวีซ่า',
+                applyRegister: 'สมัครสมาชิก',
+                googleRegister: 'Google'
             },
             tl: {
                 title: 'Korea Working Visa',
                 subtitle: 'Portal ng Seasonal Worker',
                 email: 'Email',
                 password: 'Password',
+                defaultPwdHint: 'Default password: kwv2026',
                 login: 'Mag-login',
+                orSocial: 'o',
+                googleLogin: 'Mag-login gamit ang Google',
                 noAccount: 'Wala pang account?',
-                register: 'Mag-register'
+                register: 'Mag-register',
+                visaInfo: 'Impormasyon sa Visa',
+                visaGuide: 'Gabay sa Visa',
+                applyRegister: 'Mag-apply para sa Registration',
+                googleRegister: 'Google'
             }
         };
 
@@ -226,7 +306,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             applyTranslations();
 
-            // sessionStorage 기반 - 브라우저 닫으면 로그아웃
             const loggedIn = sessionStorage.getItem('kwv_logged_in');
             const user = sessionStorage.getItem('kwv_user');
             if (loggedIn === 'true' && user) {

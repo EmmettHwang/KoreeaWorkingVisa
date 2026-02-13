@@ -510,26 +510,49 @@
         <!-- ==================== 지자체 탭 ==================== -->
         <div id="tab-regions" class="tab-content">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800" data-i18n="regionInfo">📍 지자체 정보</h2>
-                <div class="flex bg-gray-100 rounded-xl p-1">
-                    <button onclick="toggleRegionView('list')" id="regionListBtn" class="px-4 py-2 rounded-lg text-sm font-medium transition bg-white shadow text-blue-600">
-                        <i class="fas fa-list mr-2"></i><span data-i18n="listView">목록</span>
+                <h2 class="text-2xl font-bold text-gray-800">📍 지자체 관리</h2>
+                <div class="flex items-center gap-3">
+                    <select id="lgRegionFilter" class="input-apple text-sm" onchange="loadLocalGovernments()">
+                        <option value="">전체 지역</option>
+                    </select>
+                    <div class="flex bg-gray-100 rounded-xl p-1">
+                        <button onclick="toggleRegionView('list')" id="regionListBtn" class="px-4 py-2 rounded-lg text-sm font-medium transition bg-white shadow text-blue-600">
+                            <i class="fas fa-list mr-2"></i>목록
+                        </button>
+                        <button onclick="toggleRegionView('map')" id="regionMapBtn" class="px-4 py-2 rounded-lg text-sm font-medium transition text-gray-600">
+                            <i class="fas fa-map mr-2"></i>지도
+                        </button>
+                    </div>
+                    <button onclick="openLgModal()" class="btn-primary text-sm" id="addLgBtn" style="display:none;">
+                        <i class="fas fa-plus mr-1"></i>지자체 등록
                     </button>
-                    <button onclick="toggleRegionView('map')" id="regionMapBtn" class="px-4 py-2 rounded-lg text-sm font-medium transition text-gray-600">
-                        <i class="fas fa-map mr-2"></i><span data-i18n="mapView">지도</span>
-                    </button>
+                </div>
+            </div>
+
+            <!-- TO 요약 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="lgSummaryCards">
+                <div class="card p-4 text-center">
+                    <p class="text-xs text-gray-400">등록 지자체</p>
+                    <p class="text-2xl font-bold text-gray-800" id="lgTotalCount">0</p>
+                </div>
+                <div class="card p-4 text-center">
+                    <p class="text-xs text-gray-400">총 배정 TO</p>
+                    <p class="text-2xl font-bold text-blue-600" id="lgTotalQuota">0</p>
+                </div>
+                <div class="card p-4 text-center">
+                    <p class="text-xs text-gray-400">사용 TO</p>
+                    <p class="text-2xl font-bold text-green-600" id="lgUsedQuota">0</p>
+                </div>
+                <div class="card p-4 text-center">
+                    <p class="text-xs text-gray-400">잔여 TO</p>
+                    <p class="text-2xl font-bold text-orange-600" id="lgRemainingQuota">0</p>
                 </div>
             </div>
 
             <!-- 목록 뷰 -->
             <div id="regionListView">
-                <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4" data-i18n="krRegionsTitle">🇰🇷 한국 지자체</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="krRegionCards"></div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4" data-i18n="foreignPartners">🌏 해외 파트너 지자체</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="foreignRegionCards"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="lgCards">
+                    <div class="text-center text-gray-400 py-8 col-span-2"><i class="fas fa-spinner fa-spin mr-2"></i>로딩 중...</div>
                 </div>
             </div>
 
@@ -620,6 +643,158 @@
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-gray-800" data-i18n="settingsTitle">⚙️ 설정</h2>
             </div>
+
+            <!-- ===== 시스템 설정 (Super Admin 전용) ===== -->
+            <div id="systemSettingsSection" style="display:none;" class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                    <i class="fas fa-server text-blue-500 mr-2"></i>시스템 설정
+                    <span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">Super Admin</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    <!-- 플랫폼 기본정보 -->
+                    <div class="card p-6">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-heading text-blue-500"></i></div>
+                            플랫폼 정보
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs text-gray-500">시스템 제목</label>
+                                <input type="text" id="set_system_title" class="w-full input-apple text-sm mt-1" placeholder="Korea Working Visa">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">부제목</label>
+                                <input type="text" id="set_system_subtitle" class="w-full input-apple text-sm mt-1" placeholder="외국인 계절근로자 관리 포털">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">로고 URL</label>
+                                <input type="text" id="set_logo_url" class="w-full input-apple text-sm mt-1" placeholder="/logo.png">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 가입/승인 설정 -->
+                    <div class="card p-6">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-user-check text-green-500"></i></div>
+                            가입/승인
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs text-gray-500">가입 승인 모드</label>
+                                <select id="set_approval_mode" class="w-full input-apple text-sm mt-1">
+                                    <option value="auto">자동 승인</option>
+                                    <option value="manual">관리자 승인</option>
+                                </select>
+                            </div>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
+                                <span class="text-sm text-gray-700">시스템 점검 모드</span>
+                                <input type="checkbox" id="set_maintenance_mode" class="w-5 h-5 accent-[#007AFF]">
+                            </label>
+                            <div>
+                                <label class="text-xs text-gray-500">기본 언어</label>
+                                <select id="set_default_language" class="w-full input-apple text-sm mt-1">
+                                    <option value="ko">한국어</option>
+                                    <option value="en">English</option>
+                                    <option value="vi">Tiếng Việt</option>
+                                    <option value="th">ภาษาไทย</option>
+                                    <option value="tl">Filipino</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 포인트/출퇴근 설정 -->
+                    <div class="card p-6">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-star text-orange-500"></i></div>
+                            포인트/출퇴근
+                        </h4>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs text-gray-500">출근 포인트</label>
+                                    <input type="number" id="set_point_check_in" class="w-full input-apple text-sm mt-1" value="10">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">퇴근 포인트</label>
+                                    <input type="number" id="set_point_check_out" class="w-full input-apple text-sm mt-1" value="5">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs text-gray-500">활동일지 포인트</label>
+                                    <input type="number" id="set_point_activity_log" class="w-full input-apple text-sm mt-1" value="3">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500">GPS 반경(m)</label>
+                                    <input type="number" id="set_gps_radius_meters" class="w-full input-apple text-sm mt-1" value="500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">출근 마감시간(시)</label>
+                                <input type="number" id="set_attendance_deadline_hours" class="w-full input-apple text-sm mt-1" value="10" min="6" max="12">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API 키 설정 -->
+                    <div class="card p-6">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-key text-purple-500"></i></div>
+                            API 키
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs text-gray-500">Google Maps API</label>
+                                <input type="password" id="set_google_maps_api_key" class="w-full input-apple text-sm mt-1" placeholder="API Key">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">AI API Key (Groq/Gemini)</label>
+                                <input type="password" id="set_ai_api_key" class="w-full input-apple text-sm mt-1" placeholder="API Key">
+                            </div>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
+                                <span class="text-sm text-gray-700">AI 이상감지 활성화</span>
+                                <input type="checkbox" id="set_ai_anomaly_enabled" class="w-5 h-5 accent-[#007AFF]">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 로그인 페이지 설정 -->
+                    <div class="card p-6">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <div class="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center mr-2"><i class="fas fa-sign-in-alt text-cyan-500"></i></div>
+                            로그인 페이지
+                        </h4>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
+                                <span class="text-sm text-gray-700">회원가입 버튼</span>
+                                <input type="checkbox" id="set_login_show_register" checked class="w-5 h-5 accent-[#007AFF]">
+                            </label>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
+                                <span class="text-sm text-gray-700">Google 로그인</span>
+                                <input type="checkbox" id="set_login_show_google" checked class="w-5 h-5 accent-[#007AFF]">
+                            </label>
+                            <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
+                                <span class="text-sm text-gray-700">MOU 쇼케이스 링크</span>
+                                <input type="checkbox" id="set_login_show_mou" checked class="w-5 h-5 accent-[#007AFF]">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 저장 버튼 -->
+                    <div class="card p-6 flex items-center justify-center">
+                        <button onclick="saveSystemSettings()" class="btn-primary w-full text-center">
+                            <i class="fas fa-save mr-2"></i>시스템 설정 저장
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 개인 설정 ===== -->
+            <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center" id="personalSettingsTitle">
+                <i class="fas fa-user text-gray-400 mr-2"></i>개인 설정
+            </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- 내 프로필 -->
                 <div class="card p-6">
@@ -4118,50 +4293,235 @@
             if (modal) modal.remove();
         }
 
-        // 지자체
-        async function loadRegions() {
+        // ==================== 지자체 관리 (API 기반) ====================
+        let localGovernments = [];
+
+        async function loadLocalGovernments() {
             try {
-                const krRes = await fetch(API_BASE + '/regions/kr');
-                const krData = await krRes.json();
-                const posUnit = t('unit_people');
-                if (krData.success) {
-                    document.getElementById('krRegionCards').innerHTML = krData.data.map(r => `
-                        <div class="card p-6 cursor-pointer hover:shadow-xl transition-shadow" onclick="openRegionModal('${r.name}')">
-                            <div class="flex items-center mb-4">
+                const regionFilter = document.getElementById('lgRegionFilter')?.value || '';
+                let url = API_BASE + '/local-governments';
+                if (regionFilter) url += '?region=' + encodeURIComponent(regionFilter);
+                const res = await fetch(url);
+                localGovernments = await res.json();
+
+                // 요약 카드
+                const total = localGovernments.length;
+                const totalQuota = localGovernments.reduce((s, lg) => s + (lg.allocated_quota || 0), 0);
+                const usedQuota = localGovernments.reduce((s, lg) => s + (lg.used_quota || 0), 0);
+                document.getElementById('lgTotalCount').textContent = total;
+                document.getElementById('lgTotalQuota').textContent = totalQuota.toLocaleString();
+                document.getElementById('lgUsedQuota').textContent = usedQuota.toLocaleString();
+                document.getElementById('lgRemainingQuota').textContent = (totalQuota - usedQuota).toLocaleString();
+
+                // 지역 필터 옵션
+                const regions = [...new Set(localGovernments.map(lg => lg.region))].sort();
+                const filterEl = document.getElementById('lgRegionFilter');
+                const currentVal = filterEl.value;
+                const opts = '<option value="">전체 지역</option>' + regions.map(r => `<option value="${r}" ${r===currentVal?'selected':''}>${r}</option>`).join('');
+                filterEl.innerHTML = opts;
+
+                // 카드 렌더링
+                const container = document.getElementById('lgCards');
+                if (localGovernments.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-400 py-12 col-span-2"><i class="fas fa-building mr-2"></i>등록된 지자체가 없습니다.<br><button onclick="openLgModal()" class="mt-3 text-blue-500 underline">지자체 등록하기</button></div>';
+                    return;
+                }
+                container.innerHTML = localGovernments.map(lg => `
+                    <div class="card p-6 cursor-pointer hover:shadow-xl transition-shadow" onclick="openLgDetail(${lg.id})">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
                                 <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mr-4">
-                                    <i class="fas fa-map-marker-alt text-blue-500 text-xl"></i>
+                                    ${lg.logo_url ? `<img src="${lg.logo_url}" class="w-10 h-10 rounded-xl object-cover">` : '<i class="fas fa-landmark text-blue-500 text-xl"></i>'}
                                 </div>
                                 <div>
-                                    <h3 class="text-xl font-bold text-gray-800">${t(r.name)}</h3>
-                                    <p class="text-gray-400">${t(r.province)}</p>
+                                    <h3 class="text-lg font-bold text-gray-800">${lg.name}</h3>
+                                    <p class="text-sm text-gray-400">${lg.region}${lg.name_en ? ' · ' + lg.name_en : ''}</p>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-gray-50 p-3 rounded-xl"><p class="text-xs text-gray-400">${t('climate')}</p><p class="font-medium text-gray-800">${t(r.climate)}</p></div>
-                                <div class="bg-gray-50 p-3 rounded-xl"><p class="text-xs text-gray-400">${t('mainIndustry')}</p><p class="font-medium text-gray-800">${t(r.main_industry)}</p></div>
-                                <div class="bg-gray-50 p-3 rounded-xl"><p class="text-xs text-gray-400">${t('population')}</p><p class="font-medium text-gray-800">${r.population.toLocaleString()}${posUnit}</p></div>
-                                <div class="bg-blue-50 p-3 rounded-xl"><p class="text-xs text-blue-400">${t('neededWorkers')}</p><p class="font-bold text-blue-600">${r.needed_workers}${posUnit}</p></div>
+                            ${lg.is_active ? '<span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">활성</span>' : '<span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">비활성</span>'}
+                        </div>
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div class="bg-gray-50 p-3 rounded-xl text-center">
+                                <p class="text-xs text-gray-400">배정 TO</p>
+                                <p class="font-bold text-blue-600">${lg.allocated_quota || 0}</p>
                             </div>
-                            <div class="mt-4 text-center text-blue-500 text-sm"><i class="fas fa-info-circle mr-1"></i>${t('viewDetails') || '상세보기'}</div>
+                            <div class="bg-gray-50 p-3 rounded-xl text-center">
+                                <p class="text-xs text-gray-400">사용 TO</p>
+                                <p class="font-bold text-green-600">${lg.used_quota || 0}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl text-center">
+                                <p class="text-xs text-gray-400">잔여</p>
+                                <p class="font-bold text-orange-600">${(lg.allocated_quota || 0) - (lg.used_quota || 0)}</p>
+                            </div>
                         </div>
-                    `).join('');
-                }
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="text-gray-400">
+                                ${lg.representative_name ? '<i class="fas fa-user mr-1"></i>' + lg.representative_name : ''}
+                                ${lg.phone ? ' · <i class="fas fa-phone mr-1"></i>' + lg.phone : ''}
+                            </div>
+                            ${lg.website_url ? '<a href="' + lg.website_url + '" target="_blank" class="text-blue-500 hover:underline" onclick="event.stopPropagation()"><i class="fas fa-external-link-alt mr-1"></i>홈페이지</a>' : ''}
+                        </div>
+                    </div>
+                `).join('');
 
-                const foreignRes = await fetch(API_BASE + '/regions/foreign');
-                const foreignData = await foreignRes.json();
-                if (foreignData.success) {
-                    const flags = {VN: '🇻🇳', TH: '🇹🇭', PH: '🇵🇭'};
-                    const countryNames = {VN: t('country_VN'), TH: t('country_TH'), PH: t('country_PH')};
-                    document.getElementById('foreignRegionCards').innerHTML = foreignData.data.map(r => `
-                        <div class="card p-6 text-center">
-                            <span class="text-5xl mb-4 block">${flags[r.country_code] || '🌍'}</span>
-                            <h3 class="text-xl font-bold text-gray-800">${t(r.name)}</h3>
-                            <p class="text-gray-400">${countryNames[r.country_code] || r.country}</p>
-                        </div>
-                    `).join('');
-                }
-            } catch(e) { console.error(e); }
+                // 지도 마커 업데이트
+                updateRegionMapMarkers();
+            } catch(e) {
+                console.error('loadLocalGovernments error:', e);
+                document.getElementById('lgCards').innerHTML = '<div class="text-center text-red-400 py-8 col-span-2"><i class="fas fa-exclamation-triangle mr-2"></i>지자체 정보를 불러올 수 없습니다.</div>';
+            }
         }
+
+        // 지자체 등록/수정 모달
+        function openLgModal(lgId) {
+            const lg = lgId ? localGovernments.find(x => x.id === lgId) : null;
+            const isEdit = !!lg;
+            const modal = document.createElement('div');
+            modal.id = 'lgModal';
+            modal.className = 'modal fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 active';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-400 p-6 rounded-t-3xl">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-xl font-bold text-white"><i class="fas fa-landmark mr-2"></i>${isEdit ? '지자체 수정' : '지자체 등록'}</h2>
+                            <button onclick="document.getElementById('lgModal').remove()" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-xs text-gray-500">지자체명 *</label><input type="text" id="lgName" class="w-full input-apple text-sm mt-1" value="${lg?.name||''}" placeholder="예: 해남군"></div>
+                            <div><label class="text-xs text-gray-500">영문명</label><input type="text" id="lgNameEn" class="w-full input-apple text-sm mt-1" value="${lg?.name_en||''}" placeholder="예: Haenam-gun"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-xs text-gray-500">광역 지역 *</label><input type="text" id="lgRegion" class="w-full input-apple text-sm mt-1" value="${lg?.region||''}" placeholder="예: 전라남도"></div>
+                            <div><label class="text-xs text-gray-500">주소</label><input type="text" id="lgAddress" class="w-full input-apple text-sm mt-1" value="${lg?.address||''}"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div><label class="text-xs text-gray-500">전화번호</label><input type="text" id="lgPhone" class="w-full input-apple text-sm mt-1" value="${lg?.phone||''}"></div>
+                            <div><label class="text-xs text-gray-500">이메일</label><input type="text" id="lgEmail" class="w-full input-apple text-sm mt-1" value="${lg?.email||''}"></div>
+                            <div><label class="text-xs text-gray-500">홈페이지</label><input type="text" id="lgWebsite" class="w-full input-apple text-sm mt-1" value="${lg?.website_url||''}" placeholder="https://"></div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-xl">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-user-tie mr-1"></i>담당자 정보</h4>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div><label class="text-xs text-gray-500">담당자명</label><input type="text" id="lgRepName" class="w-full input-apple text-sm mt-1" value="${lg?.representative_name||''}"></div>
+                                <div><label class="text-xs text-gray-500">담당자 연락처</label><input type="text" id="lgRepPhone" class="w-full input-apple text-sm mt-1" value="${lg?.representative_phone||''}"></div>
+                                <div><label class="text-xs text-gray-500">담당자 이메일</label><input type="text" id="lgRepEmail" class="w-full input-apple text-sm mt-1" value="${lg?.representative_email||''}"></div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-xl">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-users mr-1"></i>TO 배정</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-xs text-gray-500">배정 TO</label><input type="number" id="lgQuota" class="w-full input-apple text-sm mt-1" value="${lg?.allocated_quota||0}" min="0"></div>
+                                <div><label class="text-xs text-gray-500">배정 연도</label><input type="number" id="lgQuotaYear" class="w-full input-apple text-sm mt-1" value="${lg?.quota_year||new Date().getFullYear()}"></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-xs text-gray-500">위도</label><input type="number" step="0.0000001" id="lgLat" class="w-full input-apple text-sm mt-1" value="${lg?.latitude||''}" placeholder="36.5"></div>
+                            <div><label class="text-xs text-gray-500">경도</label><input type="number" step="0.0000001" id="lgLng" class="w-full input-apple text-sm mt-1" value="${lg?.longitude||''}" placeholder="127.0"></div>
+                        </div>
+                        <div><label class="text-xs text-gray-500">설명</label><textarea id="lgDesc" class="w-full input-apple text-sm mt-1" rows="3" placeholder="지자체 소개...">${lg?.description||''}</textarea></div>
+                        <button onclick="saveLg(${lgId||'null'})" class="w-full btn-primary text-center"><i class="fas fa-save mr-2"></i>${isEdit ? '수정' : '등록'}</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function saveLg(lgId) {
+            const data = {
+                name: document.getElementById('lgName').value.trim(),
+                name_en: document.getElementById('lgNameEn').value.trim() || null,
+                region: document.getElementById('lgRegion').value.trim(),
+                address: document.getElementById('lgAddress').value.trim() || null,
+                phone: document.getElementById('lgPhone').value.trim() || null,
+                email: document.getElementById('lgEmail').value.trim() || null,
+                website_url: document.getElementById('lgWebsite').value.trim() || null,
+                representative_name: document.getElementById('lgRepName').value.trim() || null,
+                representative_phone: document.getElementById('lgRepPhone').value.trim() || null,
+                representative_email: document.getElementById('lgRepEmail').value.trim() || null,
+                allocated_quota: parseInt(document.getElementById('lgQuota').value) || 0,
+                quota_year: parseInt(document.getElementById('lgQuotaYear').value) || new Date().getFullYear(),
+                latitude: parseFloat(document.getElementById('lgLat').value) || null,
+                longitude: parseFloat(document.getElementById('lgLng').value) || null,
+                description: document.getElementById('lgDesc').value.trim() || null
+            };
+            if (!data.name || !data.region) { alert('지자체명과 광역 지역은 필수입니다.'); return; }
+            try {
+                const token = sessionStorage.getItem('kwv_token');
+                const url = lgId ? `${API_BASE}/local-governments/${lgId}` : `${API_BASE}/local-governments`;
+                const method = lgId ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify(data) });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || '저장 실패');
+                alert(result.message);
+                document.getElementById('lgModal')?.remove();
+                loadLocalGovernments();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        async function deleteLg(lgId) {
+            if (!confirm('이 지자체를 비활성화하시겠습니까?')) return;
+            try {
+                const token = sessionStorage.getItem('kwv_token');
+                const res = await fetch(`${API_BASE}/local-governments/${lgId}`, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail);
+                alert(result.message);
+                loadLocalGovernments();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        function openLgDetail(lgId) {
+            const lg = localGovernments.find(x => x.id === lgId);
+            if (!lg) return;
+            const modal = document.createElement('div');
+            modal.id = 'lgDetailModal';
+            modal.className = 'modal fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 active';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-400 p-6 rounded-t-3xl">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-bold text-white">${lg.name}</h2>
+                                <p class="text-blue-100">${lg.region}${lg.name_en ? ' · ' + lg.name_en : ''}</p>
+                            </div>
+                            <button onclick="document.getElementById('lgDetailModal').remove()" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-blue-50 p-4 rounded-xl text-center"><p class="text-xs text-gray-500">배정 TO</p><p class="text-2xl font-bold text-blue-600">${lg.allocated_quota||0}</p></div>
+                            <div class="bg-green-50 p-4 rounded-xl text-center"><p class="text-xs text-gray-500">사용 TO</p><p class="text-2xl font-bold text-green-600">${lg.used_quota||0}</p></div>
+                            <div class="bg-orange-50 p-4 rounded-xl text-center"><p class="text-xs text-gray-500">잔여 TO</p><p class="text-2xl font-bold text-orange-600">${(lg.allocated_quota||0)-(lg.used_quota||0)}</p></div>
+                        </div>
+                        ${lg.description ? `<div class="bg-gray-50 p-4 rounded-xl"><p class="text-sm text-gray-600">${lg.description}</p></div>` : ''}
+                        <div class="bg-gray-50 p-4 rounded-xl space-y-2">
+                            <h4 class="font-semibold text-gray-700"><i class="fas fa-info-circle mr-1"></i>연락처</h4>
+                            ${lg.phone ? `<p class="text-sm text-gray-600"><i class="fas fa-phone mr-2 text-gray-400"></i>${lg.phone}</p>` : ''}
+                            ${lg.email ? `<p class="text-sm text-gray-600"><i class="fas fa-envelope mr-2 text-gray-400"></i>${lg.email}</p>` : ''}
+                            ${lg.address ? `<p class="text-sm text-gray-600"><i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>${lg.address}</p>` : ''}
+                            ${lg.website_url ? `<p class="text-sm"><a href="${lg.website_url}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-external-link-alt mr-2"></i>${lg.website_url}</a></p>` : ''}
+                        </div>
+                        ${lg.representative_name ? `
+                        <div class="bg-gray-50 p-4 rounded-xl space-y-2">
+                            <h4 class="font-semibold text-gray-700"><i class="fas fa-user-tie mr-1"></i>담당자</h4>
+                            <p class="text-sm text-gray-600">${lg.representative_name}${lg.representative_phone ? ' · ' + lg.representative_phone : ''}${lg.representative_email ? ' · ' + lg.representative_email : ''}</p>
+                        </div>` : ''}
+                        <div class="flex gap-3">
+                            <button onclick="document.getElementById('lgDetailModal').remove(); openLgModal(${lg.id})" class="flex-1 btn-primary text-center text-sm"><i class="fas fa-edit mr-1"></i>수정</button>
+                            <button onclick="document.getElementById('lgDetailModal').remove(); deleteLg(${lg.id})" class="px-6 py-3 bg-red-50 text-red-600 rounded-xl font-semibold text-sm hover:bg-red-100"><i class="fas fa-trash mr-1"></i>삭제</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Legacy alias
+        async function loadRegions() { await loadLocalGovernments(); }
 
         // 지자체 상세 정보 데이터
         const regionDetails = {
@@ -4296,12 +4656,7 @@
         // 지도 관련
         let regionMap = null;
         let regionMarkers = {};
-        const regionCoordinates = {
-            '서천군': { lat: 36.0803, lng: 126.6917, color: '#3B82F6', workers: 50 },
-            '해남군': { lat: 34.5739, lng: 126.5994, color: '#10B981', workers: 80 },
-            '영덕군': { lat: 36.4153, lng: 129.3656, color: '#F59E0B', workers: 40 },
-            '고성군': { lat: 38.3803, lng: 128.4678, color: '#8B5CF6', workers: 30 }
-        };
+        const regionColors = ['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EF4444','#06B6D4','#F97316','#84CC16'];
 
         function toggleRegionView(view) {
             const listView = document.getElementById('regionListView');
@@ -4327,26 +4682,51 @@
             }
         }
 
+        function updateRegionMapMarkers() {
+            if (!regionMap) return;
+            // 기존 마커 제거
+            Object.values(regionMarkers).forEach(m => regionMap.removeLayer(m));
+            regionMarkers = {};
+            const legendContainer = document.getElementById('mapLegend');
+            legendContainer.innerHTML = '';
+            localGovernments.filter(lg => lg.latitude && lg.longitude).forEach((lg, i) => {
+                const color = regionColors[i % regionColors.length];
+                const icon = L.divIcon({
+                    html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">${lg.allocated_quota||0}</div>`,
+                    className: '', iconSize: [32, 32], iconAnchor: [16, 16]
+                });
+                const marker = L.marker([lg.latitude, lg.longitude], { icon }).addTo(regionMap);
+                marker.bindPopup(`<b>${lg.name}</b><br>${lg.region}<br>TO: ${lg.used_quota||0}/${lg.allocated_quota||0}`);
+                regionMarkers[lg.id] = marker;
+                legendContainer.innerHTML += `
+                    <div class="card p-3 flex items-center space-x-2 cursor-pointer" onclick="regionMap.setView([${lg.latitude},${lg.longitude}],10)">
+                        <div style="width:12px;height:12px;border-radius:50%;background:${color}"></div>
+                        <span class="text-sm font-medium">${lg.name}</span>
+                        <span class="text-xs text-gray-400">${lg.allocated_quota||0}명</span>
+                    </div>`;
+            });
+        }
+
         function initRegionMap() {
             if (regionMap) {
                 regionMap.invalidateSize();
+                updateRegionMapMarkers();
                 return;
             }
 
-            // 한국 중심 좌표
             regionMap = L.map('regionMap').setView([36.5, 127.5], 7);
-
-            // OpenStreetMap 타일
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(regionMap);
 
-            // 마커 추가
-            const legendContainer = document.getElementById('mapLegend');
-            legendContainer.innerHTML = '';
+            updateRegionMapMarkers();
+        }
 
-            Object.entries(regionCoordinates).forEach(([name, data]) => {
-                // 커스텀 마커 아이콘
+        // Legacy compatibility - keep old function signature but unused
+        function initRegionMapLegacy() {
+            const legendContainer = document.getElementById('mapLegend');
+            if (!legendContainer) return;
+            // Handled by updateRegionMapMarkers now
                 const markerIcon = L.divIcon({
                     className: 'custom-marker',
                     html: `<div style="
@@ -4435,10 +4815,10 @@
             }
         }
 
-        function focusRegion(name) {
-            const data = regionCoordinates[name];
-            if (data && regionMap) {
-                regionMap.setView([data.lat, data.lng], 10, { animate: true });
+        function focusRegion(lgId) {
+            const lg = localGovernments.find(x => x.id === lgId);
+            if (lg && lg.latitude && lg.longitude && regionMap) {
+                regionMap.setView([lg.latitude, lg.longitude], 10, { animate: true });
             }
         }
 
@@ -5529,6 +5909,75 @@
             initNotificationSettings();
         }
 
+        // ==================== 시스템 설정 ====================
+        let systemSettings = {};
+
+        async function loadSystemSettings() {
+            try {
+                const res = await fetch(API_BASE + '/settings');
+                systemSettings = await res.json();
+
+                // Super Admin이면 시스템 설정 섹션 표시
+                const userStr = sessionStorage.getItem('kwv_user');
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    const level = user.admin_level || user.adminLevel || 0;
+                    if (level >= 1 && (user.user_type === 'admin' || user.userType === 'admin')) {
+                        document.getElementById('systemSettingsSection').style.display = 'block';
+                        document.getElementById('addLgBtn').style.display = 'inline-flex';
+                    }
+                }
+
+                // 폼에 값 채우기
+                const fields = ['system_title','system_subtitle','logo_url','approval_mode','default_language',
+                    'point_check_in','point_check_out','point_activity_log','gps_radius_meters',
+                    'attendance_deadline_hours','google_maps_api_key','ai_api_key'];
+                fields.forEach(key => {
+                    const el = document.getElementById('set_' + key);
+                    if (el && systemSettings[key] !== undefined) el.value = systemSettings[key];
+                });
+                // 체크박스
+                ['maintenance_mode','ai_anomaly_enabled','login_show_register','login_show_google','login_show_mou'].forEach(key => {
+                    const el = document.getElementById('set_' + key);
+                    if (el) el.checked = !!systemSettings[key];
+                });
+
+                // 시스템 제목 적용
+                if (systemSettings.system_title) {
+                    document.title = systemSettings.system_title;
+                }
+            } catch(e) { console.error('loadSystemSettings error:', e); }
+        }
+
+        async function saveSystemSettings() {
+            const data = {};
+            ['system_title','system_subtitle','logo_url','approval_mode','default_language',
+             'google_maps_api_key','ai_api_key'].forEach(key => {
+                const el = document.getElementById('set_' + key);
+                if (el) data[key] = el.value;
+            });
+            ['point_check_in','point_check_out','point_activity_log','gps_radius_meters','attendance_deadline_hours'].forEach(key => {
+                const el = document.getElementById('set_' + key);
+                if (el) data[key] = parseInt(el.value) || 0;
+            });
+            ['maintenance_mode','ai_anomaly_enabled','login_show_register','login_show_google','login_show_mou'].forEach(key => {
+                const el = document.getElementById('set_' + key);
+                if (el) data[key] = el.checked;
+            });
+            try {
+                const token = sessionStorage.getItem('kwv_token');
+                const res = await fetch(API_BASE + '/settings', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || '저장 실패');
+                alert('시스템 설정이 저장되었습니다!');
+                loadSystemSettings();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
         // ==================== 모바일 전용 함수 ====================
         let mobileCurrentPage = 0;
         let mobileTouchStartX = 0;
@@ -5850,7 +6299,7 @@
             loadStats();
             loadVisaTypes();
             loadJobs();
-            loadRegions();
+            loadLocalGovernments();
             loadNotices();
             renderApplicants();
             renderFaq();
@@ -5858,6 +6307,7 @@
             loadRecentActivity();
             initCharts();
             loadSavedSettings();
+            loadSystemSettings();
 
             // 리사이즈 핸들러
             let mobileInitDone = isMobileView();

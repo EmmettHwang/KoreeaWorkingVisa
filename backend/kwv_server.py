@@ -48,9 +48,17 @@ if os.path.exists(frontend_dir):
     if os.path.exists(js_dir):
         app.mount("/js", StaticFiles(directory=js_dir), name="js")
 
-# 루트 페이지 -> 로그인으로 리다이렉트
+# 루트 페이지 -> 랜딩 페이지로 리다이렉트
 @app.get("/")
 async def root():
+    return RedirectResponse(url="/kwv-landing.html")
+
+# 랜딩 페이지
+@app.get("/kwv-landing.html")
+async def serve_landing():
+    landing_path = os.path.join(frontend_dir, "kwv-landing.html")
+    if os.path.exists(landing_path):
+        return FileResponse(landing_path, media_type="text/html")
     return RedirectResponse(url="/kwv-login.html")
 
 # 통합 로그인 페이지
@@ -67,6 +75,30 @@ async def serve_register():
     register_path = os.path.join(frontend_dir, "kwv-register.html")
     if os.path.exists(register_path):
         return FileResponse(register_path, media_type="text/html")
+    return RedirectResponse(url="/kwv-login.html")
+
+# Google OAuth 콜백 페이지
+@app.get("/kwv-google-callback.html")
+async def serve_google_callback():
+    callback_path = os.path.join(frontend_dir, "kwv-google-callback.html")
+    if os.path.exists(callback_path):
+        return FileResponse(callback_path, media_type="text/html")
+    return RedirectResponse(url="/kwv-login.html")
+
+# 개인정보처리방침 페이지
+@app.get("/kwv-privacy.html")
+async def serve_privacy():
+    privacy_path = os.path.join(frontend_dir, "kwv-privacy.html")
+    if os.path.exists(privacy_path):
+        return FileResponse(privacy_path, media_type="text/html")
+    return RedirectResponse(url="/kwv-landing.html")
+
+# 대시보드 페이지
+@app.get("/kwv-dashboard.html")
+async def serve_dashboard():
+    dashboard_path = os.path.join(frontend_dir, "kwv-dashboard.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path, media_type="text/html")
     return RedirectResponse(url="/kwv-login.html")
 
 if __name__ == "__main__":

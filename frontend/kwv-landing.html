@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Korea Working Visa - 외국인 계절근로자 관리 플랫폼</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        /* ===== Hero Section ===== */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #0c4a6e 60%, #0369a1 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 20%, rgba(14, 165, 233, 0.1) 0%, transparent 40%),
+                        radial-gradient(ellipse at 50% 80%, rgba(2, 132, 199, 0.06) 0%, transparent 40%);
+            animation: aurora 20s ease-in-out infinite alternate;
+        }
+        @keyframes aurora {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-2%, 1%) rotate(1deg); }
+            100% { transform: translate(1%, -1%) rotate(-1deg); }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            animation: float-up linear infinite;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        /* Grid lines */
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* ===== Glassmorphism ===== */
+        .glass {
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .glass-white {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.08);
+        }
+
+        /* ===== Scroll Animations ===== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-left { opacity: 0; transform: translateX(-40px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal-left.visible { opacity: 1; transform: translateX(0); }
+        .reveal-right { opacity: 0; transform: translateX(40px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+        /* ===== Gradient Text ===== */
+        .gradient-text {
+            background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .gradient-text-warm {
+            background: linear-gradient(135deg, #f97316, #ef4444, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ===== Feature Cards ===== */
+        .feature-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid #f1f5f9;
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-color-1), var(--card-color-2));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 60px -15px rgba(0,0,0,0.12);
+        }
+        .feature-card:hover::before { opacity: 1; }
+
+        /* ===== Stats Counter ===== */
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.02em;
+        }
+
+        /* ===== CTA Section ===== */
+        .cta-section {
+            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #db2777 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* ===== Process Steps ===== */
+        .step-line {
+            position: absolute;
+            top: 36px;
+            left: 50%;
+            width: calc(100% - 72px);
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+            z-index: 0;
+        }
+
+        /* ===== Navbar ===== */
+        .navbar {
+            transition: all 0.3s;
+        }
+        .navbar.scrolled {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+        }
+
+        /* ===== Buttons ===== */
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+            transform: scale(0);
+            transition: transform 0.6s;
+        }
+        .btn-glow:hover::before { transform: scale(1); }
+
+        /* ===== Marquee ===== */
+        .marquee-track {
+            display: flex;
+            animation: marquee 30s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Smooth section backgrounds */
+        .section-light { background: #ffffff; }
+        .section-gray { background: #f8fafc; }
+        .section-dark { background: #0f172a; color: white; }
+    </style>
+</head>
+<body class="bg-white text-gray-900 overflow-x-hidden">
+
+    <!-- ===== Navigation ===== -->
+    <nav class="navbar fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="#" class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-globe-asia text-white text-lg"></i>
+                </div>
+                <span class="text-white font-bold text-xl tracking-tight">KWV</span>
+            </a>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#features" class="text-white/70 hover:text-white transition text-sm font-medium">주요 기능</a>
+                <a href="#process" class="text-white/70 hover:text-white transition text-sm font-medium">절차 안내</a>
+                <a href="#stats" class="text-white/70 hover:text-white transition text-sm font-medium">현황</a>
+                <a href="#partners" class="text-white/70 hover:text-white transition text-sm font-medium">파트너</a>
+            </div>
+            <div class="flex items-center space-x-3">
+                <select onchange="changeLandingLang(this.value)" class="bg-white/10 text-white text-sm rounded-lg px-3 py-2 border border-white/20 outline-none cursor-pointer">
+                    <option value="ko" class="text-gray-900">🇰🇷 한국어</option>
+                    <option value="en" class="text-gray-900">🇺🇸 English</option>
+                    <option value="vi" class="text-gray-900">🇻🇳 Tiếng Việt</option>
+                    <option value="th" class="text-gray-900">🇹🇭 ภาษาไทย</option>
+                    <option value="tl" class="text-gray-900">🇵🇭 Filipino</option>
+                </select>
+                <a href="/kwv-login.html" class="bg-white text-gray-900 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-50 transition">
+                    로그인
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== Hero Section ===== -->
+    <section class="hero flex items-center justify-center relative" id="hero">
+        <div class="grid-bg"></div>
+        <!-- Particles -->
+        <div id="particles"></div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-6 text-center">
+            <!-- Badge -->
+            <div class="inline-flex items-center glass rounded-full px-5 py-2 mb-8 animate-pulse">
+                <span class="w-2 h-2 bg-green-400 rounded-full mr-3 animate-ping"></span>
+                <span class="text-white/80 text-sm font-medium" data-i18n="heroBadge">정부 공인 외국인 계절근로자 관리 플랫폼</span>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] mb-6 tracking-tight">
+                <span data-i18n="heroTitle1">대한민국</span><br>
+                <span class="gradient-text" data-i18n="heroTitle2">계절근로자</span><br>
+                <span data-i18n="heroTitle3">통합 관리</span>
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed" data-i18n="heroSubtitle">
+                지자체와 외국 정부 간 MOU 기반의 투명한 근로자 관리 시스템.<br>
+                출퇴근 기록, AI 이상감지, 포인트제로 안전하고 효율적인 인력 관리를 실현합니다.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                <a href="/kwv-login.html" class="btn-glow bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all hover:scale-105">
+                    <i class="fas fa-rocket mr-2"></i><span data-i18n="heroCtaStart">바로 시작하기</span>
+                </a>
+                <a href="#features" class="glass text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:bg-white/10 transition">
+                    <i class="fas fa-play-circle mr-2"></i><span data-i18n="heroCtaLearn">자세히 알아보기</span>
+                </a>
+            </div>
+
+            <!-- Hero Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+                <div class="glass rounded-2xl p-4">
+                    <div class="text-2xl md:text-3xl font-black text-white">15+</div>
+                    <div class="text-xs text-white/50 mt-1" data-i18n="heroStat1">MOU 체결 국가</div>
+                </div>
+                <div class="glass rounded-2xl p-4">
+                    <div class="text-2xl md:text-3xl font-black text-white">50+</div>
+                    <div class="text-xs text-white/50 mt-1" data-i18n="heroStat2">참여 지자체</div>
+                </div>
+                <div class="glass rounded-2xl p-4">
+                    <div class="text-2xl md:text-3xl font-black text-white">10K+</div>
+                    <div class="text-xs text-white/50 mt-1" data-i18n="heroStat3">등록 근로자</div>
+                </div>
+                <div class="glass rounded-2xl p-4">
+                    <div class="text-2xl md:text-3xl font-black text-white">99.2%</div>
+                    <div class="text-xs text-white/50 mt-1" data-i18n="heroStat4">출퇴근 이행률</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+            <a href="#features" class="text-white/40 hover:text-white/70 transition">
+                <i class="fas fa-chevron-down text-2xl"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- ===== Trust Marquee ===== -->
+    <section class="section-light py-6 border-b border-gray-100 overflow-hidden">
+        <div class="marquee-track">
+            <div class="flex items-center space-x-12 px-6 whitespace-nowrap">
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-check-circle text-blue-400 mr-2"></i>고용노동부 인증</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-check-circle text-green-400 mr-2"></i>법무부 협력</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-check-circle text-purple-400 mr-2"></i>행정안전부 연계</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-shield-alt text-orange-400 mr-2"></i>개인정보 보호법 준수</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-globe text-cyan-400 mr-2"></i>다국어 5개 언어 지원</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-mobile-alt text-pink-400 mr-2"></i>모바일 최적화</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-brain text-violet-400 mr-2"></i>AI 이상감지</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-qrcode text-teal-400 mr-2"></i>QR 출퇴근</span>
+            </div>
+            <div class="flex items-center space-x-12 px-6 whitespace-nowrap">
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-check-circle text-blue-400 mr-2"></i>고용노동부 인증</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-check-circle text-green-400 mr-2"></i>법무부 협력</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-check-circle text-purple-400 mr-2"></i>행정안전부 연계</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-shield-alt text-orange-400 mr-2"></i>개인정보 보호법 준수</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-globe text-cyan-400 mr-2"></i>다국어 5개 언어 지원</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-mobile-alt text-pink-400 mr-2"></i>모바일 최적화</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-brain text-violet-400 mr-2"></i>AI 이상감지</span>
+                <span class="text-gray-300 text-sm font-medium flex items-center"><i class="fas fa-qrcode text-teal-400 mr-2"></i>QR 출퇴근</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Features Section ===== -->
+    <section class="section-gray py-24 px-6" id="features">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16 reveal">
+                <span class="text-blue-600 font-semibold text-sm uppercase tracking-widest" data-i18n="featuresTag">Platform Features</span>
+                <h2 class="text-4xl md:text-5xl font-black text-gray-900 mt-3 mb-4" data-i18n="featuresTitle">지자체를 위한<br>완벽한 관리 솔루션</h2>
+                <p class="text-gray-500 text-lg max-w-2xl mx-auto" data-i18n="featuresSubtitle">입국부터 귀국까지, 외국인 계절근로자의 모든 과정을 하나의 플랫폼에서 관리합니다.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card reveal" style="--card-color-1: #3b82f6; --card-color-2: #06b6d4; transition-delay: 0s;">
+                    <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-qrcode text-blue-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="feat1Title">QR 출퇴근 관리</h3>
+                    <p class="text-gray-500 leading-relaxed" data-i18n="feat1Desc">사업장 QR 코드 스캔으로 간편 출퇴근. GPS 위치 자동 기록으로 근무지 확인이 실시간으로 이루어집니다.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card reveal" style="--card-color-1: #8b5cf6; --card-color-2: #ec4899; transition-delay: 0.1s;">
+                    <div class="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-brain text-purple-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="feat2Title">AI 이상감지</h3>
+                    <p class="text-gray-500 leading-relaxed" data-i18n="feat2Desc">출퇴근 패턴을 AI가 분석하여 이탈 징후를 조기에 감지. 3일 연속 결근, GPS 이탈 등 이상 시 즉시 알림.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card reveal" style="--card-color-1: #f97316; --card-color-2: #eab308; transition-delay: 0.2s;">
+                    <div class="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-star text-orange-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="feat3Title">포인트 인센티브</h3>
+                    <p class="text-gray-500 leading-relaxed" data-i18n="feat3Desc">성실한 출퇴근과 활동 기록에 포인트 부여. 재입국 심사 시 가점 혜택으로 자발적 참여를 유도합니다.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card reveal" style="--card-color-1: #10b981; --card-color-2: #14b8a6; transition-delay: 0.3s;">
+                    <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-map-marked-alt text-green-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="feat4Title">실시간 위치 파악</h3>
+                    <p class="text-gray-500 leading-relaxed" data-i18n="feat4Desc">근로자가 자발적으로 접속할 때 위치 정보 수집. 지도 기반 대시보드로 지자체별 분포를 한눈에 파악.</p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-card reveal" style="--card-color-1: #ef4444; --card-color-2: #f97316; transition-delay: 0.4s;">
+                    <div class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-file-medical-alt text-red-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="feat5Title">종합 리포트</h3>
+                    <p class="text-gray-500 leading-relaxed" data-i18n="feat5Desc">출퇴근, 근로자 현황, 포인트, 상담일지 등 다양한 리포트를 Excel/PDF로 생성. 정부 보고에 즉시 활용.</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card reveal" style="--card-color-1: #06b6d4; --card-color-2: #3b82f6; transition-delay: 0.5s;">
+                    <div class="w-16 h-16 bg-cyan-50 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-handshake text-cyan-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="feat6Title">MOU 관리</h3>
+                    <p class="text-gray-500 leading-relaxed" data-i18n="feat6Desc">외국 정부·지자체와의 협정 현황을 체계적으로 관리하고 공개. 신뢰도 높은 파트너십을 증명합니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Process Section ===== -->
+    <section class="section-light py-24 px-6" id="process">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16 reveal">
+                <span class="text-purple-600 font-semibold text-sm uppercase tracking-widest" data-i18n="processTag">How It Works</span>
+                <h2 class="text-4xl md:text-5xl font-black text-gray-900 mt-3 mb-4" data-i18n="processTitle">간단한 4단계로<br>시작하세요</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+                <!-- Step line (desktop only) -->
+                <div class="hidden md:block step-line"></div>
+
+                <div class="reveal text-center" style="transition-delay: 0s;">
+                    <div class="relative z-10 w-[72px] h-[72px] bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-200">
+                        <span class="text-white text-2xl font-black">1</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2" data-i18n="step1Title">MOU 체결</h3>
+                    <p class="text-gray-500 text-sm" data-i18n="step1Desc">외국 정부/지자체와 계절근로자 파견 협정을 체결합니다.</p>
+                </div>
+
+                <div class="reveal text-center" style="transition-delay: 0.15s;">
+                    <div class="relative z-10 w-[72px] h-[72px] bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-200">
+                        <span class="text-white text-2xl font-black">2</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2" data-i18n="step2Title">근로자 등록</h3>
+                    <p class="text-gray-500 text-sm" data-i18n="step2Desc">근로자가 여권, 비자 정보와 함께 플랫폼에 등록합니다.</p>
+                </div>
+
+                <div class="reveal text-center" style="transition-delay: 0.3s;">
+                    <div class="relative z-10 w-[72px] h-[72px] bg-gradient-to-br from-pink-500 to-pink-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-pink-200">
+                        <span class="text-white text-2xl font-black">3</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2" data-i18n="step3Title">지자체 배정</h3>
+                    <p class="text-gray-500 text-sm" data-i18n="step3Desc">인천공항 도착 후 배정된 지자체에서 인계하여 사업장에 배치.</p>
+                </div>
+
+                <div class="reveal text-center" style="transition-delay: 0.45s;">
+                    <div class="relative z-10 w-[72px] h-[72px] bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-200">
+                        <span class="text-white text-2xl font-black">4</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2" data-i18n="step4Title">스마트 관리</h3>
+                    <p class="text-gray-500 text-sm" data-i18n="step4Desc">QR 출퇴근, AI 모니터링, 포인트 적립으로 체계적 관리 시작.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Stats Section ===== -->
+    <section class="section-dark py-24 px-6" id="stats">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                <div class="reveal-left">
+                    <span class="text-blue-400 font-semibold text-sm uppercase tracking-widest" data-i18n="statsTag">Why Choose Us</span>
+                    <h2 class="text-4xl md:text-5xl font-black text-white mt-3 mb-6" data-i18n="statsTitle">데이터가 증명하는<br><span class="gradient-text">신뢰와 성과</span></h2>
+                    <p class="text-white/60 text-lg leading-relaxed mb-8" data-i18n="statsDesc">KWV 플랫폼은 이미 전국 지자체에서 검증된 시스템입니다. 입국 단계부터 보험 가입, 출퇴근 관리, 상담까지 원스톱으로 처리합니다.</p>
+                    <a href="/kwv-login.html" class="inline-flex items-center bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-600 transition">
+                        <span data-i18n="statsCtaBtn">지금 도입하기</span><i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+                <div class="grid grid-cols-2 gap-6 reveal-right">
+                    <div class="glass rounded-3xl p-8 text-center">
+                        <div class="stat-number text-white" data-count="98">0</div>
+                        <div class="text-lg text-white/80 font-medium mt-1">%</div>
+                        <div class="text-white/50 text-sm mt-2" data-i18n="statLabel1">근로자 관리율</div>
+                    </div>
+                    <div class="glass rounded-3xl p-8 text-center">
+                        <div class="stat-number text-white" data-count="24">0</div>
+                        <div class="text-lg text-white/80 font-medium mt-1">/7</div>
+                        <div class="text-white/50 text-sm mt-2" data-i18n="statLabel2">실시간 모니터링</div>
+                    </div>
+                    <div class="glass rounded-3xl p-8 text-center">
+                        <div class="stat-number text-white" data-count="5">0</div>
+                        <div class="text-lg text-white/80 font-medium mt-1" data-i18n="statUnit3">개 언어</div>
+                        <div class="text-white/50 text-sm mt-2" data-i18n="statLabel3">다국어 지원</div>
+                    </div>
+                    <div class="glass rounded-3xl p-8 text-center">
+                        <div class="stat-number text-white" data-count="30">0</div>
+                        <div class="text-lg text-white/80 font-medium mt-1" data-i18n="statUnit4">초</div>
+                        <div class="text-white/50 text-sm mt-2" data-i18n="statLabel4">이상감지 알림 속도</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== For Government Section ===== -->
+    <section class="section-gray py-24 px-6" id="partners">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16 reveal">
+                <span class="text-green-600 font-semibold text-sm uppercase tracking-widest" data-i18n="govTag">For Local Governments</span>
+                <h2 class="text-4xl md:text-5xl font-black text-gray-900 mt-3 mb-4" data-i18n="govTitle">지자체 담당자를 위한<br>맞춤 기능</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glass-white rounded-3xl p-10 reveal-left">
+                    <div class="flex items-start space-x-5">
+                        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-shield-alt text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2" data-i18n="gov1Title">이탈 방지 시스템</h3>
+                            <p class="text-gray-500 leading-relaxed" data-i18n="gov1Desc">근로자가 매일 자발적으로 출퇴근 기록을 남기면 포인트를 획득합니다. 포인트는 재입국 가산점으로 활용되어 이탈 동기를 원천 차단합니다. 3일 이상 미접속 시 AI가 자동으로 이상 알림을 발송합니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-white rounded-3xl p-10 reveal-right">
+                    <div class="flex items-start space-x-5">
+                        <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-chart-bar text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2" data-i18n="gov2Title">원클릭 보고서</h3>
+                            <p class="text-gray-500 leading-relaxed" data-i18n="gov2Desc">출퇴근 현황, 근로자 통계, 상담 내역, 이상징후 리포트를 Excel/PDF로 즉시 생성. 정부 보고 양식에 맞춰 자동 포맷팅되어 행정 업무를 대폭 절감합니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-white rounded-3xl p-10 reveal-left">
+                    <div class="flex items-start space-x-5">
+                        <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-umbrella text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2" data-i18n="gov3Title">보험 통합 관리</h3>
+                            <p class="text-gray-500 leading-relaxed" data-i18n="gov3Desc">입국 시점부터 4대 보험 가입 현황을 체계적으로 관리합니다. 보험 만료 임박 시 자동 알림으로 무보험 상태를 예방합니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-white rounded-3xl p-10 reveal-right">
+                    <div class="flex items-start space-x-5">
+                        <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-comments text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2" data-i18n="gov4Title">상담일지 & 소통</h3>
+                            <p class="text-gray-500 leading-relaxed" data-i18n="gov4Desc">근로자와의 상담 기록을 체계적으로 관리. 음성 녹음, 사진 첨부, 후속 조치 추적까지 한 곳에서. 5개 국어 번역 지원으로 언어 장벽을 해소합니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA Section ===== -->
+    <section class="cta-section py-24 px-6">
+        <div class="relative z-10 max-w-4xl mx-auto text-center reveal">
+            <h2 class="text-4xl md:text-5xl font-black text-white mb-6" data-i18n="ctaTitle">지금 바로<br>KWV를 도입하세요</h2>
+            <p class="text-white/80 text-lg mb-10 max-w-2xl mx-auto" data-i18n="ctaDesc">외국인 계절근로자 관리의 새로운 패러다임. 지자체 담당자도, 근로자도 모두 만족하는 스마트 플랫폼.</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="/kwv-login.html" class="bg-white text-gray-900 px-10 py-5 rounded-2xl text-lg font-bold hover:bg-gray-100 transition shadow-2xl hover:scale-105 transform">
+                    <i class="fas fa-arrow-right mr-2"></i><span data-i18n="ctaBtnStart">바로가기</span>
+                </a>
+                <a href="/kwv-register.html" class="glass text-white px-10 py-5 rounded-2xl text-lg font-semibold hover:bg-white/10 transition border border-white/30">
+                    <i class="fas fa-user-plus mr-2"></i><span data-i18n="ctaBtnRegister">회원가입</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Footer ===== -->
+    <footer class="section-dark py-16 px-6 border-t border-white/10">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-globe-asia text-white text-lg"></i>
+                        </div>
+                        <span class="text-white font-bold text-xl">KWV</span>
+                    </div>
+                    <p class="text-white/40 text-sm leading-relaxed">Korea Working Visa<br>외국인 계절근로자<br>통합 관리 플랫폼</p>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">플랫폼</h4>
+                    <ul class="space-y-2 text-white/40 text-sm">
+                        <li><a href="/kwv-login.html" class="hover:text-white transition">로그인</a></li>
+                        <li><a href="/kwv-register.html" class="hover:text-white transition">회원가입</a></li>
+                        <li><a href="#features" class="hover:text-white transition">주요 기능</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">안내</h4>
+                    <ul class="space-y-2 text-white/40 text-sm">
+                        <li><a href="#process" class="hover:text-white transition">이용 절차</a></li>
+                        <li><a href="#partners" class="hover:text-white transition">지자체 안내</a></li>
+                        <li><a href="/kwv-privacy.html" class="hover:text-white transition">개인정보처리방침</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">문의</h4>
+                    <ul class="space-y-2 text-white/40 text-sm">
+                        <li><i class="fas fa-envelope mr-2"></i>eden1191@naver.com</li>
+                        <li><i class="fas fa-phone mr-2"></i>042-545-1155</li>
+                        <li><i class="fas fa-map-marker-alt mr-2"></i>대전광역시</li>
+                        <li><i class="fas fa-clock mr-2"></i>평일 09:00~18:00</li>
+                        <li><i class="fas fa-calendar-alt mr-2"></i>토 10:00~17:00 / 일·공휴일 휴무</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/10 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                    <div>
+                        <p class="text-white/30 text-sm">&copy; 2026 글로벌워크센터. All rights reserved.</p>
+                        <p class="text-white/20 text-xs mt-1">대표: 김성식 | 사업자등록번호: 123-45-09876</p>
+                    </div>
+                    <div class="flex items-center space-x-6 mt-4 md:mt-0">
+                        <a href="/kwv-privacy.html" class="text-white/40 hover:text-white text-sm transition">개인정보처리방침</a>
+                        <div class="flex space-x-3">
+                            <a href="#" class="text-white/30 hover:text-white transition"><i class="fab fa-facebook text-lg"></i></a>
+                            <a href="#" class="text-white/30 hover:text-white transition"><i class="fab fa-youtube text-lg"></i></a>
+                            <a href="#" class="text-white/30 hover:text-white transition"><i class="fab fa-instagram text-lg"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ===== Particles =====
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = (8 + Math.random() * 12) + 's';
+            p.style.animationDelay = Math.random() * 10 + 's';
+            p.style.width = p.style.height = (2 + Math.random() * 4) + 'px';
+            particlesContainer.appendChild(p);
+        }
+
+        // ===== Navbar scroll effect =====
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            navbar.classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        // ===== Scroll reveal =====
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+        document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => observer.observe(el));
+
+        // ===== Counter animation =====
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const target = parseInt(el.dataset.count);
+                    let current = 0;
+                    const increment = target / 40;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) { current = target; clearInterval(timer); }
+                        el.textContent = Math.round(current);
+                    }, 30);
+                    counterObserver.unobserve(el);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('[data-count]').forEach(el => counterObserver.observe(el));
+
+        // ===== Language =====
+        function changeLandingLang(lang) {
+            localStorage.setItem('kwv_language', lang);
+            // Simple redirect or dynamic translation could be added here
+        }
+    </script>
+</body>
+</html>

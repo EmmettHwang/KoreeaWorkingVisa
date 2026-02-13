@@ -6,8 +6,8 @@ KoreaWorkingVisa API 모듈
 - JWT 토큰 기반 인증
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, Depends, Header, UploadFile, File, Form, Request
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime, timedelta
@@ -15,6 +15,9 @@ import os
 import json
 import hashlib
 import secrets
+import uuid
+import base64
+import httpx
 
 # JWT 관련 (python-jose)
 try:
@@ -40,6 +43,13 @@ JWT_EXPIRATION_HOURS = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
+# 파일 업로드 경로
+LOCAL_UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "file_uploads")
+os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
+
+# 기본 비밀번호
+DEFAULT_PASSWORD = "kwv2026"
+
 # ==================== Router ====================
 router = APIRouter(prefix="/api/kwv", tags=["KoreaWorkingVisa"])
 
@@ -50,15 +60,22 @@ class UserLogin(BaseModel):
 
 class UserRegister(BaseModel):
     email: str
-    password: str
     name: str
     phone: Optional[str] = None
+    address: Optional[str] = None
     language: Optional[str] = "en"
     user_type: Optional[str] = "applicant"  # applicant 또는 admin
-    organization: Optional[str] = None  # 관리자 신청 시 소속 기관
+    organization: Optional[str] = None  # 관리자: 소속 지역
+    profile_photo: Optional[str] = None  # Base64 또는 URL
+    passport_copy_url: Optional[str] = None
+    visa_copy_url: Optional[str] = None
+    id_card_url: Optional[str] = None
+    insurance_cert_url: Optional[str] = None
 
 class GoogleLoginRequest(BaseModel):
-    credential: str  # Google ID token
+    credential: Optional[str] = None  # Google ID token (legacy)
+    email: Optional[str] = None
+    name: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -98,11 +115,17 @@ def verify_password(password: str, hashed: str) -> bool:
     else:
         return hashlib.sha256(password.encode()).hexdigest() == hashed
 
+# DB 세션 토큰 저장소 (JWT 불가 시 사용)
+_token_store = {}
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """JWT 토큰 생성"""
+    """JWT 토큰 생성 (JWT 불가 시 DB 세션 토큰)"""
     if not JWT_AVAILABLE:
-        token_data = json.dumps({**data, "exp": (datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)).isoformat()})
-        return hashlib.sha256(token_data.encode()).hexdigest()
+        import secrets
+        token = secrets.token_hex(32)
+        expire = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+        _token_store[token] = {**data, "exp": expire.isoformat()}
+        return token
 
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(hours=JWT_EXPIRATION_HOURS))
@@ -112,7 +135,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def decode_token(token: str) -> Optional[dict]:
     """JWT 토큰 디코딩"""
     if not JWT_AVAILABLE:
-        return None
+        stored = _token_store.get(token)
+        if not stored:
+            return None
+        if datetime.fromisoformat(stored["exp"]) < datetime.utcnow():
+            del _token_store[token]
+            return None
+        return {k: v for k, v in stored.items() if k != "exp"}
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return payload
@@ -138,12 +167,12 @@ def require_admin(user: dict) -> dict:
         raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다")
     return user
 
-def require_admin_level(user: dict, max_level: int) -> dict:
-    """특정 등급 이상의 관리자 권한 확인"""
+def require_admin_level(user: dict, min_level: int) -> dict:
+    """특정 등급 이상의 관리자 권한 확인 (숫자가 클수록 높은 권한, 9=super admin)"""
     if user.get("user_type") != "admin":
         raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다")
-    if user.get("admin_level", 999) > max_level:
-        raise HTTPException(status_code=403, detail=f"등급 {max_level} 이상의 관리자 권한이 필요합니다")
+    if user.get("admin_level", 0) < min_level:
+        raise HTTPException(status_code=403, detail=f"등급 {min_level} 이상의 관리자 권한이 필요합니다")
     return user
 
 # ==================== 데이터베이스 연결 ====================
@@ -164,14 +193,14 @@ def get_kwv_db_connection():
     from dotenv import load_dotenv
 
     env_path = Path(__file__).parent.parent / '.env'
-    load_dotenv(dotenv_path=env_path)
+    load_dotenv(dotenv_path=env_path, override=True)
 
     try:
         return pymysql.connect(
             host=os.getenv('DB_HOST', 'localhost'),
             user=os.getenv('DB_USER', 'root'),
             passwd=os.getenv('DB_PASSWORD', ''),
-            db=os.getenv('DB_NAME', 'minilms'),
+            db=os.getenv('DB_NAME', 'koreaworkingvisa'),
             charset='utf8mb4',
             port=int(os.getenv('DB_PORT', '3306'))
         )
@@ -185,13 +214,21 @@ def get_kwv_db_connection():
 async def register(user_data: UserRegister):
     """
     회원가입
-    - applicant (일반 사용자): 비자 신청자
-    - admin (관리자): 정부 기관 담당자
+    - applicant (일반 사용자): 비자 신청자 (여권+비자 첨부)
+    - admin (관리자): 지역별 담당자 (신분증+4대보험 첨부)
+    - 비밀번호는 입력받지 않고 기본값 'kwv2026' 사용
     """
     global MOCK_USER_ID_COUNTER
 
     if user_data.user_type not in ["applicant", "admin"]:
         raise HTTPException(status_code=400, detail="유효하지 않은 사용자 유형입니다")
+
+    # 프로필 사진 Base64 → 파일 저장
+    profile_photo_url = None
+    if user_data.profile_photo and user_data.profile_photo.startswith('data:'):
+        profile_photo_url = save_base64_file(user_data.profile_photo, "profile")
+    elif user_data.profile_photo:
+        profile_photo_url = user_data.profile_photo
 
     # Mock mode 처리
     if MOCK_MODE:
@@ -206,14 +243,17 @@ async def register(user_data: UserRegister):
         new_user = {
             "id": user_id,
             "email": user_data.email,
-            "password_hash": hash_password(user_data.password),
+            "password_hash": hash_password(DEFAULT_PASSWORD),
             "name": user_data.name,
+            "phone": user_data.phone,
+            "address": user_data.address,
             "user_type": user_data.user_type,
             "admin_level": 2 if is_admin else None,
             "language": user_data.language,
             "is_active": True,
             "is_approved": True,
             "organization": user_data.organization,
+            "profile_photo": profile_photo_url,
             "created_at": datetime.utcnow().isoformat()
         }
         MOCK_USERS[user_id] = new_user
@@ -253,37 +293,50 @@ async def register(user_data: UserRegister):
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다")
 
-        import secrets
+        # 기본 비밀번호 kwv2026 해시
         password_salt = secrets.token_hex(16)
-        password_hash = hashlib.sha256((user_data.password + password_salt).encode()).hexdigest()
-
-        # name을 first_name/last_name으로 분리
-        name_parts = (user_data.name or '').strip().split(' ', 1)
-        first_name = name_parts[0] if name_parts else ''
-        last_name = name_parts[1] if len(name_parts) > 1 else ''
+        password_hash = hashlib.sha256((DEFAULT_PASSWORD + password_salt).encode()).hexdigest()
 
         user_type = user_data.user_type or 'applicant'
 
         cursor.execute("""
-            INSERT INTO kwv_users (email, password_hash, password_salt, first_name, last_name, birth_date, nationality, phone, status, user_type, admin_level, language, organization)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO kwv_users (email, password_hash, password_salt, name, phone, address,
+                user_type, admin_level, language, organization, region, profile_photo)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             user_data.email,
             password_hash,
             password_salt,
-            first_name,
-            last_name,
-            '2000-01-01',
-            'XX',
+            user_data.name,
             user_data.phone or '',
-            'active',
+            user_data.address or '',
             user_type,
-            0,
+            2 if user_type == 'admin' else 0,
             user_data.language or 'en',
-            user_data.organization
+            user_data.organization if user_type == 'admin' else None,
+            user_data.organization if user_type == 'admin' else None,
+            profile_photo_url
         ))
 
         user_id = cursor.lastrowid
+
+        # 첨부 파일 정보 저장
+        file_entries = []
+        if user_data.passport_copy_url:
+            file_entries.append((user_id, 'passport_copy', 'passport', user_data.passport_copy_url))
+        if user_data.visa_copy_url:
+            file_entries.append((user_id, 'visa_copy', 'visa', user_data.visa_copy_url))
+        if user_data.id_card_url:
+            file_entries.append((user_id, 'id_card', 'id_card', user_data.id_card_url))
+        if user_data.insurance_cert_url:
+            file_entries.append((user_id, 'insurance_cert', 'insurance', user_data.insurance_cert_url))
+
+        for uid, category, fname, fpath in file_entries:
+            cursor.execute("""
+                INSERT INTO kwv_file_uploads (user_id, file_category, file_name, file_path)
+                VALUES (%s, %s, %s, %s)
+            """, (uid, category, fname, fpath))
+
         conn.commit()
 
         token_data = {
@@ -291,7 +344,7 @@ async def register(user_data: UserRegister):
             "email": user_data.email,
             "name": user_data.name,
             "user_type": user_type,
-            "admin_level": 3 if user_type == 'admin' else 0
+            "admin_level": 2 if user_type == 'admin' else 0
         }
         access_token = create_access_token(token_data)
 
@@ -304,7 +357,7 @@ async def register(user_data: UserRegister):
                 "email": user_data.email,
                 "name": user_data.name,
                 "user_type": user_type,
-                "admin_level": 3 if user_type == 'admin' else 0,
+                "admin_level": 2 if user_type == 'admin' else 0,
                 "language": user_data.language
             }
         }
@@ -369,7 +422,7 @@ async def login(credentials: UserLogin):
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT id, email, password_hash, password_salt, first_name, last_name, status, user_type, admin_level, language
+            SELECT id, email, password_hash, password_salt, name, user_type, admin_level, language, is_active
             FROM kwv_users WHERE email = %s
         """, (credentials.email,))
 
@@ -378,8 +431,9 @@ async def login(credentials: UserLogin):
         if not user:
             raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다")
 
-        user_id, email, password_hash, password_salt, first_name, last_name, status, user_type, admin_level, language = user
-        name = (first_name + ' ' + last_name).strip() if first_name else email
+        user_id, email, password_hash, password_salt, name, user_type, admin_level, language, is_active = user
+        name = name or email
+        status = 'active' if is_active else 'inactive'
         user_type = user_type or 'applicant'
         admin_level = admin_level or 0
         language = language or 'ko'
@@ -391,7 +445,7 @@ async def login(credentials: UserLogin):
         if check_hash != password_hash:
             raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다")
 
-        cursor.execute("UPDATE kwv_users SET last_login = NOW() WHERE id = %s", (user_id,))
+        cursor.execute("UPDATE kwv_users SET last_login_at = NOW() WHERE id = %s", (user_id,))
         conn.commit()
 
         token_data = {
@@ -756,6 +810,488 @@ async def create_application(
     finally:
         conn.close()
 
+# ==================== 파일 업로드 API ====================
+
+def upload_to_local(file_data: bytes, filename: str, category: str) -> str:
+    """파일을 로컬에 저장하고 URL 반환"""
+    cat_dir = os.path.join(LOCAL_UPLOAD_DIR, category)
+    os.makedirs(cat_dir, exist_ok=True)
+    file_path = os.path.join(cat_dir, filename)
+    with open(file_path, 'wb') as f:
+        f.write(file_data)
+    return f"/api/kwv/uploads/{category}/{filename}"
+
+def save_base64_file(base64_data: str, category: str) -> str:
+    """Base64 데이터를 파일로 저장"""
+    if ',' in base64_data:
+        base64_data = base64_data.split(',', 1)[1]
+    file_data = base64.b64decode(base64_data)
+    ext = 'jpg'
+    filename = f"{int(datetime.utcnow().timestamp())}_{uuid.uuid4().hex[:8]}.{ext}"
+    return upload_to_local(file_data, filename, category)
+
+@router.get("/uploads/{category}/{filename}")
+async def serve_upload(category: str, filename: str):
+    """업로드된 파일 서빙"""
+    file_path = os.path.join(LOCAL_UPLOAD_DIR, category, filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="File not found")
+
+@router.post("/auth/upload-temp")
+async def upload_temp_file(file: UploadFile = File(...), category: str = Form("temp")):
+    """가입 전 임시 파일 업로드"""
+    allowed = {'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'}
+    if file.content_type not in allowed:
+        raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다")
+
+    file_data = await file.read()
+    if len(file_data) > 10 * 1024 * 1024:  # 10MB
+        raise HTTPException(status_code=400, detail="파일 크기가 10MB를 초과합니다")
+
+    ext = file.filename.rsplit('.', 1)[-1] if '.' in file.filename else 'bin'
+    filename = f"{int(datetime.utcnow().timestamp())}_{uuid.uuid4().hex[:8]}.{ext}"
+    url = upload_to_local(file_data, filename, category)
+    return {"url": url, "filename": filename}
+
+# ==================== Google OAuth 서버 플로우 ====================
+
+@router.get("/auth/google/start")
+async def google_auth_start(request: Request, mode: str = "register"):
+    """Google OAuth 시작 - Google 로그인 페이지로 리다이렉트"""
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=503, detail="Google OAuth가 설정되지 않았습니다")
+
+    # 콜백 URL 구성
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("host", request.url.hostname)
+    redirect_uri = f"{scheme}://{host}/kwv-google-callback.html"
+
+    google_auth_url = (
+        "https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={GOOGLE_CLIENT_ID}"
+        f"&redirect_uri={redirect_uri}"
+        "&response_type=code"
+        "&scope=openid+profile+email"
+        "&access_type=online"
+        "&prompt=select_account"
+        f"&state={mode}"
+    )
+    return RedirectResponse(url=google_auth_url)
+
+@router.get("/auth/google/exchange")
+async def google_auth_exchange(request: Request, code: str = None):
+    """Google OAuth code를 사용자 정보로 교환"""
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code가 필요합니다")
+
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("host", request.url.hostname)
+    redirect_uri = f"{scheme}://{host}/kwv-google-callback.html"
+
+    try:
+        async with httpx.AsyncClient() as client:
+            # code → access_token 교환
+            token_resp = await client.post("https://oauth2.googleapis.com/token", data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            })
+            token_data = token_resp.json()
+
+            if "error" in token_data:
+                raise HTTPException(status_code=400, detail=token_data.get("error_description", "Token exchange failed"))
+
+            # access_token으로 사용자 정보 가져오기
+            userinfo_resp = await client.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {token_data['access_token']}"}
+            )
+            userinfo = userinfo_resp.json()
+
+            return {
+                "name": userinfo.get("name", ""),
+                "email": userinfo.get("email", ""),
+                "picture": userinfo.get("picture", "")
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Google 인증 처리 실패: {str(e)}")
+
+@router.post("/auth/google-login")
+async def google_login_by_email(request_data: GoogleLoginRequest):
+    """Google 이메일로 기존 사용자 찾아 로그인"""
+    email = request_data.email
+    if not email:
+        raise HTTPException(status_code=400, detail="이메일이 필요합니다")
+
+    if MOCK_MODE:
+        user = None
+        for u in MOCK_USERS.values():
+            if u["email"] == email:
+                user = u
+                break
+        if not user:
+            raise HTTPException(status_code=404, detail="등록되지 않은 사용자입니다. 먼저 회원가입을 해주세요.")
+
+        token_data = {
+            "sub": str(user["id"]),
+            "email": user["email"],
+            "name": user["name"],
+            "user_type": user["user_type"],
+            "admin_level": user["admin_level"]
+        }
+        access_token = create_access_token(token_data)
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": JWT_EXPIRATION_HOURS * 3600,
+            "user": {
+                "id": user["id"],
+                "email": user["email"],
+                "name": user["name"],
+                "user_type": user["user_type"],
+                "admin_level": user["admin_level"],
+                "language": user.get("language", "en")
+            }
+        }
+
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, email, name, user_type, admin_level, language
+            FROM kwv_users WHERE email = %s AND is_active = TRUE
+        """, (email,))
+        user = cursor.fetchone()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="등록되지 않은 사용자입니다. 먼저 회원가입을 해주세요.")
+
+        user_id, email, name, user_type, admin_level, language = user
+        user_type = user_type or 'applicant'
+        admin_level = admin_level or 0
+
+        cursor.execute("UPDATE kwv_users SET last_login_at = NOW(), oauth_provider = 'google' WHERE id = %s", (user_id,))
+        conn.commit()
+
+        token_data = {
+            "sub": str(user_id),
+            "email": email,
+            "name": name,
+            "user_type": user_type,
+            "admin_level": admin_level
+        }
+        access_token = create_access_token(token_data)
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": JWT_EXPIRATION_HOURS * 3600,
+            "user": {
+                "id": user_id,
+                "email": email,
+                "name": name,
+                "user_type": user_type,
+                "admin_level": admin_level,
+                "language": language or "en"
+            }
+        }
+    finally:
+        conn.close()
+
+# ==================== 시스템 설정 API ====================
+
+def ensure_system_settings_table():
+    """시스템 설정 테이블 확인 및 생성"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS kwv_system_settings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                setting_key VARCHAR(100) UNIQUE NOT NULL,
+                setting_value TEXT,
+                setting_type ENUM('string','number','boolean','json') DEFAULT 'string',
+                description VARCHAR(500),
+                updated_by INT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_key (setting_key)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        conn.commit()
+    except:
+        pass
+    finally:
+        conn.close()
+
+@router.get("/settings")
+async def get_system_settings():
+    """시스템 설정 조회 (공개)"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT setting_key, setting_value, setting_type FROM kwv_system_settings")
+        rows = cursor.fetchall()
+        settings = {}
+        for key, value, stype in rows:
+            if stype == 'boolean':
+                settings[key] = value == 'true'
+            elif stype == 'number':
+                try:
+                    settings[key] = int(value) if value else 0
+                except:
+                    settings[key] = float(value) if value else 0
+            elif stype == 'json':
+                try:
+                    settings[key] = json.loads(value) if value else {}
+                except:
+                    settings[key] = value
+            else:
+                settings[key] = value or ''
+        return settings
+    finally:
+        conn.close()
+
+@router.post("/settings")
+async def update_system_settings(request: Request, user: dict = Depends(get_current_user)):
+    """시스템 설정 수정 (super admin 전용)"""
+    require_admin_level(user, 9)
+    body = await request.json()
+
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        updated = 0
+        for key, value in body.items():
+            if isinstance(value, bool):
+                str_value = 'true' if value else 'false'
+            elif isinstance(value, (dict, list)):
+                str_value = json.dumps(value)
+            else:
+                str_value = str(value)
+            cursor.execute("""
+                INSERT INTO kwv_system_settings (setting_key, setting_value, updated_by)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by)
+            """, (key, str_value, user.get('sub')))
+            updated += 1
+        conn.commit()
+        return {"message": f"{updated}개 설정이 저장되었습니다", "updated": updated}
+    finally:
+        conn.close()
+
+# ==================== 지자체 API ====================
+
+class LocalGovernmentCreate(BaseModel):
+    name: str
+    name_en: Optional[str] = None
+    region: str
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website_url: Optional[str] = None
+    representative_name: Optional[str] = None
+    representative_phone: Optional[str] = None
+    representative_email: Optional[str] = None
+    allocated_quota: Optional[int] = 0
+    quota_year: Optional[int] = None
+    logo_url: Optional[str] = None
+    description: Optional[str] = None
+    description_en: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+@router.get("/local-governments")
+async def list_local_governments(region: Optional[str] = None, active_only: bool = True):
+    """지자체 목록 조회 (공개)"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        query = """
+            SELECT id, name, name_en, region, address, phone, email, website_url,
+                   representative_name, representative_phone, representative_email,
+                   allocated_quota, used_quota, quota_year,
+                   logo_url, description, description_en, latitude, longitude,
+                   is_active, created_at
+            FROM kwv_local_governments
+        """
+        conditions = []
+        params = []
+        if active_only:
+            conditions.append("is_active = TRUE")
+        if region:
+            conditions.append("region = %s")
+            params.append(region)
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY region, name"
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        result = []
+        for row in rows:
+            item = dict(zip(columns, row))
+            # datetime/decimal 변환
+            for k, v in item.items():
+                if isinstance(v, datetime):
+                    item[k] = v.isoformat()
+                elif hasattr(v, '__float__'):
+                    item[k] = float(v)
+            result.append(item)
+        return result
+    finally:
+        conn.close()
+
+@router.get("/local-governments/{lg_id}")
+async def get_local_government(lg_id: int):
+    """지자체 상세 조회"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, name_en, region, address, phone, email, website_url,
+                   representative_name, representative_phone, representative_email,
+                   allocated_quota, used_quota, quota_year,
+                   logo_url, description, description_en, latitude, longitude,
+                   is_active, created_at, updated_at
+            FROM kwv_local_governments WHERE id = %s
+        """, (lg_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="지자체를 찾을 수 없습니다")
+        columns = [desc[0] for desc in cursor.description]
+        item = dict(zip(columns, row))
+        for k, v in item.items():
+            if isinstance(v, datetime):
+                item[k] = v.isoformat()
+            elif hasattr(v, '__float__'):
+                item[k] = float(v)
+        # 배정된 근로자 수 조회
+        cursor.execute("SELECT COUNT(*) FROM kwv_users WHERE local_government_id = %s AND is_active = TRUE", (lg_id,))
+        item['worker_count'] = cursor.fetchone()[0]
+        return item
+    finally:
+        conn.close()
+
+@router.post("/local-governments")
+async def create_local_government(data: LocalGovernmentCreate, user: dict = Depends(get_current_user)):
+    """지자체 등록 (admin)"""
+    require_admin(user)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        from datetime import date
+        cursor.execute("""
+            INSERT INTO kwv_local_governments
+            (name, name_en, region, address, phone, email, website_url,
+             representative_name, representative_phone, representative_email,
+             allocated_quota, quota_year, logo_url, description, description_en,
+             latitude, longitude)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (data.name, data.name_en, data.region, data.address, data.phone,
+              data.email, data.website_url, data.representative_name,
+              data.representative_phone, data.representative_email,
+              data.allocated_quota, data.quota_year or date.today().year,
+              data.logo_url, data.description, data.description_en,
+              data.latitude, data.longitude))
+        conn.commit()
+        return {"id": cursor.lastrowid, "message": f"지자체 '{data.name}' 등록 완료"}
+    finally:
+        conn.close()
+
+@router.put("/local-governments/{lg_id}")
+async def update_local_government(lg_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """지자체 수정"""
+    require_admin(user)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        allowed_fields = [
+            'name', 'name_en', 'region', 'address', 'phone', 'email', 'website_url',
+            'representative_name', 'representative_phone', 'representative_email',
+            'allocated_quota', 'used_quota', 'quota_year', 'logo_url',
+            'description', 'description_en', 'latitude', 'longitude', 'is_active'
+        ]
+        updates = []
+        params = []
+        for field in allowed_fields:
+            if field in body:
+                updates.append(f"{field} = %s")
+                params.append(body[field])
+        if not updates:
+            raise HTTPException(status_code=400, detail="수정할 항목이 없습니다")
+        params.append(lg_id)
+        cursor.execute(f"UPDATE kwv_local_governments SET {', '.join(updates)} WHERE id = %s", params)
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="지자체를 찾을 수 없습니다")
+        return {"message": "지자체 정보가 수정되었습니다"}
+    finally:
+        conn.close()
+
+@router.delete("/local-governments/{lg_id}")
+async def delete_local_government(lg_id: int, user: dict = Depends(get_current_user)):
+    """지자체 삭제 (super admin)"""
+    require_admin_level(user, 9)
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE kwv_local_governments SET is_active = FALSE WHERE id = %s", (lg_id,))
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="지자체를 찾을 수 없습니다")
+        return {"message": "지자체가 비활성화되었습니다"}
+    finally:
+        conn.close()
+
+@router.put("/local-governments/{lg_id}/quota")
+async def update_quota(lg_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """지자체 TO 배정 관리 (super admin)"""
+    require_admin_level(user, 9)
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        allocated = body.get('allocated_quota')
+        year = body.get('quota_year')
+        if allocated is not None:
+            cursor.execute("""
+                UPDATE kwv_local_governments
+                SET allocated_quota = %s, quota_year = COALESCE(%s, quota_year)
+                WHERE id = %s
+            """, (allocated, year, lg_id))
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="지자체를 찾을 수 없습니다")
+        return {"message": "TO 배정이 업데이트되었습니다"}
+    finally:
+        conn.close()
+
 # ==================== Health Check ====================
 
 @router.get("/health")
@@ -764,7 +1300,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": "KoreaWorkingVisa API",
-        "version": "1.0.0",
+        "version": "1.1.20260213",
         "mock_mode": MOCK_MODE,
         "jwt_available": JWT_AVAILABLE,
         "bcrypt_available": BCRYPT_AVAILABLE,

@@ -12,6 +12,8 @@
         .user-type-btn:hover { transform: translateY(-2px); }
         .user-type-btn.selected { border-color: #3b82f6; background: #eff6ff; }
         .user-type-btn.selected .check-icon { display: flex; }
+        .file-upload-zone { transition: all 0.2s; }
+        .file-upload-zone:hover { border-color: #3b82f6; background: #f0f9ff; }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
@@ -25,7 +27,7 @@
         </select>
     </div>
 
-    <div class="w-full max-w-md">
+    <div class="w-full max-w-lg my-8">
         <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
             <div class="bg-gradient-to-r from-green-600 to-blue-600 p-6 text-center">
                 <div class="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
@@ -37,6 +39,36 @@
 
             <div class="p-6">
                 <form id="registerForm" class="space-y-4">
+
+                    <!-- Profile Photo -->
+                    <div class="text-center">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-camera mr-1"></i> <span data-i18n="profilePhoto">Profile Photo</span>
+                        </label>
+                        <div class="relative inline-block">
+                            <div id="photoPreview" class="w-28 h-28 rounded-full border-4 border-gray-200 mx-auto flex items-center justify-center overflow-hidden bg-gray-100">
+                                <!-- Default Avatar SVG -->
+                                <svg id="defaultAvatar" class="w-16 h-16 text-gray-300" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                </svg>
+                                <img id="photoImg" class="w-full h-full object-cover hidden" alt="Profile">
+                            </div>
+                            <button type="button" id="removePhotoBtn" onclick="removePhoto()" class="hidden absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="flex justify-center gap-2 mt-2">
+                            <label class="cursor-pointer bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition-all text-sm inline-flex items-center">
+                                <i class="fas fa-upload mr-1"></i><span data-i18n="uploadPhoto">Upload</span>
+                                <input type="file" class="hidden" accept="image/*" onchange="handlePhotoUpload(event)">
+                            </label>
+                            <button type="button" onclick="openCamera()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition-all text-sm inline-flex items-center">
+                                <i class="fas fa-camera mr-1"></i><span data-i18n="takePhoto">Camera</span>
+                            </button>
+                        </div>
+                        <input type="hidden" id="profilePhotoData">
+                    </div>
+
                     <!-- User Type Selection -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -57,19 +89,13 @@
                                 </div>
                                 <i class="fas fa-user-shield text-3xl text-purple-500 mb-2"></i>
                                 <p class="font-medium text-gray-700" data-i18n="admin">Administrator</p>
-                                <p class="text-xs text-gray-500 mt-1" data-i18n="adminDesc">Government Official</p>
+                                <p class="text-xs text-gray-500 mt-1" data-i18n="adminDesc">Regional Manager</p>
                             </div>
                         </div>
                         <input type="hidden" id="userType" value="applicant">
                     </div>
 
-                    <div id="organizationField" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class="fas fa-building mr-1"></i> <span data-i18n="organization">Organization</span>
-                        </label>
-                        <input type="text" id="organization" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Government Agency Name">
-                    </div>
-
+                    <!-- Common Fields -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class="fas fa-user mr-1"></i> <span data-i18n="name">Full Name</span>
@@ -86,16 +112,119 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class="fas fa-lock mr-1"></i> <span data-i18n="password">Password</span>
+                            <i class="fas fa-phone mr-1"></i> <span data-i18n="phone">Phone</span>
                         </label>
-                        <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Create a password" required minlength="6">
+                        <input type="tel" id="phone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="010-0000-0000" oninput="formatPhone(this)">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class="fas fa-lock mr-1"></i> <span data-i18n="confirmPassword">Confirm Password</span>
+                            <i class="fas fa-map-marker-alt mr-1"></i> <span data-i18n="address">Address</span>
                         </label>
-                        <input type="password" id="confirmPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Confirm your password" required>
+                        <input type="text" id="address" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Your address">
+                    </div>
+
+                    <!-- Default Password Notice -->
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <span data-i18n="defaultPasswordInfo">Default password is "kwv2026". You can change it after login.</span>
+                    </div>
+
+                    <!-- Admin Fields -->
+                    <div id="adminFields" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-map mr-1"></i> <span data-i18n="region">Assigned Region</span>
+                            </label>
+                            <input type="text" id="organization" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Your region">
+                        </div>
+
+                        <!-- ID Card Upload -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-id-card mr-1"></i> <span data-i18n="idCard">ID Card Copy</span>
+                            </label>
+                            <div class="file-upload-zone border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                <div id="idCardPreview" class="hidden mb-2">
+                                    <div class="flex items-center justify-between bg-green-50 p-2 rounded">
+                                        <span class="text-sm text-green-700"><i class="fas fa-check-circle mr-1"></i><span id="idCardFileName"></span></span>
+                                        <button type="button" onclick="removeFile('idCard')" class="text-red-500 text-sm hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <label class="cursor-pointer bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all inline-flex items-center text-sm">
+                                    <i class="fas fa-paperclip mr-2"></i><span data-i18n="uploadFile">Upload File</span>
+                                    <input type="file" class="hidden" accept="image/*,application/pdf" onchange="handleFileUpload(event, 'idCard')">
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">JPG, PNG, PDF (max 10MB)</p>
+                            </div>
+                            <input type="hidden" id="idCardUrl">
+                        </div>
+
+                        <!-- Insurance Certificate Upload -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-file-medical mr-1"></i> <span data-i18n="insuranceCert">4 Major Insurance Certificate</span>
+                            </label>
+                            <div class="file-upload-zone border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                <div id="insuranceCertPreview" class="hidden mb-2">
+                                    <div class="flex items-center justify-between bg-green-50 p-2 rounded">
+                                        <span class="text-sm text-green-700"><i class="fas fa-check-circle mr-1"></i><span id="insuranceCertFileName"></span></span>
+                                        <button type="button" onclick="removeFile('insuranceCert')" class="text-red-500 text-sm hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <label class="cursor-pointer bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all inline-flex items-center text-sm">
+                                    <i class="fas fa-paperclip mr-2"></i><span data-i18n="uploadFile">Upload File</span>
+                                    <input type="file" class="hidden" accept="image/*,application/pdf" onchange="handleFileUpload(event, 'insuranceCert')">
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">JPG, PNG, PDF (max 10MB)</p>
+                            </div>
+                            <input type="hidden" id="insuranceCertUrl">
+                        </div>
+                    </div>
+
+                    <!-- Applicant Fields -->
+                    <div id="applicantFields" class="space-y-4">
+                        <!-- Passport Upload -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-passport mr-1"></i> <span data-i18n="passportCopy">Passport Copy</span>
+                            </label>
+                            <div class="file-upload-zone border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                <div id="passportPreview" class="hidden mb-2">
+                                    <div class="flex items-center justify-between bg-green-50 p-2 rounded">
+                                        <span class="text-sm text-green-700"><i class="fas fa-check-circle mr-1"></i><span id="passportFileName"></span></span>
+                                        <button type="button" onclick="removeFile('passport')" class="text-red-500 text-sm hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <label class="cursor-pointer bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all inline-flex items-center text-sm">
+                                    <i class="fas fa-paperclip mr-2"></i><span data-i18n="uploadFile">Upload File</span>
+                                    <input type="file" class="hidden" accept="image/*,application/pdf" onchange="handleFileUpload(event, 'passport')">
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">JPG, PNG, PDF (max 10MB)</p>
+                            </div>
+                            <input type="hidden" id="passportUrl">
+                        </div>
+
+                        <!-- Visa Upload -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-file-alt mr-1"></i> <span data-i18n="visaCopy">Visa Copy</span>
+                            </label>
+                            <div class="file-upload-zone border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                <div id="visaPreview" class="hidden mb-2">
+                                    <div class="flex items-center justify-between bg-green-50 p-2 rounded">
+                                        <span class="text-sm text-green-700"><i class="fas fa-check-circle mr-1"></i><span id="visaFileName"></span></span>
+                                        <button type="button" onclick="removeFile('visa')" class="text-red-500 text-sm hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <label class="cursor-pointer bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all inline-flex items-center text-sm">
+                                    <i class="fas fa-paperclip mr-2"></i><span data-i18n="uploadFile">Upload File</span>
+                                    <input type="file" class="hidden" accept="image/*,application/pdf" onchange="handleFileUpload(event, 'visa')">
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">JPG, PNG, PDF (max 10MB)</p>
+                            </div>
+                            <input type="hidden" id="visaUrl">
+                        </div>
                     </div>
 
                     <div id="errorMessage" class="hidden p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
@@ -116,16 +245,110 @@
         </div>
     </div>
 
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="font-bold text-gray-800"><i class="fas fa-camera mr-2"></i><span data-i18n="cameraCapture">Camera Capture</span></h3>
+                <button onclick="closeCamera()" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-4">
+                <video id="cameraVideo" autoplay playsinline class="w-full rounded-lg bg-black" style="max-height: 360px;"></video>
+                <canvas id="cameraCanvas" class="hidden"></canvas>
+                <div class="flex gap-2 mt-3">
+                    <button type="button" onclick="capturePhoto()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg transition-all">
+                        <i class="fas fa-camera mr-2"></i><span data-i18n="capture">Capture</span>
+                    </button>
+                    <button type="button" onclick="closeCamera()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2.5 rounded-lg transition-all">
+                        <span data-i18n="cancel">Cancel</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api/kwv';
         let selectedUserType = 'applicant';
+        let cameraStream = null;
+        let uploadedFiles = {};
 
+        // ==================== i18n ====================
         const translations = {
-            en: { title: 'Create Account', subtitle: 'Join Korea Working Visa', userType: 'Account Type', applicant: 'Visa Applicant', applicantDesc: 'Foreign Worker', admin: 'Administrator', adminDesc: 'Government Official', organization: 'Organization', name: 'Full Name', email: 'Email', password: 'Password', confirmPassword: 'Confirm Password', register: 'Register', hasAccount: 'Already have an account?', login: 'Login', passwordMismatch: 'Passwords do not match', registrationSuccess: 'Registration successful! Redirecting...' },
-            ko: { title: '회원가입', subtitle: '한국 워킹비자에 가입하세요', userType: '계정 유형', applicant: '비자 신청자', applicantDesc: '외국인 근로자', admin: '관리자', adminDesc: '정부 기관 담당자', organization: '소속 기관', name: '이름', email: '이메일', password: '비밀번호', confirmPassword: '비밀번호 확인', register: '가입하기', hasAccount: '이미 계정이 있으신가요?', login: '로그인', passwordMismatch: '비밀번호가 일치하지 않습니다', registrationSuccess: '가입 완료! 이동 중...' },
-            vi: { title: 'Tạo Tài Khoản', subtitle: 'Tham gia Korea Working Visa', userType: 'Loại Tài Khoản', applicant: 'Người Xin Visa', applicantDesc: 'Lao Động Nước Ngoài', admin: 'Quản Trị Viên', adminDesc: 'Quan Chức Chính Phủ' },
-            th: { title: 'สร้างบัญชี', subtitle: 'เข้าร่วม Korea Working Visa', userType: 'ประเภทบัญชี', applicant: 'ผู้สมัครวีซ่า', applicantDesc: 'แรงงานต่างชาติ', admin: 'ผู้ดูแลระบบ', adminDesc: 'เจ้าหน้าที่รัฐ' },
-            tl: { title: 'Gumawa ng Account', subtitle: 'Sumali sa Korea Working Visa', userType: 'Uri ng Account', applicant: 'Visa Applicant', applicantDesc: 'Dayuhang Manggagawa', admin: 'Administrator', adminDesc: 'Opisyal ng Gobyerno' }
+            en: {
+                title: 'Create Account', subtitle: 'Join Korea Working Visa', profilePhoto: 'Profile Photo',
+                uploadPhoto: 'Upload', takePhoto: 'Camera', userType: 'Account Type',
+                applicant: 'Visa Applicant', applicantDesc: 'Foreign Worker',
+                admin: 'Administrator', adminDesc: 'Regional Manager',
+                name: 'Full Name', email: 'Email', phone: 'Phone', address: 'Address',
+                defaultPasswordInfo: 'Default password is "kwv2026". You can change it after login.',
+                region: 'Assigned Region', idCard: 'ID Card Copy',
+                insuranceCert: '4 Major Insurance Certificate',
+                passportCopy: 'Passport Copy', visaCopy: 'Visa Copy',
+                uploadFile: 'Upload File', register: 'Register',
+                hasAccount: 'Already have an account?', login: 'Login',
+                cameraCapture: 'Camera Capture', capture: 'Capture', cancel: 'Cancel',
+                registrationSuccess: 'Registration successful! Redirecting...',
+                fileTooLarge: 'File size exceeds 10MB', invalidFileType: 'Invalid file type'
+            },
+            ko: {
+                title: '회원가입', subtitle: '한국 워킹비자에 가입하세요', profilePhoto: '프로필 사진',
+                uploadPhoto: '업로드', takePhoto: '카메라', userType: '계정 유형',
+                applicant: '비자 신청자', applicantDesc: '외국인 근로자',
+                admin: '관리자', adminDesc: '지역별 담당자',
+                name: '이름', email: '이메일', phone: '전화번호', address: '주소',
+                defaultPasswordInfo: '초기 비밀번호는 "kwv2026"입니다. 로그인 후 변경 가능합니다.',
+                region: '소속 지역', idCard: '신분증 사본',
+                insuranceCert: '4대보험 가입증명',
+                passportCopy: '여권 사본', visaCopy: '비자 사본',
+                uploadFile: '파일 업로드', register: '가입하기',
+                hasAccount: '이미 계정이 있으신가요?', login: '로그인',
+                cameraCapture: '카메라 촬영', capture: '촬영', cancel: '취소',
+                registrationSuccess: '가입 완료! 이동 중...',
+                fileTooLarge: '파일 크기가 10MB를 초과합니다', invalidFileType: '허용되지 않는 파일 형식입니다'
+            },
+            vi: {
+                title: 'Tạo Tài Khoản', subtitle: 'Tham gia Korea Working Visa', profilePhoto: 'Ảnh Đại Diện',
+                uploadPhoto: 'Tải lên', takePhoto: 'Camera', userType: 'Loại Tài Khoản',
+                applicant: 'Người Xin Visa', applicantDesc: 'Lao Động Nước Ngoài',
+                admin: 'Quản Trị Viên', adminDesc: 'Quản Lý Khu Vực',
+                name: 'Họ Tên', email: 'Email', phone: 'Số Điện Thoại', address: 'Địa Chỉ',
+                defaultPasswordInfo: 'Mật khẩu mặc định là "kwv2026". Bạn có thể thay đổi sau khi đăng nhập.',
+                region: 'Khu Vực Phụ Trách', idCard: 'Bản Sao CMND',
+                insuranceCert: 'Chứng Nhận Bảo Hiểm',
+                passportCopy: 'Bản Sao Hộ Chiếu', visaCopy: 'Bản Sao Visa',
+                uploadFile: 'Tải File', register: 'Đăng Ký',
+                hasAccount: 'Đã có tài khoản?', login: 'Đăng Nhập',
+                cameraCapture: 'Chụp Ảnh', capture: 'Chụp', cancel: 'Hủy'
+            },
+            th: {
+                title: 'สร้างบัญชี', subtitle: 'เข้าร่วม Korea Working Visa', profilePhoto: 'รูปโปรไฟล์',
+                uploadPhoto: 'อัปโหลด', takePhoto: 'กล้อง', userType: 'ประเภทบัญชี',
+                applicant: 'ผู้สมัครวีซ่า', applicantDesc: 'แรงงานต่างชาติ',
+                admin: 'ผู้ดูแลระบบ', adminDesc: 'ผู้จัดการภูมิภาค',
+                name: 'ชื่อ-นามสกุล', email: 'อีเมล', phone: 'โทรศัพท์', address: 'ที่อยู่',
+                defaultPasswordInfo: 'รหัสผ่านเริ่มต้นคือ "kwv2026" คุณสามารถเปลี่ยนได้หลังจากเข้าสู่ระบบ',
+                region: 'ภูมิภาคที่รับผิดชอบ', idCard: 'สำเนาบัตรประชาชน',
+                insuranceCert: 'ใบรับรองประกันสังคม',
+                passportCopy: 'สำเนาหนังสือเดินทาง', visaCopy: 'สำเนาวีซ่า',
+                uploadFile: 'อัปโหลดไฟล์', register: 'ลงทะเบียน',
+                hasAccount: 'มีบัญชีอยู่แล้ว?', login: 'เข้าสู่ระบบ',
+                cameraCapture: 'ถ่ายรูป', capture: 'ถ่าย', cancel: 'ยกเลิก'
+            },
+            tl: {
+                title: 'Gumawa ng Account', subtitle: 'Sumali sa Korea Working Visa', profilePhoto: 'Profile Photo',
+                uploadPhoto: 'Upload', takePhoto: 'Camera', userType: 'Uri ng Account',
+                applicant: 'Visa Applicant', applicantDesc: 'Dayuhang Manggagawa',
+                admin: 'Administrator', adminDesc: 'Regional Manager',
+                name: 'Buong Pangalan', email: 'Email', phone: 'Telepono', address: 'Address',
+                defaultPasswordInfo: 'Ang default password ay "kwv2026". Maaaring baguhin pagkatapos mag-login.',
+                region: 'Assigned Region', idCard: 'ID Card Copy',
+                insuranceCert: 'Insurance Certificate',
+                passportCopy: 'Passport Copy', visaCopy: 'Visa Copy',
+                uploadFile: 'Upload File', register: 'Mag-register',
+                hasAccount: 'May account na?', login: 'Mag-login',
+                cameraCapture: 'Camera Capture', capture: 'Capture', cancel: 'Cancel'
+            }
         };
 
         let currentLang = localStorage.getItem('kwv_language') || 'en';
@@ -145,14 +368,157 @@
             document.getElementById('langSelector').value = currentLang;
         }
 
+        // ==================== User Type ====================
         function selectUserType(type) {
             selectedUserType = type;
             document.getElementById('userType').value = type;
             document.querySelectorAll('.user-type-btn').forEach(btn => btn.classList.remove('selected'));
             document.getElementById('btn-' + type).classList.add('selected');
-            document.getElementById('organizationField').classList.toggle('hidden', type !== 'admin');
+            document.getElementById('adminFields').classList.toggle('hidden', type !== 'admin');
+            document.getElementById('applicantFields').classList.toggle('hidden', type !== 'applicant');
         }
 
+        // ==================== Profile Photo ====================
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { showError('File too large (max 5MB)'); return; }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setProfilePhoto(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setProfilePhoto(dataUrl) {
+            const img = document.getElementById('photoImg');
+            const avatar = document.getElementById('defaultAvatar');
+            const removeBtn = document.getElementById('removePhotoBtn');
+
+            img.src = dataUrl;
+            img.classList.remove('hidden');
+            avatar.classList.add('hidden');
+            removeBtn.classList.remove('hidden');
+            removeBtn.classList.add('flex');
+            document.getElementById('profilePhotoData').value = dataUrl;
+        }
+
+        function removePhoto() {
+            const img = document.getElementById('photoImg');
+            const avatar = document.getElementById('defaultAvatar');
+            const removeBtn = document.getElementById('removePhotoBtn');
+
+            img.src = '';
+            img.classList.add('hidden');
+            avatar.classList.remove('hidden');
+            removeBtn.classList.add('hidden');
+            removeBtn.classList.remove('flex');
+            document.getElementById('profilePhotoData').value = '';
+        }
+
+        // ==================== Camera ====================
+        async function openCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                document.getElementById('cameraVideo').srcObject = cameraStream;
+                const modal = document.getElementById('cameraModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } catch (err) {
+                showError('Camera access denied');
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            setProfilePhoto(dataUrl);
+            closeCamera();
+        }
+
+        function closeCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+            const modal = document.getElementById('cameraModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // ==================== File Upload ====================
+        async function handleFileUpload(event, category) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const t = translations[currentLang] || translations.en;
+            if (file.size > 10 * 1024 * 1024) { showError(t.fileTooLarge || 'File too large'); return; }
+
+            const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+            if (!allowed.includes(file.type)) { showError(t.invalidFileType || 'Invalid file type'); return; }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('category', category);
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/upload-temp`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Upload failed');
+
+                uploadedFiles[category] = data.url;
+
+                // Update UI
+                const previewId = category === 'passport' ? 'passportPreview' :
+                                  category === 'visa' ? 'visaPreview' :
+                                  category === 'idCard' ? 'idCardPreview' : 'insuranceCertPreview';
+                const fileNameId = category === 'passport' ? 'passportFileName' :
+                                   category === 'visa' ? 'visaFileName' :
+                                   category === 'idCard' ? 'idCardFileName' : 'insuranceCertFileName';
+                const urlId = category === 'passport' ? 'passportUrl' :
+                              category === 'visa' ? 'visaUrl' :
+                              category === 'idCard' ? 'idCardUrl' : 'insuranceCertUrl';
+
+                document.getElementById(previewId).classList.remove('hidden');
+                document.getElementById(fileNameId).textContent = file.name;
+                document.getElementById(urlId).value = data.url;
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        function removeFile(category) {
+            delete uploadedFiles[category];
+            const previewId = category === 'passport' ? 'passportPreview' :
+                              category === 'visa' ? 'visaPreview' :
+                              category === 'idCard' ? 'idCardPreview' : 'insuranceCertPreview';
+            const urlId = category === 'passport' ? 'passportUrl' :
+                          category === 'visa' ? 'visaUrl' :
+                          category === 'idCard' ? 'idCardUrl' : 'insuranceCertUrl';
+
+            document.getElementById(previewId).classList.add('hidden');
+            document.getElementById(urlId).value = '';
+        }
+
+        // ==================== Phone Format ====================
+        function formatPhone(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 3 && value.length <= 7) {
+                value = value.slice(0, 3) + '-' + value.slice(3);
+            } else if (value.length > 7) {
+                value = value.slice(0, 3) + '-' + value.slice(3, 7) + '-' + value.slice(7, 11);
+            }
+            input.value = value;
+        }
+
+        // ==================== Messages ====================
         function showError(msg) {
             document.getElementById('errorMessage').textContent = msg;
             document.getElementById('errorMessage').classList.remove('hidden');
@@ -165,52 +531,57 @@
             document.getElementById('errorMessage').classList.add('hidden');
         }
 
-        function redirectUser(user) {
-            if (user.user_type === 'admin') {
-                setTimeout(() => { window.location.href = '/kwv-dashboard.html'; }, 1000);
-            } else {
-                setTimeout(() => { window.location.href = '/applicant/dashboard.html'; }, 1000);
-            }
-        }
-
+        // ==================== Form Submit ====================
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const t = translations[currentLang] || translations.en;
-
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const organization = document.getElementById('organization').value;
             const registerBtn = document.getElementById('registerBtn');
-
-            if (password !== confirmPassword) {
-                showError(t.passwordMismatch || 'Passwords do not match');
-                return;
-            }
 
             registerBtn.disabled = true;
             registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Registering...';
 
             try {
+                const body = {
+                    email: document.getElementById('email').value,
+                    name: document.getElementById('name').value,
+                    phone: document.getElementById('phone').value,
+                    address: document.getElementById('address').value,
+                    user_type: selectedUserType,
+                    language: currentLang,
+                    profile_photo: document.getElementById('profilePhotoData').value || null
+                };
+
+                if (selectedUserType === 'admin') {
+                    body.organization = document.getElementById('organization').value;
+                    body.id_card_url = document.getElementById('idCardUrl').value || null;
+                    body.insurance_cert_url = document.getElementById('insuranceCertUrl').value || null;
+                } else {
+                    body.passport_copy_url = document.getElementById('passportUrl').value || null;
+                    body.visa_copy_url = document.getElementById('visaUrl').value || null;
+                }
+
                 const res = await fetch(`${API_BASE}/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email, password, name,
-                        user_type: selectedUserType,
-                        organization: selectedUserType === 'admin' ? organization : null,
-                        language: currentLang
-                    })
+                    body: JSON.stringify(body)
                 });
 
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || 'Registration failed');
 
-                localStorage.setItem('kwv_token', data.access_token);
-                localStorage.setItem('kwv_user', JSON.stringify(data.user));
+                sessionStorage.setItem('kwv_token', data.access_token);
+                sessionStorage.setItem('kwv_logged_in', 'true');
+                sessionStorage.setItem('kwv_user', JSON.stringify(data.user));
+
                 showSuccess(t.registrationSuccess || 'Registration successful! Redirecting...');
-                redirectUser(data.user);
+
+                setTimeout(() => {
+                    if (data.user.user_type === 'admin') {
+                        window.location.href = '/kwv-dashboard.html';
+                    } else {
+                        window.location.href = '/applicant/dashboard.html';
+                    }
+                }, 1500);
             } catch (error) {
                 showError(error.message);
                 registerBtn.disabled = false;
@@ -218,7 +589,29 @@
             }
         });
 
-        window.addEventListener('DOMContentLoaded', applyTranslations);
+        // ==================== Google Pre-fill ====================
+        function applyGoogleUserData() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('sns') === 'google') {
+                const name = params.get('google_name');
+                const email = params.get('google_email');
+                const picture = params.get('google_picture');
+
+                if (name) document.getElementById('name').value = name;
+                if (email) document.getElementById('email').value = email;
+                if (picture) {
+                    // Higher resolution
+                    const hiRes = picture.replace('=s96-c', '=s400-c');
+                    setProfilePhoto(hiRes);
+                }
+            }
+        }
+
+        // ==================== Init ====================
+        window.addEventListener('DOMContentLoaded', () => {
+            applyTranslations();
+            applyGoogleUserData();
+        });
     </script>
 </body>
 </html>
