@@ -3771,6 +3771,138 @@ async def my_insurance(user: dict = Depends(get_current_user)):
     finally:
         conn.close()
 
+# ==================== 공지사항 (Notices) ====================
+
+@router.get("/notices")
+async def list_notices(
+    target_type: Optional[str] = None,
+    local_government_id: Optional[int] = None,
+    important_only: Optional[int] = 0
+):
+    """공지사항 목록 (공개 - 로그인 불필요)"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"items": []}
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        sql = """
+            SELECT n.*, u.name as created_by_name,
+                   lg.name as lg_name
+            FROM kwv_notices n
+            LEFT JOIN kwv_users u ON n.created_by = u.id
+            LEFT JOIN kwv_local_governments lg ON n.local_government_id = lg.id
+            WHERE n.is_active = 1
+        """
+        params = []
+        if target_type:
+            sql += " AND n.target_type = %s"
+            params.append(target_type)
+        if local_government_id:
+            sql += " AND (n.target_type = 'all' OR n.local_government_id = %s)"
+            params.append(local_government_id)
+        if important_only:
+            sql += " AND n.is_important = 1"
+        sql += " ORDER BY n.is_important DESC, n.created_at DESC"
+        cursor.execute(sql, params)
+        items = cursor.fetchall()
+        for item in items:
+            for k, v in item.items():
+                if isinstance(v, (datetime, date)):
+                    item[k] = v.isoformat()
+        return {"items": items, "total": len(items)}
+    finally:
+        conn.close()
+
+@router.get("/notices/{notice_id}")
+async def get_notice(notice_id: int):
+    """공지사항 상세"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # 조회수 증가
+        cursor.execute("UPDATE kwv_notices SET view_count = view_count + 1 WHERE id = %s", (notice_id,))
+        conn.commit()
+        cursor.execute("""
+            SELECT n.*, u.name as created_by_name, lg.name as lg_name
+            FROM kwv_notices n
+            LEFT JOIN kwv_users u ON n.created_by = u.id
+            LEFT JOIN kwv_local_governments lg ON n.local_government_id = lg.id
+            WHERE n.id = %s
+        """, (notice_id,))
+        item = cursor.fetchone()
+        if not item:
+            raise HTTPException(status_code=404, detail="공지를 찾을 수 없습니다")
+        for k, v in item.items():
+            if isinstance(v, (datetime, date)):
+                item[k] = v.isoformat()
+        return item
+    finally:
+        conn.close()
+
+@router.post("/admin/notices")
+async def create_notice(request: Request, user: dict = Depends(get_current_user)):
+    """공지사항 작성 (관리자)"""
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            INSERT INTO kwv_notices (title, content, target_type, local_government_id, is_important, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            body['title'], body['content'],
+            body.get('target_type', 'all'),
+            body.get('local_government_id') or None,
+            body.get('is_important', 0),
+            int(user['sub'])
+        ))
+        conn.commit()
+        return {"message": "공지가 등록되었습니다", "id": cursor.lastrowid}
+    finally:
+        conn.close()
+
+@router.put("/admin/notices/{notice_id}")
+async def update_notice(notice_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """공지사항 수정 (관리자)"""
+    body = await request.json()
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            UPDATE kwv_notices SET title=%s, content=%s, target_type=%s,
+            local_government_id=%s, is_important=%s WHERE id=%s
+        """, (
+            body['title'], body['content'],
+            body.get('target_type', 'all'),
+            body.get('local_government_id') or None,
+            body.get('is_important', 0),
+            notice_id
+        ))
+        conn.commit()
+        return {"message": "공지가 수정되었습니다"}
+    finally:
+        conn.close()
+
+@router.delete("/admin/notices/{notice_id}")
+async def delete_notice(notice_id: int, user: dict = Depends(get_current_user)):
+    """공지사항 삭제 (관리자)"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("UPDATE kwv_notices SET is_active = 0 WHERE id = %s", (notice_id,))
+        conn.commit()
+        return {"message": "공지가 삭제되었습니다"}
+    finally:
+        conn.close()
+
 # ==================== Health Check ====================
 
 @router.get("/health")
@@ -3779,7 +3911,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": "KoreaWorkingVisa API",
-        "version": "1.9.20260214",
+        "version": "1.10.20260214",
         "mock_mode": MOCK_MODE,
         "jwt_available": JWT_AVAILABLE,
         "bcrypt_available": BCRYPT_AVAILABLE,

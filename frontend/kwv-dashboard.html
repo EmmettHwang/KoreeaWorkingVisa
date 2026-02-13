@@ -338,24 +338,20 @@
                     </div>
                 </div>
 
-                <!-- 비자 관리 (단독) -->
-                <button onclick="showTab('visa')" class="tab-btn menu-group-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="visa">
-                    <i class="fas fa-passport mr-2"></i><span>비자 관리</span>
-                </button>
-
                 <!-- 구인/구직 (단독) -->
                 <button onclick="showTab('jobs')" class="tab-btn menu-group-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" data-tab="jobs">
                     <i class="fas fa-briefcase mr-2"></i><span>구인/구직</span>
                 </button>
 
-                <!-- FAQ & 챗봇 그룹 -->
+                <!-- AI Helper 그룹 -->
                 <div class="menu-group">
                     <div class="menu-group-btn tab-btn px-5 py-4 text-sm font-medium rounded-t-lg transition-all text-gray-500 hover:text-gray-700" id="menuGroupFaq">
-                        <i class="fas fa-question-circle mr-2"></i><span>FAQ & 챗봇</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
+                        <i class="fas fa-robot mr-2"></i><span>AI Helper</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
                     </div>
                     <div class="menu-dropdown">
+                        <a href="#" onclick="showTab('visa');return false;" data-tab="visa"><i class="fas fa-passport"></i> 비자안내</a>
                         <a href="#" onclick="showTab('faq');return false;" data-tab="faq"><i class="fas fa-question-circle"></i> FAQ</a>
-                        <a href="#" onclick="showTab('chatbot');return false;" data-tab="chatbot"><i class="fas fa-robot"></i> AI 챗봇</a>
+                        <a href="#" onclick="showTab('chatbot');return false;" data-tab="chatbot"><i class="fas fa-comments"></i> AI 챗봇</a>
                     </div>
                 </div>
 
@@ -365,6 +361,7 @@
                         <i class="fas fa-cog mr-2"></i><span>시스템</span> <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
                     </div>
                     <div class="menu-dropdown">
+                        <a href="#" onclick="showTab('notices');return false;" data-tab="notices"><i class="fas fa-bullhorn"></i> 공지사항</a>
                         <a href="#" onclick="showTab('settings');return false;" data-tab="settings"><i class="fas fa-cog"></i> 시스템 설정</a>
                         <a href="#" onclick="showTab('permissions');return false;" data-tab="permissions"><i class="fas fa-shield-alt"></i> 권한 관리</a>
                     </div>
@@ -566,10 +563,10 @@
             </div>
         </div>
 
-        <!-- ==================== 비자 관리 탭 ==================== -->
+        <!-- ==================== 비자안내 탭 ==================== -->
         <div id="tab-visa" class="tab-content">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800" data-i18n="visaGuideTitle">🛂 비자 종류 안내</h2>
+                <h2 class="text-2xl font-bold text-gray-800" data-i18n="visaGuideTitle">🛂 비자안내</h2>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="visaCards"></div>
         </div>
@@ -1288,6 +1285,82 @@
             <!-- FAQ 목록 -->
             <div id="faqList" class="space-y-4">
                 <!-- FAQ 항목들이 JavaScript로 렌더링됨 -->
+            </div>
+        </div>
+
+        <!-- ==================== 공지사항 탭 ==================== -->
+        <div id="tab-notices" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-bullhorn mr-2 text-orange-500"></i> 공지사항</h2>
+                <button onclick="openNoticeCreateModal()" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-orange-600 transition" id="btnCreateNotice" style="display:none;">
+                    <i class="fas fa-plus mr-1"></i> 공지 작성
+                </button>
+            </div>
+
+            <!-- 필터 -->
+            <div class="card p-4 mb-6">
+                <div class="flex flex-wrap gap-3 items-center">
+                    <select id="noticeTargetFilter" class="input-apple text-sm" onchange="loadNoticesTab()">
+                        <option value="">전체 공지</option>
+                        <option value="all">전체 대상</option>
+                        <option value="lg">지자체별</option>
+                    </select>
+                    <select id="noticeLgFilter" class="input-apple text-sm" onchange="loadNoticesTab()">
+                        <option value="">전체 지자체</option>
+                    </select>
+                    <label class="flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" id="noticeImportantOnly" onchange="loadNoticesTab()" class="rounded">
+                        중요 공지만
+                    </label>
+                </div>
+            </div>
+
+            <!-- 공지 목록 -->
+            <div id="noticesListContainer" class="space-y-4">
+                <div class="text-center text-gray-400 py-12"><i class="fas fa-spinner fa-spin mr-2"></i> 로딩 중...</div>
+            </div>
+        </div>
+
+        <!-- 공지사항 작성/수정 모달 -->
+        <div id="noticeCreateModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-[60]">
+            <div class="bg-white rounded-3xl max-w-lg w-full mx-4 overflow-hidden shadow-2xl">
+                <div class="bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-white font-bold text-lg" id="noticeModalTitle">공지 작성</h3>
+                    <button onclick="closeNoticeCreateModal()" class="text-white/80 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <input type="hidden" id="noticeEditId" value="">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">제목 <span class="text-red-500">*</span></label>
+                        <input type="text" id="noticeTitle" class="w-full input-apple text-sm" placeholder="공지 제목을 입력하세요">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">내용 <span class="text-red-500">*</span></label>
+                        <textarea id="noticeContent" class="w-full input-apple text-sm" rows="5" placeholder="공지 내용을 입력하세요"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">대상</label>
+                            <select id="noticeTargetType" class="w-full input-apple text-sm" onchange="toggleNoticeLgSelect()">
+                                <option value="all">전체</option>
+                                <option value="lg">특정 지자체</option>
+                            </select>
+                        </div>
+                        <div id="noticeLgSelectWrap" style="display:none;">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">지자체 선택</label>
+                            <select id="noticeLgId" class="w-full input-apple text-sm">
+                                <option value="">선택하세요</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" id="noticeIsImportant" class="rounded">
+                        <span class="text-orange-600 font-medium">중요 공지로 설정</span>
+                    </label>
+                    <button onclick="saveNotice()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition">
+                        <i class="fas fa-save mr-1"></i> 저장
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -4960,8 +5033,8 @@
             applicants: 'menuGroupWorker', attendance: 'menuGroupWorker', activities: 'menuGroupWorker',
             counseling: 'menuGroupWorker', points: 'menuGroupWorker', insurance: 'menuGroupWorker',
             reports: 'menuGroupReport', anomalies: 'menuGroupReport',
-            faq: 'menuGroupFaq', chatbot: 'menuGroupFaq',
-            settings: 'menuGroupSystem', permissions: 'menuGroupSystem'
+            visa: 'menuGroupFaq', faq: 'menuGroupFaq', chatbot: 'menuGroupFaq',
+            notices: 'menuGroupSystem', settings: 'menuGroupSystem', permissions: 'menuGroupSystem'
         };
 
         function showTab(tabName) {
@@ -4977,7 +5050,7 @@
             const tabEl = document.getElementById('tab-' + tabName);
             if (tabEl) tabEl.classList.add('active');
 
-            // 직접 탭 버튼 (대시보드, 비자, 구인구직)
+            // 직접 탭 버튼 (대시보드, 구인구직)
             const directBtn = document.querySelector(`button[data-tab="${tabName}"]`);
             if (directBtn) {
                 directBtn.classList.add('text-blue-600', 'bg-white/50');
@@ -5007,45 +5080,68 @@
             if (tabName === 'reports') loadReportsTab();
             if (tabName === 'anomalies') loadAnomaliesTab();
             if (tabName === 'insurance') loadInsuranceTab();
+            if (tabName === 'notices') loadNoticesTab();
             if (tabName === 'dashboard') loadDashboardCharts();
         }
 
-        // 공지사항 로드
-        function loadNotices() {
+        // 대시보드 공지사항 위젯 로드 (API 연동)
+        async function loadNotices() {
             const container = document.getElementById('noticeList');
-            const notices = getNotices();
-            container.innerHTML = '';
-            notices.slice(0, 3).forEach(n => {
-                container.innerHTML += `
-                    <div class="p-4 rounded-xl ${n.important ? 'bg-red-50 border border-red-100' : 'bg-gray-50'} cursor-pointer hover:bg-gray-100 transition" onclick="openNoticeDetail(${n.id})">
-                        <p class="font-medium text-gray-800 text-sm">${n.title}</p>
-                        <p class="text-xs text-gray-400 mt-1">${n.date}</p>
-                    </div>
-                `;
-            });
+            if (!container) return;
+            try {
+                const res = await fetch('/api/kwv/notices?important_only=0');
+                const data = await res.json();
+                const items = (data.items || []).slice(0, 3);
+                if (items.length === 0) {
+                    // API에 공지가 없으면 기존 하드코딩 데이터 사용
+                    const notices = getNotices();
+                    container.innerHTML = '';
+                    notices.slice(0, 3).forEach(n => {
+                        container.innerHTML += `
+                            <div class="p-4 rounded-xl ${n.important ? 'bg-red-50 border border-red-100' : 'bg-gray-50'} cursor-pointer hover:bg-gray-100 transition" onclick="showTab('notices')">
+                                <p class="font-medium text-gray-800 text-sm">${n.title}</p>
+                                <p class="text-xs text-gray-400 mt-1">${n.date}</p>
+                            </div>
+                        `;
+                    });
+                    return;
+                }
+                container.innerHTML = '';
+                items.forEach(n => {
+                    const dateStr = n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR') : '';
+                    container.innerHTML += `
+                        <div class="p-4 rounded-xl ${n.is_important ? 'bg-red-50 border border-red-100' : 'bg-gray-50'} cursor-pointer hover:bg-gray-100 transition" onclick="showTab('notices')">
+                            <p class="font-medium text-gray-800 text-sm">${n.title}</p>
+                            <p class="text-xs text-gray-400 mt-1">${dateStr}</p>
+                        </div>
+                    `;
+                });
+            } catch(e) {
+                // fallback to hardcoded
+                const notices = getNotices();
+                container.innerHTML = '';
+                notices.slice(0, 3).forEach(n => {
+                    container.innerHTML += `
+                        <div class="p-4 rounded-xl bg-gray-50 cursor-pointer hover:bg-gray-100 transition" onclick="showTab('notices')">
+                            <p class="font-medium text-gray-800 text-sm">${n.title}</p>
+                            <p class="text-xs text-gray-400 mt-1">${n.date}</p>
+                        </div>
+                    `;
+                });
+            }
         }
 
         function openNoticeModal() {
-            const notices = getNotices();
-            const content = document.getElementById('noticeModalContent');
-            content.innerHTML = notices.map(n => `
-                <div class="p-5 rounded-2xl ${n.important ? 'bg-red-50 border border-red-100' : 'bg-gray-50'} mb-4">
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="font-semibold text-gray-800">${n.title}</p>
-                        <span class="text-xs text-gray-400">${n.date}</span>
-                    </div>
-                    <p class="text-sm text-gray-600">${n.content}</p>
-                </div>
-            `).join('');
-            document.getElementById('noticeModal').classList.add('active');
+            showTab('notices');
         }
 
         function closeNoticeModal() {
-            document.getElementById('noticeModal').classList.remove('active');
+            const m = document.getElementById('noticeModal');
+            if (m) m.classList.remove('active');
         }
 
         function openNoticeDetail(id) {
-            openNoticeModal();
+            showTab('notices');
         }
 
         // ==================== 출퇴근 관리 JS ====================
@@ -5869,6 +5965,154 @@
                 if (data.success) { alert(`${data.sent_count}명에게 알림 전송 완료`); closeSendNotifModal(); loadMyNotifications(); }
                 else alert(data.detail || '전송 실패');
             } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        // ==================== 공지사항 관리 함수 ====================
+        async function loadNoticesTab() {
+            const token = sessionStorage.getItem('kwv_token');
+            // 관리자면 작성 버튼 표시
+            const adminLevel = parseInt(sessionStorage.getItem('kwv_admin_level') || '0');
+            const btnCreate = document.getElementById('btnCreateNotice');
+            if (btnCreate) btnCreate.style.display = adminLevel >= 5 ? '' : 'none';
+
+            // 지자체 필터 로드
+            await loadNoticeLgFilter();
+
+            const targetFilter = document.getElementById('noticeTargetFilter')?.value || '';
+            const lgFilter = document.getElementById('noticeLgFilter')?.value || '';
+            const importantOnly = document.getElementById('noticeImportantOnly')?.checked || false;
+
+            let url = '/api/kwv/notices?';
+            if (targetFilter) url += `target_type=${targetFilter}&`;
+            if (lgFilter) url += `local_government_id=${lgFilter}&`;
+            if (importantOnly) url += 'important_only=1&';
+
+            try {
+                const res = await fetch(url, { headers: token ? {'Authorization': 'Bearer ' + token} : {} });
+                const data = await res.json();
+                const items = data.items || [];
+                const container = document.getElementById('noticesListContainer');
+
+                if (items.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-400 py-12"><i class="fas fa-clipboard-list text-4xl mb-3"></i><p>등록된 공지사항이 없습니다</p></div>';
+                    return;
+                }
+
+                container.innerHTML = items.map(n => `
+                    <div class="card p-5 ${n.is_important ? 'border-l-4 border-orange-500 bg-orange-50/30' : ''}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    ${n.is_important ? '<span class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-medium">중요</span>' : ''}
+                                    ${n.target_type === 'lg' ? '<span class="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">' + (n.lg_name || '지자체') + '</span>' : '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">전체</span>'}
+                                </div>
+                                <h3 class="font-semibold text-gray-800 text-lg">${n.title}</h3>
+                                <p class="text-gray-600 text-sm mt-2 whitespace-pre-line">${n.content}</p>
+                                <div class="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                                    <span><i class="fas fa-user mr-1"></i>${n.created_by_name || '관리자'}</span>
+                                    <span><i class="fas fa-clock mr-1"></i>${n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR') : ''}</span>
+                                    <span><i class="fas fa-eye mr-1"></i>${n.view_count || 0}</span>
+                                </div>
+                            </div>
+                            ${adminLevel >= 5 ? `
+                            <div class="flex items-center gap-2 ml-4">
+                                <button onclick="editNotice(${n.id})" class="text-blue-500 hover:text-blue-700 text-sm"><i class="fas fa-edit"></i></button>
+                                <button onclick="deleteNotice(${n.id})" class="text-red-400 hover:text-red-600 text-sm"><i class="fas fa-trash"></i></button>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('noticesListContainer').innerHTML = '<div class="text-center text-red-400 py-12">로딩 실패</div>';
+            }
+        }
+
+        let noticeLgFilterLoaded = false;
+        async function loadNoticeLgFilter() {
+            if (noticeLgFilterLoaded) return;
+            try {
+                const res = await fetch('/api/kwv/local-governments');
+                const data = await res.json();
+                const lgs = data.local_governments || data.items || [];
+                const filterSel = document.getElementById('noticeLgFilter');
+                const modalSel = document.getElementById('noticeLgId');
+                lgs.forEach(lg => {
+                    const opt1 = new Option(lg.name, lg.id);
+                    const opt2 = new Option(lg.name, lg.id);
+                    if (filterSel) filterSel.add(opt1);
+                    if (modalSel) modalSel.add(opt2);
+                });
+                noticeLgFilterLoaded = true;
+            } catch(e) {}
+        }
+
+        function toggleNoticeLgSelect() {
+            const sel = document.getElementById('noticeTargetType');
+            const wrap = document.getElementById('noticeLgSelectWrap');
+            if (wrap) wrap.style.display = sel?.value === 'lg' ? '' : 'none';
+        }
+
+        function openNoticeCreateModal(data) {
+            document.getElementById('noticeEditId').value = data?.id || '';
+            document.getElementById('noticeTitle').value = data?.title || '';
+            document.getElementById('noticeContent').value = data?.content || '';
+            document.getElementById('noticeTargetType').value = data?.target_type || 'all';
+            document.getElementById('noticeLgId').value = data?.local_government_id || '';
+            document.getElementById('noticeIsImportant').checked = data?.is_important || false;
+            document.getElementById('noticeModalTitle').textContent = data?.id ? '공지 수정' : '공지 작성';
+            toggleNoticeLgSelect();
+            document.getElementById('noticeCreateModal').classList.add('active');
+        }
+
+        function closeNoticeCreateModal() {
+            document.getElementById('noticeCreateModal').classList.remove('active');
+        }
+
+        async function saveNotice() {
+            const token = sessionStorage.getItem('kwv_token');
+            const editId = document.getElementById('noticeEditId').value;
+            const body = {
+                title: document.getElementById('noticeTitle').value,
+                content: document.getElementById('noticeContent').value,
+                target_type: document.getElementById('noticeTargetType').value,
+                local_government_id: document.getElementById('noticeLgId').value || null,
+                is_important: document.getElementById('noticeIsImportant').checked ? 1 : 0
+            };
+            if (!body.title || !body.content) return alert('제목과 내용을 입력하세요.');
+            if (body.target_type === 'lg' && !body.local_government_id) return alert('지자체를 선택하세요.');
+
+            try {
+                const url = editId ? `/api/kwv/admin/notices/${editId}` : '/api/kwv/admin/notices';
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error((await res.json()).detail || '저장 실패');
+                closeNoticeCreateModal();
+                loadNoticesTab();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        async function editNotice(id) {
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(`/api/kwv/notices/${id}`, { headers: {'Authorization':'Bearer '+token} });
+                const data = await res.json();
+                openNoticeCreateModal(data);
+            } catch(e) { alert('로딩 실패'); }
+        }
+
+        async function deleteNotice(id) {
+            if (!confirm('이 공지를 삭제하시겠습니까?')) return;
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                await fetch(`/api/kwv/admin/notices/${id}`, {
+                    method: 'DELETE', headers: {'Authorization':'Bearer '+token}
+                });
+                loadNoticesTab();
+            } catch(e) { alert('삭제 실패'); }
         }
 
         // ==================== 보험 관리 함수 ====================
