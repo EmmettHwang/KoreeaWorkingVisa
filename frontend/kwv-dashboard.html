@@ -7303,7 +7303,7 @@
         }
 
         function focusRegion(lgId) {
-            const lg = localGovernments.find(x => x.id === lgId);
+            let lg = localGovernments.find(x => x.id === lgId);
             if (lg && lg.latitude && lg.longitude && regionMap) {
                 regionMap.setView([lg.latitude, lg.longitude], 10, { animate: true });
             }
@@ -7311,17 +7311,15 @@
 
         // ==================== 지원자 관리 (API 연동) ====================
         let applicantPage = 1;
-        const countryFlags = {VN:'🇻🇳',TH:'🇹🇭',PH:'🇵🇭',KH:'🇰🇭',ID:'🇮🇩',MM:'🇲🇲',NP:'🇳🇵',LK:'🇱🇰',BD:'🇧🇩',MN:'🇲🇳',UZ:'🇺🇿',TL:'🇹🇱',CN:'🇨🇳'};
-        const countryNames = {VN:'베트남',TH:'태국',PH:'필리핀',KH:'캄보디아',ID:'인도네시아',MM:'미얀마',NP:'네팔',LK:'스리랑카',BD:'방글라데시',MN:'몽골',UZ:'우즈베키스탄',TL:'동티모르',CN:'중국'};
 
         async function loadApplicants(page = 1) {
             applicantPage = page;
-            const token = sessionStorage.getItem('kwv_token');
+            let token = sessionStorage.getItem('kwv_token');
             const params = new URLSearchParams({page, limit: 20});
             const status = document.getElementById('filterStatus')?.value;
             const approval = document.getElementById('filterApproval')?.value;
             const nat = document.getElementById('filterNationality')?.value;
-            const lg = document.getElementById('filterLg')?.value;
+            lg = document.getElementById('filterLg')?.value;
             const search = document.getElementById('filterSearch')?.value;
             if (status) params.set('status', status);
             if (approval) params.set('is_approved', approval);
@@ -7402,7 +7400,7 @@
 
         async function approveApplicant(id) {
             if (!confirm('이 지원자를 승인하시겠습니까?')) return;
-            const token = sessionStorage.getItem('kwv_token');
+            token = sessionStorage.getItem('kwv_token');
             try {
                 const res = await fetch(`/api/kwv/admin/applicants/${id}/status`, {
                     method: 'PUT',
@@ -7417,7 +7415,7 @@
         async function rejectApplicant(id) {
             const reason = prompt('반려 사유를 입력하세요:');
             if (reason === null) return;
-            const token = sessionStorage.getItem('kwv_token');
+            token = sessionStorage.getItem('kwv_token');
             try {
                 const res = await fetch(`/api/kwv/admin/applicants/${id}/status`, {
                     method: 'PUT',
@@ -7522,7 +7520,7 @@
         }
 
         function renderFaq() {
-            const container = document.getElementById('faqList');
+            let container = document.getElementById('faqList');
             const filtered = currentFaqFilter === 'all'
                 ? faqData
                 : faqData.filter(f => f.category === currentFaqFilter);
@@ -7600,7 +7598,7 @@
                 toggleMobileUserMenu();
                 return;
             }
-            const menu = document.getElementById('userMenu');
+            let menu = document.getElementById('userMenu');
             menu.classList.toggle('hidden');
             // 알림 패널 닫기
             document.getElementById('notificationPanel').classList.add('hidden');
@@ -7608,19 +7606,19 @@
 
         // 모바일 사용자 메뉴 토글
         function toggleMobileUserMenu() {
-            const menu = document.getElementById('mobileUserMenu');
+            menu = document.getElementById('mobileUserMenu');
             const layoutMenu = document.getElementById('mobileLayoutUserMenu');
             if (menu) menu.classList.toggle('hidden');
             if (layoutMenu) layoutMenu.classList.toggle('hidden');
             // 알림 패널 닫기
             document.getElementById('notificationPanel').classList.add('hidden');
-            const mp = document.getElementById('mobileNotifPanel');
+            let mp = document.getElementById('mobileNotifPanel');
             if (mp) mp.classList.add('hidden');
         }
 
         // 모바일 알림 패널 토글
         function toggleMobileNotification() {
-            const panel = document.getElementById('mobileNotifPanel');
+            let panel = document.getElementById('mobileNotifPanel');
             if (panel) {
                 panel.classList.toggle('hidden');
                 // 알림 목록 동기화
@@ -7637,7 +7635,7 @@
                 }
             }
             // 사용자 메뉴 닫기
-            const lm = document.getElementById('mobileLayoutUserMenu');
+            let lm = document.getElementById('mobileLayoutUserMenu');
             if (lm) lm.classList.add('hidden');
         }
 
@@ -7670,7 +7668,7 @@
 
         // 알림 패널 토글
         function toggleNotificationPanel() {
-            const panel = document.getElementById('notificationPanel');
+            panel = document.getElementById('notificationPanel');
             panel.classList.toggle('hidden');
             // 사용자 메뉴 닫기
             document.getElementById('userMenu').classList.add('hidden');
@@ -7827,10 +7825,10 @@
         let permModalCallback = null;
 
         function showPermModal(opts) {
-            const modal = document.getElementById('permissionModal');
-            const icon = document.getElementById('permModalIcon');
+            let modal = document.getElementById('permissionModal');
+            let icon = document.getElementById('permModalIcon');
             const title = document.getElementById('permModalTitle');
-            const msg = document.getElementById('permModalMessage');
+            let msg = document.getElementById('permModalMessage');
             const btn = document.getElementById('permModalConfirm');
 
             icon.className = 'w-10 h-10 rounded-xl flex items-center justify-center ' + (opts.iconBg || 'bg-blue-100');
@@ -7855,8 +7853,8 @@
 
         function showPermToast(message, type) {
             const toast = document.getElementById('permToast');
-            const icon = document.getElementById('toastIcon');
-            const msg = document.getElementById('toastMessage');
+            icon = document.getElementById('toastIcon');
+            msg = document.getElementById('toastMessage');
 
             if (type === 'success') {
                 icon.className = 'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-green-100';
@@ -7971,7 +7969,7 @@
         // 사용자 정보 로드
         function loadUserInfo() {
             // 오늘 날짜 표시 (다국어)
-            const today = new Date();
+            let today = new Date();
             let dateStr;
             if (currentLang === 'ko') {
                 dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
@@ -7986,7 +7984,7 @@
             }
             document.getElementById('todayDate').textContent = dateStr;
 
-            const userStr = sessionStorage.getItem('kwv_user');
+            let userStr = sessionStorage.getItem('kwv_user');
             let name = currentLang === 'ko' ? '사용자' : 'User';
             if (userStr) {
                 try {
@@ -8049,13 +8047,13 @@
 
         // 프로필 수정 모달
         function openProfileModal() {
-            const userStr = sessionStorage.getItem('kwv_user');
+            userStr = sessionStorage.getItem('kwv_user');
             let user = {};
             if (userStr) {
                 try { user = JSON.parse(userStr); } catch(e) {}
             }
 
-            const modal = document.createElement('div');
+            modal = document.createElement('div');
             modal.id = 'profileModal';
             modal.className = 'modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50';
             modal.innerHTML = `
@@ -8115,13 +8113,13 @@
         }
 
         function closeProfileModal() {
-            const modal = document.getElementById('profileModal');
+            modal = document.getElementById('profileModal');
             if (modal) modal.remove();
         }
 
         // 비밀번호 변경 모달
         function openPasswordModal() {
-            const modal = document.createElement('div');
+            modal = document.createElement('div');
             modal.id = 'passwordModal';
             modal.className = 'modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50';
             modal.innerHTML = `
@@ -8174,7 +8172,7 @@
         }
 
         function closePasswordModal() {
-            const modal = document.getElementById('passwordModal');
+            modal = document.getElementById('passwordModal');
             if (modal) modal.remove();
         }
 
@@ -8284,7 +8282,7 @@
             localStorage.setItem('kwv_theme', theme);
 
             // 버튼 스타일 업데이트
-            const themeButtons = document.querySelectorAll('.theme-btn');
+            let themeButtons = document.querySelectorAll('.theme-btn');
             themeButtons.forEach(btn => {
                 btn.classList.remove('border-[#007AFF]');
                 if (document.body.classList.contains('dark-mode')) {
@@ -8344,7 +8342,7 @@
         // 테마 버튼 스타일 업데이트
         function updateThemeButtons(activeTheme) {
             const isDark = document.body.classList.contains('dark-mode');
-            const themeButtons = document.querySelectorAll('.theme-btn');
+            themeButtons = document.querySelectorAll('.theme-btn');
 
             themeButtons.forEach(btn => {
                 const btnTheme = btn.getAttribute('data-theme');
@@ -8362,13 +8360,13 @@
 
         // 데이터 내보내기
         function exportData(format = 'json') {
-            const userStr = sessionStorage.getItem('kwv_user');
+            userStr = sessionStorage.getItem('kwv_user');
             let userData = {};
             if (userStr) {
                 try { userData = JSON.parse(userStr); } catch(e) {}
             }
 
-            const dateStr = new Date().toISOString().split('T')[0];
+            let dateStr = new Date().toISOString().split('T')[0];
 
             if (format === 'csv') {
                 // CSV 형식으로 지원자 데이터 내보내기
@@ -8429,7 +8427,7 @@
 
         // 계정 삭제 확인
         function confirmDeleteAccount() {
-            const modal = document.createElement('div');
+            modal = document.createElement('div');
             modal.id = 'deleteModal';
             modal.className = 'modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50';
             modal.innerHTML = `
@@ -8454,7 +8452,7 @@
         }
 
         function closeDeleteModal() {
-            const modal = document.getElementById('deleteModal');
+            modal = document.getElementById('deleteModal');
             if (modal) modal.remove();
         }
 
@@ -8590,7 +8588,7 @@
         function isMobileView() { return window.innerWidth <= 768; }
 
         function initMobileSwipe() {
-            const container = document.getElementById('mobileSwipeContainer');
+            container = document.getElementById('mobileSwipeContainer');
             if (!container) return;
             container.addEventListener('touchstart', (e) => {
                 mobileTouchStartX = e.touches[0].clientX;
@@ -8608,14 +8606,14 @@
 
         function switchMobilePage(page) {
             mobileCurrentPage = page;
-            const container = document.getElementById('mobileSwipeContainer');
+            container = document.getElementById('mobileSwipeContainer');
             if (container) container.style.transform = `translateX(-${page * 50}%)`;
             document.querySelectorAll('.mobile-page-dot').forEach((dot, i) => {
                 dot.classList.toggle('active', i === page);
             });
             // 비활성 페이지 pointer-events 끄기
             const page1 = document.getElementById('mobilePage1');
-            const page2 = document.getElementById('mobilePage2');
+            let page2 = document.getElementById('mobilePage2');
             if (page1) page1.style.pointerEvents = page === 0 ? 'auto' : 'none';
             if (page2) page2.style.pointerEvents = page === 1 ? 'auto' : 'none';
             // 페이지 전환 시 상단으로 스크롤
@@ -8623,9 +8621,9 @@
             if (targetPage) targetPage.scrollTop = 0;
             window.scrollTo(0, 0);
             // 메뉴 닫기
-            const lm = document.getElementById('mobileLayoutUserMenu');
+            lm = document.getElementById('mobileLayoutUserMenu');
             if (lm) lm.classList.add('hidden');
-            const mp = document.getElementById('mobileNotifPanel');
+            mp = document.getElementById('mobileNotifPanel');
             if (mp) mp.classList.add('hidden');
             // 스와이프 힌트 숨기기
             const hint = document.getElementById('mobileSwipeHint');
@@ -8643,7 +8641,7 @@
             const content = document.getElementById('mobileDashboardContent');
             if (!content) return;
 
-            const userStr = sessionStorage.getItem('kwv_user');
+            userStr = sessionStorage.getItem('kwv_user');
             let userName = t('hello') || '안녕하세요';
             if (userStr) {
                 try {
@@ -8652,8 +8650,8 @@
                 } catch(e) {}
             }
 
-            const today = new Date();
-            const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+            today = new Date();
+            dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
 
             let delay = 0;
             const fd = () => { delay += 0.05; return `animation-delay:${delay}s`; };
@@ -8780,7 +8778,7 @@
         }
 
         function renderMobileRecentApplicants() {
-            const container = document.getElementById('mobileRecentApplicants');
+            container = document.getElementById('mobileRecentApplicants');
             if (!container) return;
             const flags = {VN:'🇻🇳', TH:'🇹🇭', PH:'🇵🇭'};
             const statusColors = {pending:'bg-yellow-100 text-yellow-700', approved:'bg-green-100 text-green-700', rejected:'bg-red-100 text-red-700'};
@@ -8802,7 +8800,7 @@
         }
 
         function renderMobileNotices() {
-            const container = document.getElementById('mobileNoticeList');
+            container = document.getElementById('mobileNoticeList');
             if (!container) return;
             const desktopNotices = document.getElementById('noticeList');
             if (desktopNotices && desktopNotices.innerHTML) {
@@ -8830,7 +8828,7 @@
                 { id: 'settings', icon: 'fa-cog', label: t('tabSettings') || '설정', desc: '앱 설정', color: 'mobile-menu-pink' }
             ];
             // 등급 확인 - M등급이 아니면 masterOnly 메뉴 숨김
-            const userStr = sessionStorage.getItem('kwv_user');
+            userStr = sessionStorage.getItem('kwv_user');
             let userLevel = 0;
             if (userStr) { try { const u = JSON.parse(userStr); userLevel = u.admin_level || u.adminLevel || 0; } catch(e){} }
             const filteredMenus = menus.filter(m => !m.masterOnly || userLevel >= 3);
@@ -8855,8 +8853,8 @@
             }
             // 해당 탭 콘텐츠를 모바일 영역에 표시
             const tabContent = document.getElementById('tab-' + tabId);
-            const mobileTabContent = document.getElementById('mobileTabContent');
-            const menuGrid = document.getElementById('mobileMenuGrid');
+            let mobileTabContent = document.getElementById('mobileTabContent');
+            let menuGrid = document.getElementById('mobileMenuGrid');
             if (tabContent && mobileTabContent) {
                 menuGrid.style.display = 'none';
                 mobileTabContent.style.display = 'block';
@@ -8870,8 +8868,8 @@
         }
 
         function closeMobileTab() {
-            const mobileTabContent = document.getElementById('mobileTabContent');
-            const menuGrid = document.getElementById('mobileMenuGrid');
+            mobileTabContent = document.getElementById('mobileTabContent');
+            menuGrid = document.getElementById('mobileMenuGrid');
             if (mobileTabContent) mobileTabContent.style.display = 'none';
             if (menuGrid) menuGrid.style.display = 'grid';
         }
@@ -8881,7 +8879,7 @@
             renderMobileMenuGrid();
             initMobileSwipe();
             // 초기 상태: page2 비활성
-            const page2 = document.getElementById('mobilePage2');
+            page2 = document.getElementById('mobilePage2');
             if (page2) page2.style.pointerEvents = 'none';
             // 3초 후 스와이프 힌트 숨기기
             setTimeout(() => {
