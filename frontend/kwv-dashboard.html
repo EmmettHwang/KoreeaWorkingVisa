@@ -581,30 +581,73 @@
 
         <!-- ==================== 지원자 탭 ==================== -->
         <div id="tab-applicants" class="tab-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800" data-i18n="applicantManagement">👥 지원자 관리</h2>
-                <select id="filterStatus" class="input-apple" onchange="filterApplicants()">
-                    <option value="" data-i18n="allStatus">전체 상태</option>
-                    <option value="pending" data-i18n="pending">대기중</option>
-                    <option value="approved" data-i18n="approved">승인</option>
-                    <option value="rejected" data-i18n="rejected">거절</option>
-                </select>
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-3">
+                <h2 class="text-2xl font-bold text-gray-800">👥 지원자 관리</h2>
+                <div class="flex items-center gap-2 text-sm">
+                    <span id="applicantCount" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">0명</span>
+                </div>
             </div>
-            <div class="card overflow-hidden">
-                <table class="w-full">
+            <!-- 필터바 -->
+            <div class="card p-4 mb-4">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">승인 상태</label>
+                        <select id="filterApproval" class="input-apple text-sm w-full" onchange="loadApplicants()">
+                            <option value="">전체</option>
+                            <option value="false">미승인</option>
+                            <option value="true">승인됨</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">비자 상태</label>
+                        <select id="filterStatus" class="input-apple text-sm w-full" onchange="loadApplicants()">
+                            <option value="">전체</option>
+                            <option value="pending">대기중</option>
+                            <option value="processing">심사중</option>
+                            <option value="approved">승인</option>
+                            <option value="rejected">거절</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">국적</label>
+                        <select id="filterNationality" class="input-apple text-sm w-full" onchange="loadApplicants()">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">지자체</label>
+                        <select id="filterLg" class="input-apple text-sm w-full" onchange="loadApplicants()">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">검색</label>
+                        <input type="text" id="filterSearch" class="input-apple text-sm w-full" placeholder="이름/이메일/전화"
+                               onkeyup="if(event.key==='Enter')loadApplicants()">
+                    </div>
+                </div>
+            </div>
+            <!-- 테이블 -->
+            <div class="card overflow-x-auto">
+                <table class="w-full text-sm">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="name">이름</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="nationality">국적</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="appliedPosition">지원 포지션</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="visa">비자</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="status">상태</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600" data-i18n="manage">관리</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600">이름</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600">국적</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600">비자</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600">신청 지자체</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600">배정 지자체</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600">승인</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600">비자상태</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600">가입일</th>
+                            <th class="px-4 py-3 text-center font-semibold text-gray-600">관리</th>
                         </tr>
                     </thead>
                     <tbody id="applicantTable" class="divide-y divide-gray-100"></tbody>
                 </table>
             </div>
+            <!-- 페이지네이션 -->
+            <div id="applicantPagination" class="flex justify-center items-center gap-2 mt-4"></div>
         </div>
 
         <!-- ==================== FAQ 탭 ==================== -->
@@ -3793,6 +3836,9 @@
                 btn.classList.add('text-blue-600', 'bg-white/50');
                 btn.classList.remove('text-gray-500');
             }
+            // 탭별 데이터 로드
+            if (tabName === 'applicants') loadApplicants();
+            if (tabName === 'regions') loadLocalGovernments();
         }
 
         // 공지사항 로드
@@ -4366,6 +4412,16 @@
 
                 // 지도 마커 업데이트
                 updateRegionMapMarkers();
+
+                // 신청자 탭의 지자체 필터 업데이트
+                const lgFilter = document.getElementById('filterLg');
+                if (lgFilter && lgFilter.options.length <= 1) {
+                    localGovernments.forEach(lg => {
+                        const opt = document.createElement('option');
+                        opt.value = lg.id; opt.textContent = `${lg.name} (${lg.region})`;
+                        lgFilter.appendChild(opt);
+                    });
+                }
             } catch(e) {
                 console.error('loadLocalGovernments error:', e);
                 document.getElementById('lgCards').innerHTML = '<div class="text-center text-red-400 py-8 col-span-2"><i class="fas fa-exclamation-triangle mr-2"></i>지자체 정보를 불러올 수 없습니다.</div>';
@@ -4822,37 +4878,153 @@
             }
         }
 
-        // 지원자
-        function renderApplicants(filter = '') {
-            const table = document.getElementById('applicantTable');
-            const flags = {VN: '🇻🇳', TH: '🇹🇭', PH: '🇵🇭'};
-            const countryNames = {VN: t('country_VN'), TH: t('country_TH'), PH: t('country_PH')};
-            const statusColors = {pending: 'bg-yellow-100 text-yellow-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700'};
-            const statusText = {pending: t('pending'), approved: t('approved'), rejected: t('rejected')};
+        // ==================== 지원자 관리 (API 연동) ====================
+        let applicantPage = 1;
+        const countryFlags = {VN:'🇻🇳',TH:'🇹🇭',PH:'🇵🇭',KH:'🇰🇭',ID:'🇮🇩',MM:'🇲🇲',NP:'🇳🇵',LK:'🇱🇰',BD:'🇧🇩',MN:'🇲🇳',UZ:'🇺🇿',TL:'🇹🇱',CN:'🇨🇳'};
+        const countryNames = {VN:'베트남',TH:'태국',PH:'필리핀',KH:'캄보디아',ID:'인도네시아',MM:'미얀마',NP:'네팔',LK:'스리랑카',BD:'방글라데시',MN:'몽골',UZ:'우즈베키스탄',TL:'동티모르',CN:'중국'};
 
-            const filtered = filter ? applicants.filter(a => a.status === filter) : applicants;
-            table.innerHTML = filtered.map(a => `
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-6 py-4 font-medium text-gray-800">${a.name}</td>
-                    <td class="px-6 py-4">${flags[a.country]} ${countryNames[a.country]}</td>
-                    <td class="px-6 py-4 text-gray-600">${translateJob(a.job)}</td>
-                    <td class="px-6 py-4"><span class="px-2 py-1 bg-blue-100 text-blue-600 rounded-lg text-sm">${a.visa}</span></td>
-                    <td class="px-6 py-4"><span class="px-3 py-1 rounded-lg text-sm font-medium ${statusColors[a.status]}">${statusText[a.status]}</span></td>
-                    <td class="px-6 py-4">
-                        <button onclick="updateStatus(${a.id}, 'approved')" class="w-8 h-8 bg-green-100 text-green-500 rounded-lg hover:bg-green-200 mr-1"><i class="fas fa-check"></i></button>
-                        <button onclick="updateStatus(${a.id}, 'rejected')" class="w-8 h-8 bg-red-100 text-red-500 rounded-lg hover:bg-red-200"><i class="fas fa-times"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+        async function loadApplicants(page = 1) {
+            applicantPage = page;
+            const token = sessionStorage.getItem('kwv_token');
+            const params = new URLSearchParams({page, limit: 20});
+            const status = document.getElementById('filterStatus')?.value;
+            const approval = document.getElementById('filterApproval')?.value;
+            const nat = document.getElementById('filterNationality')?.value;
+            const lg = document.getElementById('filterLg')?.value;
+            const search = document.getElementById('filterSearch')?.value;
+            if (status) params.set('status', status);
+            if (approval) params.set('is_approved', approval);
+            if (nat) params.set('nationality', nat);
+            if (lg) params.set('lg_id', lg);
+            if (search) params.set('search', search);
+
+            try {
+                const res = await fetch(`/api/kwv/admin/applicants?${params}`, {
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                const data = await res.json();
+                if (!res.ok) return;
+
+                document.getElementById('applicantCount').textContent = `${data.total}명`;
+
+                // 필터 옵션 업데이트 (최초 1회)
+                if (data.filters) {
+                    const natSelect = document.getElementById('filterNationality');
+                    if (natSelect && natSelect.options.length <= 1) {
+                        data.filters.nationalities.forEach(n => {
+                            const opt = document.createElement('option');
+                            opt.value = n; opt.textContent = `${countryFlags[n]||''} ${countryNames[n]||n}`;
+                            natSelect.appendChild(opt);
+                        });
+                    }
+                }
+
+                const table = document.getElementById('applicantTable');
+                const statusColors = {pending:'bg-yellow-100 text-yellow-700',processing:'bg-blue-100 text-blue-700',approved:'bg-green-100 text-green-700',rejected:'bg-red-100 text-red-700'};
+                const statusLabels = {pending:'대기중',processing:'심사중',approved:'승인',rejected:'거절'};
+
+                table.innerHTML = data.applicants.map(a => `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                ${a.profile_photo ? `<img src="${a.profile_photo}" class="w-8 h-8 rounded-full object-cover">` : `<div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-400"><i class="fas fa-user text-xs"></i></div>`}
+                                <div>
+                                    <p class="font-medium text-gray-800">${a.name}</p>
+                                    <p class="text-xs text-gray-400">${a.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">${countryFlags[a.nationality]||''} ${countryNames[a.nationality]||a.nationality||'-'}</td>
+                        <td class="px-4 py-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">${a.visa_type||'-'}</span></td>
+                        <td class="px-4 py-3 text-gray-600">${a.target_lg_name||'-'}</td>
+                        <td class="px-4 py-3 text-gray-600">${a.lg_name||'<span class="text-orange-500 text-xs">미배정</span>'}</td>
+                        <td class="px-4 py-3">
+                            ${a.is_approved
+                                ? '<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">승인</span>'
+                                : '<span class="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">미승인</span>'}
+                        </td>
+                        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium ${statusColors[a.status]||''}">${statusLabels[a.status]||a.status}</span></td>
+                        <td class="px-4 py-3 text-xs text-gray-400">${a.created_at ? a.created_at.slice(0,10) : '-'}</td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex justify-center gap-1">
+                                ${!a.is_approved ? `<button onclick="approveApplicant(${a.id})" class="w-7 h-7 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 text-xs" title="승인"><i class="fas fa-check"></i></button>` : ''}
+                                ${a.status !== 'rejected' ? `<button onclick="rejectApplicant(${a.id})" class="w-7 h-7 bg-red-100 text-red-500 rounded-lg hover:bg-red-200 text-xs" title="반려"><i class="fas fa-times"></i></button>` : ''}
+                                ${!a.local_government_id ? `<button onclick="assignLgModal(${a.id},'${a.name}')" class="w-7 h-7 bg-blue-100 text-blue-500 rounded-lg hover:bg-blue-200 text-xs" title="지자체 배정"><i class="fas fa-building"></i></button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">지원자가 없습니다</td></tr>';
+
+                // 페이지네이션
+                const totalPages = Math.ceil(data.total / 20);
+                const pagDiv = document.getElementById('applicantPagination');
+                if (totalPages > 1) {
+                    let html = '';
+                    if (page > 1) html += `<button onclick="loadApplicants(${page-1})" class="px-3 py-1 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">이전</button>`;
+                    html += `<span class="text-sm text-gray-500">${page} / ${totalPages}</span>`;
+                    if (page < totalPages) html += `<button onclick="loadApplicants(${page+1})" class="px-3 py-1 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">다음</button>`;
+                    pagDiv.innerHTML = html;
+                } else { pagDiv.innerHTML = ''; }
+
+            } catch(e) { console.error('loadApplicants error:', e); }
         }
 
-        function filterApplicants() { renderApplicants(document.getElementById('filterStatus').value); }
+        async function approveApplicant(id) {
+            if (!confirm('이 지원자를 승인하시겠습니까?')) return;
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(`/api/kwv/admin/applicants/${id}/status`, {
+                    method: 'PUT',
+                    headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+                    body: JSON.stringify({status: 'approved'})
+                });
+                if (res.ok) { alert('승인 완료'); loadApplicants(applicantPage); }
+                else { const d = await res.json(); alert(d.detail || '오류 발생'); }
+            } catch(e) { alert('오류: ' + e.message); }
+        }
 
-        function updateStatus(id, status) {
-            applicants = applicants.map(a => a.id === id ? {...a, status} : a);
-            renderApplicants(document.getElementById('filterStatus').value);
-            loadRecentApplicants();
-            alert(status === 'approved' ? `✅ ${t('approvedMsg')}` : `❌ ${t('rejectedMsg')}`);
+        async function rejectApplicant(id) {
+            const reason = prompt('반려 사유를 입력하세요:');
+            if (reason === null) return;
+            const token = sessionStorage.getItem('kwv_token');
+            try {
+                const res = await fetch(`/api/kwv/admin/applicants/${id}/status`, {
+                    method: 'PUT',
+                    headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+                    body: JSON.stringify({status: 'rejected', rejection_reason: reason})
+                });
+                if (res.ok) { alert('반려 처리 완료'); loadApplicants(applicantPage); }
+                else { const d = await res.json(); alert(d.detail || '오류 발생'); }
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        async function assignLgModal(applicantId, name) {
+            // 지자체 목록으로 선택 모달
+            try {
+                const res = await fetch('/api/kwv/local-governments');
+                const lgs = await res.json();
+                if (!lgs.length) { alert('등록된 지자체가 없습니다.'); return; }
+
+                const options = lgs.map(lg => {
+                    const remaining = lg.allocated_quota - lg.used_quota;
+                    return `${lg.id}: ${lg.name} (${lg.region}) - TO: ${remaining}/${lg.allocated_quota}`;
+                }).join('\n');
+
+                const selected = prompt(`'${name}'을(를) 배정할 지자체 ID를 입력하세요:\n\n${options}`);
+                if (!selected) return;
+                const lgId = parseInt(selected.split(':')[0] || selected);
+                if (isNaN(lgId)) { alert('유효한 ID를 입력하세요.'); return; }
+
+                const token = sessionStorage.getItem('kwv_token');
+                const assignRes = await fetch(`/api/kwv/admin/applicants/${applicantId}/assign-lg`, {
+                    method: 'PUT',
+                    headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+                    body: JSON.stringify({local_government_id: lgId})
+                });
+                const data = await assignRes.json();
+                if (assignRes.ok) { alert(data.message); loadApplicants(applicantPage); }
+                else { alert(data.detail || '배정 실패'); }
+            } catch(e) { alert('오류: ' + e.message); }
         }
 
         // ==================== FAQ ====================

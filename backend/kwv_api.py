@@ -71,6 +71,12 @@ class UserRegister(BaseModel):
     visa_copy_url: Optional[str] = None
     id_card_url: Optional[str] = None
     insurance_cert_url: Optional[str] = None
+    # Phase 2 추가
+    nationality: Optional[str] = None  # 국적
+    visa_type: Optional[str] = None  # 비자 유형 (E-8, E-9 등)
+    birth_date: Optional[str] = None  # 생년월일
+    gender: Optional[str] = None  # 성별
+    target_local_government_id: Optional[int] = None  # 신청 대상 지자체
 
 class GoogleLoginRequest(BaseModel):
     credential: Optional[str] = None  # Google ID token (legacy)
@@ -299,10 +305,24 @@ async def register(user_data: UserRegister):
 
         user_type = user_data.user_type or 'applicant'
 
+        # 승인 모드 확인
+        approval_mode = 'manual'
+        try:
+            cursor.execute("SELECT setting_value FROM kwv_system_settings WHERE setting_key = 'approval_mode'")
+            row = cursor.fetchone()
+            if row:
+                approval_mode = row[0]
+        except:
+            pass
+
+        # applicant는 일단 미승인으로 생성, 자동 승인은 필수항목 검증 후 결정
+        is_approved = True if user_type == 'admin' else False
+
         cursor.execute("""
             INSERT INTO kwv_users (email, password_hash, password_salt, name, phone, address,
-                user_type, admin_level, language, organization, region, profile_photo)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                user_type, admin_level, language, organization, region, profile_photo,
+                target_local_government_id, is_approved)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             user_data.email,
             password_hash,
@@ -315,7 +335,9 @@ async def register(user_data: UserRegister):
             user_data.language or 'en',
             user_data.organization if user_type == 'admin' else None,
             user_data.organization if user_type == 'admin' else None,
-            profile_photo_url
+            profile_photo_url,
+            user_data.target_local_government_id if user_type == 'applicant' else None,
+            is_approved
         ))
 
         user_id = cursor.lastrowid
@@ -337,6 +359,32 @@ async def register(user_data: UserRegister):
                 VALUES (%s, %s, %s, %s)
             """, (uid, category, fname, fpath))
 
+        # applicant인 경우 비자 신청 정보 저장
+        if user_type == 'applicant':
+            cursor.execute("""
+                INSERT INTO kwv_visa_applicants (user_id, visa_type, nationality, birth_date, gender)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                user_id,
+                user_data.visa_type,
+                user_data.nationality,
+                user_data.birth_date or None,
+                user_data.gender or None
+            ))
+
+        # 자동 승인 모드일 때 필수 항목 검증
+        auto_approved = False
+        if approval_mode == 'auto' and user_type == 'applicant':
+            check = check_auto_approval(user_id, conn)
+            if check["passed"]:
+                cursor.execute("""
+                    UPDATE kwv_users SET is_approved = TRUE, approved_at = NOW() WHERE id = %s
+                """, (user_id,))
+                cursor.execute("""
+                    UPDATE kwv_visa_applicants SET application_status = 'approved' WHERE user_id = %s
+                """, (user_id,))
+                auto_approved = True
+
         conn.commit()
 
         token_data = {
@@ -348,7 +396,7 @@ async def register(user_data: UserRegister):
         }
         access_token = create_access_token(token_data)
 
-        return {
+        response = {
             "access_token": access_token,
             "token_type": "bearer",
             "expires_in": JWT_EXPIRATION_HOURS * 3600,
@@ -358,9 +406,19 @@ async def register(user_data: UserRegister):
                 "name": user_data.name,
                 "user_type": user_type,
                 "admin_level": 2 if user_type == 'admin' else 0,
-                "language": user_data.language
+                "language": user_data.language,
+                "is_approved": auto_approved if user_type == 'applicant' else True
             }
         }
+        # 자동 승인 실패 시 누락 항목 알려주기
+        if approval_mode == 'auto' and user_type == 'applicant' and not auto_approved:
+            check = check_auto_approval(user_id, conn)
+            response["approval_status"] = "pending"
+            response["missing_items"] = check.get("missing", [])
+        elif auto_approved:
+            response["approval_status"] = "approved"
+
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -576,11 +634,16 @@ async def logout():
 @router.get("/admin/applicants")
 async def get_applicants(
     status: Optional[str] = None,
+    nationality: Optional[str] = None,
+    visa_type: Optional[str] = None,
+    lg_id: Optional[int] = None,
+    is_approved: Optional[str] = None,
+    search: Optional[str] = None,
     page: int = 1,
     limit: int = 20,
     user: dict = Depends(get_current_user)
 ):
-    """신청자 목록 조회 (관리자용)"""
+    """신청자 목록 조회 (관리자용) - 필터 강화"""
     require_admin(user)
 
     conn = get_kwv_db_connection()
@@ -596,6 +659,22 @@ async def get_applicants(
         if status:
             where_clause += " AND a.application_status = %s"
             params.append(status)
+        if nationality:
+            where_clause += " AND a.nationality = %s"
+            params.append(nationality)
+        if visa_type:
+            where_clause += " AND a.visa_type = %s"
+            params.append(visa_type)
+        if lg_id:
+            where_clause += " AND u.target_local_government_id = %s"
+            params.append(lg_id)
+        if is_approved == 'true':
+            where_clause += " AND u.is_approved = TRUE"
+        elif is_approved == 'false':
+            where_clause += " AND u.is_approved = FALSE"
+        if search:
+            where_clause += " AND (u.name LIKE %s OR u.email LIKE %s OR u.phone LIKE %s)"
+            params.extend([f"%{search}%", f"%{search}%", f"%{search}%"])
 
         cursor.execute(f"""
             SELECT COUNT(*) FROM kwv_users u
@@ -607,9 +686,15 @@ async def get_applicants(
         offset = (page - 1) * limit
         cursor.execute(f"""
             SELECT u.id, u.email, u.name, u.phone, u.created_at,
-                   a.visa_type, a.nationality, a.application_status
+                   a.visa_type, a.nationality, a.application_status,
+                   u.is_approved, u.approved_at, u.target_local_government_id,
+                   u.local_government_id, u.profile_photo, u.language,
+                   lg.name as lg_name, tlg.name as target_lg_name,
+                   a.birth_date, a.gender
             FROM kwv_users u
             LEFT JOIN kwv_visa_applicants a ON u.id = a.user_id
+            LEFT JOIN kwv_local_governments lg ON u.local_government_id = lg.id
+            LEFT JOIN kwv_local_governments tlg ON u.target_local_government_id = tlg.id
             {where_clause}
             ORDER BY u.created_at DESC
             LIMIT %s OFFSET %s
@@ -625,14 +710,34 @@ async def get_applicants(
                 "created_at": row[4].isoformat() if row[4] else None,
                 "visa_type": row[5],
                 "nationality": row[6],
-                "status": row[7] or "pending"
+                "status": row[7] or "pending",
+                "is_approved": bool(row[8]),
+                "approved_at": row[9].isoformat() if row[9] else None,
+                "target_local_government_id": row[10],
+                "local_government_id": row[11],
+                "profile_photo": row[12],
+                "language": row[13],
+                "lg_name": row[14],
+                "target_lg_name": row[15],
+                "birth_date": row[16].isoformat() if row[16] else None,
+                "gender": row[17]
             })
+
+        # 필터용 메타데이터
+        cursor.execute("SELECT DISTINCT nationality FROM kwv_visa_applicants WHERE nationality IS NOT NULL ORDER BY nationality")
+        nationalities = [r[0] for r in cursor.fetchall()]
+        cursor.execute("SELECT DISTINCT visa_type FROM kwv_visa_applicants WHERE visa_type IS NOT NULL ORDER BY visa_type")
+        visa_types = [r[0] for r in cursor.fetchall()]
 
         return {
             "applicants": applicants,
             "total": total,
             "page": page,
-            "limit": limit
+            "limit": limit,
+            "filters": {
+                "nationalities": nationalities,
+                "visa_types": visa_types
+            }
         }
     finally:
         conn.close()
@@ -698,13 +803,103 @@ async def update_applicant_status(
             WHERE user_id = %s
         """, (status_update.status, status_update.rejection_reason, applicant_id))
 
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="신청자를 찾을 수 없습니다")
+        # kwv_users의 승인 상태도 동기화
+        if status_update.status == 'approved':
+            cursor.execute("""
+                UPDATE kwv_users SET is_approved = TRUE, approved_at = NOW(),
+                approved_by = %s, rejection_reason = NULL WHERE id = %s
+            """, (user.get('sub'), applicant_id))
+        elif status_update.status == 'rejected':
+            cursor.execute("""
+                UPDATE kwv_users SET is_approved = FALSE,
+                rejection_reason = %s WHERE id = %s
+            """, (status_update.rejection_reason, applicant_id))
 
         conn.commit()
         return {"message": "상태가 변경되었습니다", "status": status_update.status}
     finally:
         conn.close()
+
+@router.put("/admin/applicants/{applicant_id}/assign-lg")
+async def assign_local_government(applicant_id: int, request: Request, user: dict = Depends(get_current_user)):
+    """근로자를 지자체에 배정"""
+    require_admin_level(user, 2)
+    body = await request.json()
+    lg_id = body.get("local_government_id")
+    if not lg_id:
+        raise HTTPException(status_code=400, detail="지자체 ID가 필요합니다")
+
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        # 지자체 TO 확인
+        cursor.execute("SELECT allocated_quota, used_quota, name FROM kwv_local_governments WHERE id = %s AND is_active = TRUE", (lg_id,))
+        lg = cursor.fetchone()
+        if not lg:
+            raise HTTPException(status_code=404, detail="지자체를 찾을 수 없습니다")
+        if lg[0] > 0 and lg[1] >= lg[0]:
+            raise HTTPException(status_code=400, detail=f"'{lg[2]}' 지자체의 TO가 부족합니다 ({lg[1]}/{lg[0]})")
+
+        # 배정
+        cursor.execute("UPDATE kwv_users SET local_government_id = %s WHERE id = %s AND user_type = 'applicant'", (lg_id, applicant_id))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="신청자를 찾을 수 없습니다")
+
+        # used_quota 증가
+        cursor.execute("UPDATE kwv_local_governments SET used_quota = used_quota + 1 WHERE id = %s", (lg_id,))
+        conn.commit()
+        return {"message": f"'{lg[2]}' 지자체에 배정되었습니다"}
+    finally:
+        conn.close()
+
+def check_auto_approval(user_id: int, conn) -> dict:
+    """자동 승인 필수 항목 검증 - 모든 항목이 충족되어야 자동 승인"""
+    cursor = conn.cursor()
+    missing = []
+
+    # 1. 기본 정보 확인
+    cursor.execute("""
+        SELECT name, phone, profile_photo, target_local_government_id
+        FROM kwv_users WHERE id = %s
+    """, (user_id,))
+    user_row = cursor.fetchone()
+    if not user_row:
+        return {"passed": False, "missing": ["사용자 정보 없음"]}
+
+    name, phone, profile_photo, target_lg = user_row
+    if not name: missing.append("이름")
+    if not phone: missing.append("전화번호")
+    if not profile_photo: missing.append("프로필 사진")
+    if not target_lg: missing.append("신청 대상 지자체")
+
+    # 2. 비자 정보 확인
+    cursor.execute("""
+        SELECT nationality, visa_type, passport_number, birth_date, gender
+        FROM kwv_visa_applicants WHERE user_id = %s
+    """, (user_id,))
+    visa_row = cursor.fetchone()
+    if not visa_row:
+        missing.extend(["국적", "비자유형", "여권번호", "생년월일", "성별"])
+    else:
+        nat, vtype, passport, bdate, gender = visa_row
+        if not nat: missing.append("국적")
+        if not vtype: missing.append("비자유형")
+        if not passport: missing.append("여권번호")
+        if not bdate: missing.append("생년월일")
+        if not gender: missing.append("성별")
+
+    # 3. 필수 서류 확인 (여권 사본, 비자 사본)
+    cursor.execute("""
+        SELECT file_category FROM kwv_file_uploads WHERE user_id = %s
+        AND file_category IN ('passport_copy', 'visa_copy')
+    """, (user_id,))
+    uploaded = {r[0] for r in cursor.fetchall()}
+    if 'passport_copy' not in uploaded: missing.append("여권 사본")
+    if 'visa_copy' not in uploaded: missing.append("비자 사본")
+
+    return {"passed": len(missing) == 0, "missing": missing}
 
 # ==================== 신청자 API ====================
 

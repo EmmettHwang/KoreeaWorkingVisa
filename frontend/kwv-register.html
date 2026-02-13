@@ -124,6 +124,75 @@
                         <input type="text" id="address" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Your address">
                     </div>
 
+                    <!-- Applicant Extra Fields -->
+                    <div id="applicantExtraFields" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-globe mr-1"></i> <span data-i18n="nationality">Nationality</span> <span class="text-red-500">*</span>
+                                </label>
+                                <select id="nationality" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <option value="">Select</option>
+                                    <option value="VN">Vietnam (베트남)</option>
+                                    <option value="TH">Thailand (태국)</option>
+                                    <option value="PH">Philippines (필리핀)</option>
+                                    <option value="KH">Cambodia (캄보디아)</option>
+                                    <option value="ID">Indonesia (인도네시아)</option>
+                                    <option value="MM">Myanmar (미얀마)</option>
+                                    <option value="NP">Nepal (네팔)</option>
+                                    <option value="LK">Sri Lanka (스리랑카)</option>
+                                    <option value="BD">Bangladesh (방글라데시)</option>
+                                    <option value="MN">Mongolia (몽골)</option>
+                                    <option value="UZ">Uzbekistan (우즈베키스탄)</option>
+                                    <option value="TL">Timor-Leste (동티모르)</option>
+                                    <option value="CN">China (중국)</option>
+                                    <option value="OTHER">Other (기타)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-passport mr-1"></i> <span data-i18n="visaType">Visa Type</span> <span class="text-red-500">*</span>
+                                </label>
+                                <select id="visaType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <option value="">Select</option>
+                                    <option value="E-8">E-8 (계절근로)</option>
+                                    <option value="E-9">E-9 (비전문취업)</option>
+                                    <option value="C-4">C-4 (단기취업)</option>
+                                    <option value="H-2">H-2 (방문취업)</option>
+                                    <option value="F-1">F-1 (방문동거)</option>
+                                    <option value="OTHER">Other (기타)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-birthday-cake mr-1"></i> <span data-i18n="birthDate">Date of Birth</span>
+                                </label>
+                                <input type="date" id="birthDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-venus-mars mr-1"></i> <span data-i18n="gender">Gender</span>
+                                </label>
+                                <select id="gender" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <option value="">Select</option>
+                                    <option value="male">Male (남성)</option>
+                                    <option value="female">Female (여성)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-building mr-1"></i> <span data-i18n="targetLg">Target Local Government</span> <span class="text-red-500">*</span>
+                            </label>
+                            <select id="targetLg" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                <option value="">Loading...</option>
+                            </select>
+                            <p id="lgQuotaInfo" class="text-xs text-gray-500 mt-1 hidden"></p>
+                        </div>
+                    </div>
+
                     <!-- Default Password Notice -->
                     <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
                         <i class="fas fa-info-circle mr-1"></i>
@@ -376,6 +445,7 @@
             document.getElementById('btn-' + type).classList.add('selected');
             document.getElementById('adminFields').classList.toggle('hidden', type !== 'admin');
             document.getElementById('applicantFields').classList.toggle('hidden', type !== 'applicant');
+            document.getElementById('applicantExtraFields').classList.toggle('hidden', type !== 'applicant');
         }
 
         // ==================== Profile Photo ====================
@@ -558,6 +628,12 @@
                 } else {
                     body.passport_copy_url = document.getElementById('passportUrl').value || null;
                     body.visa_copy_url = document.getElementById('visaUrl').value || null;
+                    body.nationality = document.getElementById('nationality').value || null;
+                    body.visa_type = document.getElementById('visaType').value || null;
+                    body.birth_date = document.getElementById('birthDate').value || null;
+                    body.gender = document.getElementById('gender').value || null;
+                    const lgVal = document.getElementById('targetLg').value;
+                    body.target_local_government_id = lgVal ? parseInt(lgVal) : null;
                 }
 
                 const res = await fetch(`${API_BASE}/auth/register`, {
@@ -573,7 +649,14 @@
                 sessionStorage.setItem('kwv_logged_in', 'true');
                 sessionStorage.setItem('kwv_user', JSON.stringify(data.user));
 
-                showSuccess(t.registrationSuccess || 'Registration successful! Redirecting...');
+                let msg = t.registrationSuccess || 'Registration successful! Redirecting...';
+                if (data.approval_status === 'pending' && data.missing_items) {
+                    const missingStr = data.missing_items.join(', ');
+                    msg = (currentLang === 'ko')
+                        ? `가입 완료! 승인 대기 중입니다.\n누락 항목: ${missingStr}`
+                        : `Registration complete! Approval pending.\nMissing: ${missingStr}`;
+                }
+                showSuccess(msg);
 
                 setTimeout(() => {
                     if (data.user.user_type === 'admin') {
@@ -581,7 +664,7 @@
                     } else {
                         window.location.href = '/applicant/dashboard.html';
                     }
-                }, 1500);
+                }, 2500);
             } catch (error) {
                 showError(error.message);
                 registerBtn.disabled = false;
@@ -608,9 +691,42 @@
         }
 
         // ==================== Init ====================
+        // ==================== 지자체 목록 로드 ====================
+        async function loadLocalGovernments() {
+            try {
+                const res = await fetch(`${API_BASE}/local-governments`);
+                const lgs = await res.json();
+                const select = document.getElementById('targetLg');
+                select.innerHTML = '<option value="">-- Select Local Government --</option>';
+                lgs.forEach(lg => {
+                    const remaining = lg.allocated_quota - lg.used_quota;
+                    const quotaText = lg.allocated_quota > 0 ? ` (TO: ${remaining}/${lg.allocated_quota})` : '';
+                    const disabled = lg.allocated_quota > 0 && remaining <= 0;
+                    const opt = document.createElement('option');
+                    opt.value = lg.id;
+                    opt.textContent = `${lg.name} - ${lg.region}${quotaText}`;
+                    if (disabled) { opt.disabled = true; opt.textContent += ' [FULL]'; }
+                    select.appendChild(opt);
+                });
+                // 선택 시 quota 정보 표시
+                select.addEventListener('change', () => {
+                    const lgId = select.value;
+                    const info = document.getElementById('lgQuotaInfo');
+                    if (lgId) {
+                        const lg = lgs.find(l => l.id == lgId);
+                        if (lg && lg.allocated_quota > 0) {
+                            info.textContent = `${lg.name}: ${lg.allocated_quota - lg.used_quota}/${lg.allocated_quota} TO available`;
+                            info.classList.remove('hidden');
+                        } else { info.classList.add('hidden'); }
+                    } else { info.classList.add('hidden'); }
+                });
+            } catch(e) { console.warn('Failed to load LGs:', e); }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             applyTranslations();
             applyGoogleUserData();
+            loadLocalGovernments();
         });
     </script>
 </body>
