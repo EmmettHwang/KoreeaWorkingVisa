@@ -1457,7 +1457,13 @@
                         <div class="space-y-3">
                             <div><label class="text-xs text-gray-500">시스템 제목</label><input type="text" id="set_system_title" class="w-full input-apple text-sm mt-1" placeholder="Korea Working Visa"></div>
                             <div><label class="text-xs text-gray-500">부제목</label><input type="text" id="set_system_subtitle" class="w-full input-apple text-sm mt-1" placeholder="외국인 계절근로자 관리 포털"></div>
-                            <div><label class="text-xs text-gray-500">로고 URL</label><input type="text" id="set_logo_url" class="w-full input-apple text-sm mt-1" placeholder="/logo.png"></div>
+                            <div><label class="text-xs text-gray-500">로고</label>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <input type="text" id="set_logo_url" class="flex-1 input-apple text-sm" placeholder="/logo.png" readonly>
+                                    <label class="px-3 py-2 bg-blue-500 text-white text-xs rounded-lg cursor-pointer hover:bg-blue-600"><i class="fas fa-upload mr-1"></i>업로드<input type="file" accept="image/*" class="hidden" onchange="uploadLogo(this)"></label>
+                                </div>
+                                <div id="logoPreview" class="mt-2 hidden"><img id="logoPreviewImg" class="h-10 object-contain rounded border"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="card p-6">
@@ -1498,8 +1504,12 @@
                             API 키
                         </h4>
                         <div class="space-y-3">
-                            <div><label class="text-xs text-gray-500">Google Maps API</label><input type="password" id="set_google_maps_api_key" class="w-full input-apple text-sm mt-1" placeholder="API Key"></div>
-                            <div><label class="text-xs text-gray-500">AI API Key (Groq/Gemini)</label><input type="password" id="set_ai_api_key" class="w-full input-apple text-sm mt-1" placeholder="API Key"></div>
+                            <div><label class="text-xs text-gray-500">Google Maps API</label>
+                                <div class="flex gap-1 mt-1"><input type="password" id="set_google_maps_api_key" class="flex-1 input-apple text-sm" placeholder="API Key"><button onclick="testApiKey('google_maps')" class="px-2 py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 whitespace-nowrap"><i class="fas fa-vial"></i> 테스트</button></div>
+                            </div>
+                            <div><label class="text-xs text-gray-500">AI API Key (Groq/Gemini)</label>
+                                <div class="flex gap-1 mt-1"><input type="password" id="set_ai_api_key" class="flex-1 input-apple text-sm" placeholder="API Key"><button onclick="testApiKey('ai')" class="px-2 py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 whitespace-nowrap"><i class="fas fa-vial"></i> 테스트</button></div>
+                            </div>
                             <label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer"><span class="text-sm text-gray-700">AI 이상감지 활성화</span><input type="checkbox" id="set_ai_anomaly_enabled" class="w-5 h-5 accent-[#007AFF]"></label>
                         </div>
                     </div>
@@ -8677,6 +8687,13 @@
                     if (el) el.checked = !!systemSettings[key];
                 });
 
+                // 로고 미리보기
+                if (systemSettings.logo_url) {
+                    const preview = document.getElementById('logoPreview');
+                    const img = document.getElementById('logoPreviewImg');
+                    if (preview && img) { img.src = systemSettings.logo_url; preview.classList.remove('hidden'); }
+                }
+
                 // 시스템 제목 적용
                 if (systemSettings.system_title) {
                     document.title = systemSettings.system_title;
@@ -8710,6 +8727,46 @@
                 if (!res.ok) throw new Error(result.detail || '저장 실패');
                 alert('시스템 설정이 저장되었습니다!');
                 loadSystemSettings();
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        // ==================== 로고 업로드 ====================
+        async function uploadLogo(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const token = sessionStorage.getItem('kwv_token');
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await fetch(API_BASE + '/admin/logo/upload', {
+                    method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || '업로드 실패');
+                document.getElementById('set_logo_url').value = data.url;
+                const preview = document.getElementById('logoPreview');
+                const img = document.getElementById('logoPreviewImg');
+                img.src = data.url;
+                preview.classList.remove('hidden');
+                alert('로고가 업로드되었습니다!');
+            } catch(e) { alert('오류: ' + e.message); }
+        }
+
+        // ==================== API 키 테스트 ====================
+        async function testApiKey(type) {
+            const token = sessionStorage.getItem('kwv_token');
+            let key = '';
+            if (type === 'google_maps') key = document.getElementById('set_google_maps_api_key').value;
+            else if (type === 'ai') key = document.getElementById('set_ai_api_key').value;
+            if (!key) return alert('API 키를 먼저 입력하세요');
+            try {
+                const res = await fetch(API_BASE + '/admin/test-api-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ type, key })
+                });
+                const data = await res.json();
+                alert(data.success ? '✅ ' + data.message : '❌ ' + data.message);
             } catch(e) { alert('오류: ' + e.message); }
         }
 

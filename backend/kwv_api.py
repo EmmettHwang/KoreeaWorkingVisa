@@ -1053,6 +1053,77 @@ async def upload_temp_file(file: UploadFile = File(...), category: str = Form("t
     url = upload_to_local(file_data, filename, category)
     return {"url": url, "filename": filename}
 
+# ==================== 서류 관리 API ====================
+
+@router.get("/my/docs")
+async def get_my_documents(user: dict = Depends(get_current_user)):
+    """내 서류 목록 조회"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT id, file_category, file_name, file_path, uploaded_at as created_at
+            FROM kwv_file_uploads WHERE user_id = %s
+            ORDER BY uploaded_at DESC
+        """, (int(user['sub']),))
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
+@router.post("/my/docs/upload")
+async def upload_my_document(
+    file: UploadFile = File(...),
+    category: str = Form("general"),
+    user: dict = Depends(get_current_user)
+):
+    """서류 업로드 (인증 필요)"""
+    allowed = {'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'}
+    if file.content_type not in allowed:
+        raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다 (JPG, PNG, PDF만 가능)")
+
+    file_data = await file.read()
+    if len(file_data) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="파일 크기가 10MB를 초과합니다")
+
+    ext = file.filename.rsplit('.', 1)[-1] if '.' in file.filename else 'bin'
+    filename = f"{int(datetime.utcnow().timestamp())}_{uuid.uuid4().hex[:8]}.{ext}"
+    url = upload_to_local(file_data, filename, category)
+
+    conn = get_kwv_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO kwv_file_uploads (user_id, file_category, file_name, file_path)
+                VALUES (%s, %s, %s, %s)
+            """, (int(user['sub']), category, file.filename, url))
+            conn.commit()
+            doc_id = cursor.lastrowid
+        finally:
+            conn.close()
+    else:
+        doc_id = 0
+
+    return {"id": doc_id, "url": url, "filename": file.filename, "category": category}
+
+@router.delete("/my/docs/{doc_id}")
+async def delete_my_document(doc_id: int, user: dict = Depends(get_current_user)):
+    """내 서류 삭제"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="DB 연결 실패")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM kwv_file_uploads WHERE id = %s AND user_id = %s", (doc_id, int(user['sub'])))
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="서류를 찾을 수 없습니다")
+        return {"message": "삭제되었습니다"}
+    finally:
+        conn.close()
+
 # ==================== Google OAuth 서버 플로우 ====================
 
 @router.get("/auth/google/start")
@@ -1230,6 +1301,112 @@ def ensure_system_settings_table():
         pass
     finally:
         conn.close()
+
+@router.get("/dashboard/stats")
+async def get_dashboard_stats_real():
+    """대시보드 통계 (실제 DB 조회)"""
+    conn = get_kwv_db_connection()
+    if not conn:
+        return {"success": True, "data": {"total_jobs": 0, "total_positions": 0, "kr_regions": 0, "foreign_regions": 0, "visa_types": 0}}
+    try:
+        cursor = conn.cursor()
+        # 구인 통계
+        cursor.execute("SELECT COUNT(*), COALESCE(SUM(positions),0) FROM kwv_jobs WHERE status='active'")
+        jobs_row = cursor.fetchone()
+        total_jobs = jobs_row[0] or 0
+        total_positions = int(jobs_row[1] or 0)
+        # 지자체 통계 (한국 지자체 = kwv_local_governments, 해외 기관 = kwv_mou_agreements의 고유 국가)
+        cursor.execute("SELECT COUNT(*) FROM kwv_local_governments")
+        kr_regions = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT COUNT(DISTINCT partner_country) FROM kwv_mou_agreements")
+        foreign_regions = cursor.fetchone()[0] or 0
+        # 비자 종류
+        cursor.execute("SELECT COUNT(DISTINCT visa_type) FROM kwv_visa_applicants")
+        visa_types = cursor.fetchone()[0] or 0
+        if visa_types == 0:
+            visa_types = 5  # 기본 비자 종류 (E-8, E-9, H-2, F-2, D-10)
+        return {"success": True, "data": {
+            "total_jobs": total_jobs, "total_positions": total_positions,
+            "kr_regions": kr_regions, "foreign_regions": foreign_regions, "visa_types": visa_types
+        }}
+    finally:
+        conn.close()
+
+@router.post("/admin/logo/upload")
+async def upload_logo(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """로고 이미지 업로드"""
+    require_admin_level(user, 9)
+    allowed = {'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'}
+    if file.content_type not in allowed:
+        raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다")
+    file_data = await file.read()
+    if len(file_data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="파일 크기가 5MB를 초과합니다")
+    ext = file.filename.rsplit('.', 1)[-1] if '.' in file.filename else 'png'
+    filename = f"logo_{int(datetime.utcnow().timestamp())}.{ext}"
+    url = upload_to_local(file_data, filename, "logos")
+    # 시스템 설정에 로고 URL 저장
+    conn = get_kwv_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO kwv_system_settings (setting_key, setting_value, updated_by)
+                VALUES ('logo_url', %s, %s)
+                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by)
+            """, (url, user.get('sub')))
+            conn.commit()
+        finally:
+            conn.close()
+    return {"url": url, "filename": filename}
+
+@router.post("/admin/test-api-key")
+async def test_api_key(request: Request, user: dict = Depends(get_current_user)):
+    """API 키 테스트"""
+    require_admin_level(user, 9)
+    body = await request.json()
+    key_type = body.get("type", "")
+    api_key = body.get("key", "")
+
+    if key_type == "google_maps":
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.get(f"https://maps.googleapis.com/maps/api/geocode/json?address=Seoul&key={api_key}", timeout=5)
+                data = res.json()
+                if data.get("status") == "OK":
+                    return {"success": True, "message": "Google Maps API 키가 유효합니다"}
+                elif data.get("status") == "REQUEST_DENIED":
+                    return {"success": False, "message": f"API 키가 거부되었습니다: {data.get('error_message','')}"}
+                else:
+                    return {"success": False, "message": f"응답: {data.get('status','')}"}
+        except Exception as e:
+            return {"success": False, "message": f"연결 오류: {str(e)}"}
+    elif key_type == "ai":
+        if not api_key:
+            return {"success": False, "message": "API 키를 입력하세요"}
+        # Groq API 테스트
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.get("https://api.groq.com/openai/v1/models",
+                    headers={"Authorization": f"Bearer {api_key}"}, timeout=5)
+                if res.status_code == 200:
+                    return {"success": True, "message": "AI API 키가 유효합니다 (Groq)"}
+                else:
+                    return {"success": False, "message": f"Groq 응답: {res.status_code}"}
+        except:
+            pass
+        # Gemini API 테스트
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}", timeout=5)
+                if res.status_code == 200:
+                    return {"success": True, "message": "AI API 키가 유효합니다 (Gemini)"}
+                else:
+                    return {"success": False, "message": f"API 키를 확인해주세요"}
+        except Exception as e:
+            return {"success": False, "message": f"연결 오류: {str(e)}"}
+    else:
+        return {"success": False, "message": "알 수 없는 키 타입"}
 
 @router.get("/settings")
 async def get_system_settings():
